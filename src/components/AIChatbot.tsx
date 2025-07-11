@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Mic, MicOff, Volume2, Globe, X, Minimize2, Send } from 'lucide-react';
+import { MessageCircle, Mic, MicOff, Volume2, Globe, X, Minimize2, Send, Bot, User } from 'lucide-react';
 import { multilingualAI } from '../services/multilingualAIService';
 import voiceReservationService from '../services/voiceReservationService';
 
@@ -17,9 +17,7 @@ interface AIChatbotProps {
 }
 
 const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(true);
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -95,7 +93,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
     // Add welcome message in selected language
     const welcomeMessage: Message = {
       id: Date.now().toString(),
-      text: multilingualAI.getResponse('welcome', {}, languageCode),
+      text: multilingualAI.getGreeting('welcome'),
       sender: 'ai',
       timestamp: new Date(),
       language: languageCode
@@ -151,16 +149,15 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
       // Add AI response
       const aiMessage: Message = {
         id: Date.now().toString() + '_ai',
-        text: response.message,
+        text: response,
         sender: 'ai',
         timestamp: new Date(),
-        language: detectedLanguage,
-        data: response.extractedData
+        language: detectedLanguage
       };
       setMessages(prev => [...prev, aiMessage]);
 
       // Speak the response in the appropriate language
-      await multilingualAI.speak(response.message, detectedLanguage);
+      await multilingualAI.speak(response, detectedLanguage);
       
     } catch (error) {
       console.error('Voice processing error:', error);
@@ -226,16 +223,15 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
       // Add AI response
       const aiMessage: Message = {
         id: Date.now().toString() + '_ai',
-        text: response.message,
+        text: response,
         sender: 'ai',
         timestamp: new Date(),
-        language: detectedLanguage,
-        data: response.extractedData
+        language: detectedLanguage
       };
       setMessages(prev => [...prev, aiMessage]);
 
       // Speak the response
-      await multilingualAI.speak(response.message, detectedLanguage);
+      await multilingualAI.speak(response, detectedLanguage);
       
     } catch (error) {
       console.error('Text processing error:', error);
@@ -267,239 +263,145 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
     }
   };
 
-  const openChatbot = () => {
-    setIsOpen(true);
-    setIsMinimized(false);
-    if (messages.length === 0) {
-      setShowLanguageSelector(true);
-    }
-  };
-
-  const minimizeChatbot = () => {
-    setIsMinimized(true);
-  };
-
-  const closeChatbot = () => {
-    setIsOpen(false);
-    setIsMinimized(false);
-    setShowLanguageSelector(false);
-  };
-
-  // Two-button layout when minimized or closed
-  if (!isOpen || isMinimized) {
+  // Language Selection Screen
+  if (showLanguageSelector) {
     return (
-      <div className="fixed bottom-6 right-6 flex flex-col space-y-3 z-50">
-        {/* Voice Button */}
-        <button
-          onClick={startVoiceRecognition}
-          disabled={isListening}
-          className={`w-14 h-14 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center ${
-            isListening 
-              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-              : 'bg-gray-600 hover:bg-gray-700'
-          }`}
-        >
-          {isListening ? (
-            <MicOff className="w-6 h-6 text-white" />
-          ) : (
-            <Mic className="w-6 h-6 text-white" />
-          )}
-        </button>
+      <div className="h-full flex flex-col bg-white">
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Globe className="w-8 h-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Choose Language</h3>
+          <p className="text-sm text-gray-600 mb-6">Select your preferred language</p>
 
-        {/* AI Assistant Button */}
-        <button
-          onClick={openChatbot}
-          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
-        >
-          <MessageCircle className="w-6 h-6 text-white" />
-        </button>
+          <div className="space-y-3">
+            {availableLanguages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleLanguageSelect(lang.code)}
+                className="w-full p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left"
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-xl">{lang.flag}</span>
+                  <div>
+                    <div className="font-medium text-gray-800">{lang.name}</div>
+                    <div className="text-xs text-gray-500">{lang.description}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-50">
-      {/* Language Selection Screen */}
-      {showLanguageSelector && (
-        <div className="absolute inset-0 bg-white rounded-lg z-10 flex flex-col">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Globe className="w-5 h-5" />
-                <h3 className="font-semibold">Choose Your Language</h3>
-              </div>
-              <button
-                onClick={closeChatbot}
-                className="text-white hover:text-gray-200 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Language Options */}
-          <div className="flex-1 p-6 overflow-y-auto">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Welcome to Lagunacreek</h2>
-              <p className="text-gray-600">Select your preferred language for voice and text assistance</p>
-            </div>
-
-            <div className="space-y-3">
-              {availableLanguages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => handleLanguageSelect(lang.code)}
-                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left group"
-                >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{lang.flag}</span>
-                    <div>
-                      <div className="font-semibold text-gray-800 group-hover:text-blue-600">
-                        {lang.name}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {lang.description}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Features Panel */}
-            <div className="mt-6 bg-gray-50 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-800 mb-2">Voice Assistant Features</h4>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Multi-language speech recognition</li>
-                <li>• Natural language understanding</li>
-                <li>• Real-time voice responses</li>
-                <li>• Complete reservation management</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Chat Interface */}
-      {!showLanguageSelector && (
-        <>
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4 text-blue-600" />
+    <div className="h-full flex flex-col bg-white">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div className={`flex items-start space-x-2 max-w-[80%]`}>
+              {message.sender === 'ai' && (
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-blue-600" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">AI Assistant</h3>
-                  <div className="text-xs opacity-90">
-                    {isTyping ? 'Typing...' : `Online - ${availableLanguages.find(l => l.code === currentLanguage)?.name}`}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setShowLanguageSelector(true)}
-                  className="text-white hover:text-gray-200 transition-colors"
-                >
-                  <Globe className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={minimizeChatbot}
-                  className="text-white hover:text-gray-200 transition-colors"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={closeChatbot}
-                  className="text-white hover:text-gray-200 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
+              )}
               <div
-                key={message.id}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] p-3 rounded-lg ${
-                    message.sender === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  <p className="text-sm">{message.text}</p>
-                  <div className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    {message.language && message.language !== 'en' && (
-                      <span className="ml-2">
-                        {availableLanguages.find(l => l.code === message.language)?.flag}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {isProcessing && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span className="text-sm">Processing...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex items-center space-x-2">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type your message or use voice..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-                  <span className="text-xs text-gray-500">
-                    {availableLanguages.find(l => l.code === currentLanguage)?.flag}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={isListening ? stopVoiceRecognition : startVoiceRecognition}
-                disabled={isProcessing}
-                className={`p-2 rounded-lg transition-colors ${
-                  isListening
-                    ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                className={`p-3 rounded-lg ${
+                  message.sender === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputText.trim() || isProcessing}
-                className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg transition-colors"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+                <p className="text-sm">{message.text}</p>
+                <div className="text-xs opacity-70 mt-1">
+                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {message.language && message.language !== 'en' && (
+                    <span className="ml-2">
+                      {availableLanguages.find(l => l.code === message.language)?.flag}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {message.sender === 'user' && (
+                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-gray-600" />
+                </div>
+              )}
             </div>
           </div>
-        </>
-      )}
+        ))}
+        {isProcessing && (
+          <div className="flex justify-start">
+            <div className="flex items-start space-x-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <Bot className="w-4 h-4 text-blue-600" />
+              </div>
+              <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm">Processing...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-gray-200 p-4">
+        <div className="flex items-center space-x-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message or use voice..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+              <span className="text-xs text-gray-500">
+                {availableLanguages.find(l => l.code === currentLanguage)?.flag}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={isListening ? stopVoiceRecognition : startVoiceRecognition}
+            disabled={isProcessing}
+            className={`p-2 rounded-lg transition-colors ${
+              isListening
+                ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+            }`}
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={handleSendMessage}
+            disabled={!inputText.trim() || isProcessing}
+            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg transition-colors"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="mt-2 text-center">
+          <button
+            onClick={() => setShowLanguageSelector(true)}
+            className="text-xs text-gray-500 hover:text-gray-700 flex items-center justify-center space-x-1"
+          >
+            <Globe className="w-3 h-3" />
+            <span>Change Language</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
