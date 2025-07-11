@@ -120,19 +120,20 @@ class EnhancedVoiceProcessingService {
 
     let response = '';
     if (Object.keys(updates).length > 0) {
-      response = await geminiAI.generatePersonalizedResponse(
-        originalInput, 
-        'dates-guests', 
-        updatedData,
-        `Captured: ${Object.keys(updates).join(', ')}`
-      );
+      // Generate concise confirmation without repeating user input
+      const capturedItems = [];
+      if (updates.checkIn) capturedItems.push(`Check-in: ${updates.checkIn}`);
+      if (updates.checkOut) capturedItems.push(`Check-out: ${updates.checkOut}`);
+      if (updates.adults > 0) capturedItems.push(`${updates.adults} adults`);
+      if (updates.children >= 0) capturedItems.push(`${updates.children} children`);
+      
+      response = `Got it. ${capturedItems.join(', ')}.`;
     }
 
     if (missing.length > 0) {
-      const helpResponse = await geminiAI.generateStepHelp('dates-guests', updatedData);
-      response += ` ${helpResponse}`;
+      response += ` I still need: ${missing.join(', ')}.`;
     } else {
-      response += " Perfect! All information captured. Say 'Next' to choose your room.";
+      response += " Perfect! Say 'Next' to choose your room.";
     }
 
     return {
@@ -164,18 +165,13 @@ class EnhancedVoiceProcessingService {
       const room = roomTypes.find(r => r.name.toLowerCase().includes(roomType.toLowerCase()));
       
       if (room) {
-        const response = await geminiAI.generatePersonalizedResponse(
-          originalInput,
-          'room-selection',
-          { ...reservationData, roomType: room.name },
-          `Selected ${room.name} at $${room.price}/night`
-        );
+        const response = `${room.name} selected at $${room.price} per night.`;
 
         return {
           intent,
           confidence: 1.0,
           entities,
-          response: response + " Say 'Next' to continue with guest information.",
+          response: response + " Say 'Next' to continue.",
           action: {
             type: 'SET_ROOM',
             payload: {
@@ -188,12 +184,11 @@ class EnhancedVoiceProcessingService {
       }
     }
 
-    const helpResponse = await geminiAI.generateStepHelp('room-selection', reservationData);
     return {
       intent,
       confidence: 0.5,
       entities,
-      response: helpResponse,
+      response: "Please select a room: Deluxe King Room, Family Suite, or Ocean View Room.",
       suggestions: [
         'Say: "Deluxe King Room"',
         'Say: "Family Suite"',
@@ -218,22 +213,21 @@ class EnhancedVoiceProcessingService {
 
     let response = '';
     if (Object.keys(updates).length > 0) {
-      response = await geminiAI.generatePersonalizedResponse(
-        originalInput,
-        'guest-info',
-        { ...reservationData, ...updates },
-        `Captured: ${Object.keys(updates).join(', ')}`
-      );
+      const capturedItems = [];
+      if (updates.guestName) capturedItems.push(`Name: ${updates.guestName}`);
+      if (updates.phone) capturedItems.push(`Phone: ${updates.phone}`);
+      if (updates.email) capturedItems.push(`Email: ${updates.email}`);
+      
+      response = `Got it. ${capturedItems.join(', ')}.`;
     }
 
     const updatedData = { ...reservationData, ...updates };
     const missing = this.getMissingGuestInfo(updatedData);
 
     if (missing.length > 0) {
-      const helpResponse = await geminiAI.generateStepHelp('guest-info', updatedData);
-      response += ` ${helpResponse}`;
+      response += ` I still need your ${missing.join(', ')}.`;
     } else {
-      response += " Great! All your information is saved. Say 'Next' for payment options.";
+      response += " Perfect! Say 'Next' for payment.";
     }
 
     return {
@@ -263,18 +257,13 @@ class EnhancedVoiceProcessingService {
     const paymentMethod = this.extractPaymentMethod(originalInput, entities);
     
     if (paymentMethod) {
-      const response = await geminiAI.generatePersonalizedResponse(
-        originalInput,
-        'payment',
-        { ...reservationData, paymentMethod },
-        `Selected payment method: ${paymentMethod}`
-      );
+      const response = `${paymentMethod} selected.`;
 
       return {
         intent,
         confidence: 1.0,
         entities,
-        response: response + " Say 'Next' to review your booking.",
+        response: response + " Say 'Next' to review.",
         action: {
           type: 'SET_PAYMENT',
           payload: paymentMethod
@@ -283,12 +272,11 @@ class EnhancedVoiceProcessingService {
       };
     }
 
-    const helpResponse = await geminiAI.generateStepHelp('payment', reservationData);
     return {
       intent,
       confidence: 0.5,
       entities,
-      response: helpResponse,
+      response: "Please choose: Credit Card, Pay at Hotel, or UPI.",
       suggestions: [
         'Say: "Credit Card"',
         'Say: "Pay at Hotel"',
