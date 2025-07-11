@@ -343,22 +343,6 @@ export class VoiceReservationService {
     return roomMatch ? roomMatch[1] : undefined;
   }
 
-  private formatDate(dateStr: string): string {
-    // Simple date formatting (can be enhanced)
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    
-    // If it's just a number, assume it's a day in the current month
-    if (/^\d{1,2}$/.test(dateStr)) {
-      const day = parseInt(dateStr);
-      const month = now.getMonth();
-      return new Date(currentYear, month, day).toISOString().split('T')[0];
-    }
-    
-    // More sophisticated date parsing can be added here
-    return dateStr;
-  }
-
   // Language detection
   public detectLanguage(text: string): 'en' | 'es' | 'hi' {
     // Check for Hindi (Devanagari script)
