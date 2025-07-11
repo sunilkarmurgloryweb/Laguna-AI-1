@@ -296,3 +296,5 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
     </div>
   );
 };
+
+export default CheckOutModal
