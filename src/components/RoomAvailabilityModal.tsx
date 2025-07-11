@@ -33,6 +33,10 @@ import {
   CheckCircle,
   Cancel
 } from '@mui/icons-material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import VoiceInput from './VoiceInput';
 import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
 
@@ -56,8 +60,8 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
   onBookRoom
 }) => {
   const [searchData, setSearchData] = useState({
-    checkInDate: availabilityData.checkInDate || '',
-    checkOutDate: availabilityData.checkOutDate || '',
+    checkInDate: availabilityData.checkInDate ? dayjs(availabilityData.checkInDate) : null,
+    checkOutDate: availabilityData.checkOutDate ? dayjs(availabilityData.checkOutDate) : null,
     adults: availabilityData.adults || 1,
     children: availabilityData.children || 0,
     roomType: availabilityData.roomType || ''
@@ -136,11 +140,11 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
       const newVoiceFields = new Set(voiceFilledFields);
       
       if (voiceResult.extractedData.checkIn) {
-        updates.checkInDate = voiceResult.extractedData.checkIn;
+        updates.checkInDate = dayjs(voiceResult.extractedData.checkIn);
         newVoiceFields.add('checkInDate');
       }
       if (voiceResult.extractedData.checkOut) {
-        updates.checkOutDate = voiceResult.extractedData.checkOut;
+        updates.checkOutDate = dayjs(voiceResult.extractedData.checkOut);
         newVoiceFields.add('checkOutDate');
       }
       if (voiceResult.extractedData.adults) {
@@ -236,28 +240,37 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
           
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="Check-in Date"
-                type="date"
-                value={searchData.checkInDate}
-                onChange={(e) => setSearchData({...searchData, checkInDate: e.target.value})}
-                InputLabelProps={{ shrink: true }}
-                sx={getFieldSx('checkInDate')}
-                helperText={isVoiceFilled('checkInDate') ? '✓ Filled by voice' : ''}
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Check-in Date"
+                  value={searchData.checkInDate}
+                  onChange={(newValue) => setSearchData({...searchData, checkInDate: newValue})}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      sx: getFieldSx('checkInDate'),
+                      helperText: isVoiceFilled('checkInDate') ? '✓ Filled by voice' : '',
+                    },
+                  }}
+                />
+              </LocalizationProvider>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="Check-out Date"
-                type="date"
-                value={searchData.checkOutDate}
-                onChange={(e) => setSearchData({...searchData, checkOutDate: e.target.value})}
-                InputLabelProps={{ shrink: true }}
-                sx={getFieldSx('checkOutDate')}
-                helperText={isVoiceFilled('checkOutDate') ? '✓ Filled by voice' : ''}
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Check-out Date"
+                  value={searchData.checkOutDate}
+                  onChange={(newValue) => setSearchData({...searchData, checkOutDate: newValue})}
+                  minDate={searchData.checkInDate ? searchData.checkInDate.add(1, 'day') : undefined}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      sx: getFieldSx('checkOutDate'),
+                      helperText: isVoiceFilled('checkOutDate') ? '✓ Filled by voice' : '',
+                    },
+                  }}
+                />
+              </LocalizationProvider>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth>

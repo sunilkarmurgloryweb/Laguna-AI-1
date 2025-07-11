@@ -155,6 +155,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           onOpenModal('checkout', result.response.extractedData);
         } else if (result.response.intent === 'availability') {
           onOpenModal('availability', result.response.extractedData);
+        } else if (result.response.intent === 'search_reservation') {
+          // Handle reservation search in chat - don't open modal
+          // The AI response will contain the reservation details
         }
       }
 
@@ -332,7 +335,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                 </Paper>
                 
                 <Typography variant="caption" sx={{ opacity: 0.7, mt: 0.5, display: 'block' }}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Typography>
               </Box>
               

@@ -14,8 +14,17 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['voice/setRecognition', 'persist/PERSIST'],
-        ignoredPaths: ['voice.recognition', 'register'],
+        ignoredActions: [
+          'voice/setRecognition', 
+          'persist/PERSIST',
+          'geminiApi/executeMutation/pending',
+          'geminiApi/executeMutation/fulfilled'
+        ],
+        ignoredPaths: [
+          'voice.recognition', 
+          'register',
+          'geminiApi.mutations'
+        ],
       },
     }).concat(geminiApi.middleware),
 });

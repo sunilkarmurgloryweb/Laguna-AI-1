@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField,
   Grid,
   Typography,
   Box,
@@ -23,6 +22,10 @@ import {
   LinearProgress,
   IconButton
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import {
   Close,
   CalendarToday,
@@ -60,8 +63,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   const dispatch = useAppDispatch();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
-    checkIn: initialData.checkIn || '',
-    checkOut: initialData.checkOut || '',
+    checkIn: initialData.checkIn ? dayjs(initialData.checkIn) : null,
+    checkOut: initialData.checkOut ? dayjs(initialData.checkOut) : null,
     adults: initialData.adults || 1,
     children: initialData.children || 0,
     roomType: initialData.roomType || '',
@@ -77,7 +80,9 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
-      ...initialData
+      ...initialData,
+      checkIn: initialData.checkIn ? dayjs(initialData.checkIn) : prev.checkIn,
+      checkOut: initialData.checkOut ? dayjs(initialData.checkOut) : prev.checkOut,
     }));
     
     const nextStep = determineNextStep(initialData);
@@ -175,11 +180,11 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
       
       // Map extracted data to form fields
       if (voiceResult.extractedData.checkIn) {
-        updates.checkIn = voiceResult.extractedData.checkIn;
+        updates.checkIn = dayjs(voiceResult.extractedData.checkIn);
         newVoiceFields.add('checkIn');
       }
       if (voiceResult.extractedData.checkOut) {
-        updates.checkOut = voiceResult.extractedData.checkOut;
+        updates.checkOut = dayjs(voiceResult.extractedData.checkOut);
         newVoiceFields.add('checkOut');
       }
       if (voiceResult.extractedData.adults) {
@@ -214,17 +219,38 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
       if (Object.keys(updates).length > 0) {
         setFormData(prev => ({ ...prev, ...updates }));
         setVoiceFilledFields(newVoiceFields);
-        dispatch(updateReservationData(updates));
+        
+        // Convert dayjs objects to strings for Redux
+        const reduxUpdates = {
+          ...updates,
+          checkIn: updates.checkIn ? updates.checkIn.format('YYYY-MM-DD') : undefined,
+          checkOut: updates.checkOut ? updates.checkOut.format('YYYY-MM-DD') : undefined,
+        };
+        dispatch(updateReservationData(reduxUpdates));
         
         // Auto-advance to next step if current step is complete
-        if (canProceedToNext() && voiceResult.intent !== 'help_request') {
-          setTimeout(() => {
+        setTimeout(() => {
+          if (canProceedToNext() && voiceResult.intent !== 'help_request') {
             handleNext();
-          }, 1500); // Give user time to see the filled data
-        }
+          }
+        }, 1500);
       }
     }
   };
+
+  // Auto-advance when form is complete
+  useEffect(() => {
+    if (canProceedToNext()) {
+      const timer = setTimeout(() => {
+        if (currentStep < steps.length - 1) {
+          setTimeout(() => {
+            handleNext();
+          }, 2000);
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [formData, currentStep]);
 
   const isVoiceFilled = (field: string) => voiceFilledFields.has(field);
 
@@ -260,28 +286,37 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Check-in Date"
-                  type="date"
-                  value={formData.checkIn}
-                  onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
-                  InputLabelProps={{ shrink: true }}
-                  sx={getFieldSx('checkIn')}
-                  helperText={isVoiceFilled('checkIn') ? '✓ Filled by voice' : ''}
-                />
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Check-in Date"
+                    value={formData.checkIn}
+                    onChange={(newValue) => setFormData({...formData, checkIn: newValue})}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        sx: getFieldSx('checkIn'),
+                        helperText: isVoiceFilled('checkIn') ? '✓ Filled by voice' : '',
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Check-out Date"
-                  type="date"
-                  value={formData.checkOut}
-                  onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
-                  InputLabelProps={{ shrink: true }}
-                  sx={getFieldSx('checkOut')}
-                  helperText={isVoiceFilled('checkOut') ? '✓ Filled by voice' : ''}
-                />
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Check-out Date"
+                    value={formData.checkOut}
+                    onChange={(newValue) => setFormData({...formData, checkOut: newValue})}
+                    minDate={formData.checkIn ? formData.checkIn.add(1, 'day') : undefined}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        sx: getFieldSx('checkOut'),
+                        helperText: isVoiceFilled('checkOut') ? '✓ Filled by voice' : '',
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
@@ -529,13 +564,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   <Typography variant="body2">Check-in:</Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="medium">{formData.checkIn}</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {formData.checkIn ? formData.checkIn.format('MMM DD, YYYY') : ''}
+                  </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">Check-out:</Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="medium">{formData.checkOut}</Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {formData.checkOut ? formData.checkOut.format('MMM DD, YYYY') : ''}
+                  </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2">Guests:</Typography>

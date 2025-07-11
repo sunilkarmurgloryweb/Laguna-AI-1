@@ -14,7 +14,7 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
+  timestamp: string; // Changed to string for serialization
   extractedData?: Record<string, any>;
   formFilled?: boolean;
 }
@@ -96,6 +96,7 @@ You are an AI assistant for Lagunacreek Hotels. You help guests with:
 4. General hotel inquiries
 5. Room availability
 6. Guest services
+7. Find reservations by guest name or phone
 
 IMPORTANT INSTRUCTIONS:
 - Always respond in a friendly, professional manner
@@ -104,6 +105,10 @@ IMPORTANT INSTRUCTIONS:
 - If user input relates to form filling, indicate this clearly
 - Validate extracted data before suggesting form fills
 - Respond naturally as if having a conversation
+- For check-in requests, always open check-in modal
+- For check-out requests, always open check-out modal
+- For room availability requests, open availability modal
+- For reservation searches, display reservation details in chat
 
 Available Room Types:
 - Ocean View King Suite ($299/night)
@@ -118,6 +123,13 @@ Payment Methods:
 - Pay at Hotel
 - UPI or Digital Wallet
 
+Voice Command Examples:
+- "Make a reservation" / "Book a room" → Open reservation modal
+- "Check in" / "I'm checking in" / "Check in guest [name]" → Open check-in modal
+- "Check out" / "I'm checking out" / "Check out guest [name]" → Open check-out modal
+- "Show room availability" / "Display room availability" → Open availability modal
+- "Find reservation [name/phone]" → Search and display reservation details
+
 For each response, provide:
 1. A natural, conversational response
 2. Any extracted data in structured format
@@ -128,7 +140,7 @@ For each response, provide:
 Format your response as JSON:
 {
   "text": "conversational response",
-  "intent": "reservation|checkin|checkout|inquiry|help",
+  "intent": "reservation|checkin|checkout|availability|search_reservation|inquiry|help",
   "confidence": 0.0-1.0,
   "extractedData": {
     "checkIn": "YYYY-MM-DD",
@@ -140,7 +152,8 @@ Format your response as JSON:
     "phone": "phone number",
     "email": "email address",
     "paymentMethod": "payment method",
-    "confirmationNumber": "booking reference"
+    "confirmationNumber": "booking reference",
+    "searchQuery": "guest name or phone for reservation search"
   },
   "shouldFillForm": boolean,
   "validationErrors": ["list of validation issues"],
@@ -179,7 +192,7 @@ Format your response as JSON:
           intent: parsed.intent || 'inquiry',
           confidence: parsed.confidence || 0.7,
           extractedData: validatedData.data,
-          shouldFillForm: parsed.shouldFillForm && validatedData.isValid,
+          timestamp: new Date().toISOString(), // Convert to string
           validationErrors: validatedData.errors,
           suggestions: parsed.suggestions || []
         };
@@ -396,14 +409,17 @@ Format your response as JSON:
     if (lowerMessage.includes('book') || lowerMessage.includes('reserve') || lowerMessage.includes('reservation')) {
       return 'reservation';
     }
-    if (lowerMessage.includes('check in') || lowerMessage.includes('checkin')) {
+    if (lowerMessage.includes('check in') || lowerMessage.includes('checkin') || lowerMessage.includes('checking in')) {
       return 'checkin';
     }
-    if (lowerMessage.includes('check out') || lowerMessage.includes('checkout')) {
+    if (lowerMessage.includes('check out') || lowerMessage.includes('checkout') || lowerMessage.includes('checking out')) {
       return 'checkout';
     }
-    if (lowerMessage.includes('available') || lowerMessage.includes('availability') || lowerMessage.includes('rooms available')) {
+    if (lowerMessage.includes('available') || lowerMessage.includes('availability') || lowerMessage.includes('rooms available') || lowerMessage.includes('display room') || lowerMessage.includes('show room')) {
       return 'availability';
+    }
+    if (lowerMessage.includes('find reservation') || lowerMessage.includes('search reservation') || lowerMessage.includes('find booking')) {
+      return 'search_reservation';
     }
     if (lowerMessage.includes('help') || lowerMessage.includes('assist')) {
       return 'help';

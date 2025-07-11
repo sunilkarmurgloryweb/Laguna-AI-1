@@ -18,7 +18,10 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Alert,
+  Fade,
+  CircularProgress
 } from '@mui/material';
 import {
   Close,
@@ -26,7 +29,9 @@ import {
   CalendarToday,
   CreditCard,
   CameraAlt,
-  Upload
+  Upload,
+  CheckCircle,
+  Verified
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
 import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
@@ -54,7 +59,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     checkInDate: guestData.checkInDate || '',
     roomType: guestData.roomType || '',
     documentUploaded: false,
-    signatureCompleted: false
+    documentVerified: false,
+    signatureCompleted: false,
+    isProcessing: false,
+    checkInComplete: false
   });
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
@@ -73,8 +81,30 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   };
 
   const handleComplete = () => {
-    console.log('Check-in completed:', formData);
-    onClose();
+    setFormData(prev => ({ ...prev, isProcessing: true }));
+    
+    // Simulate check-in process
+    setTimeout(() => {
+      setFormData(prev => ({ 
+        ...prev, 
+        isProcessing: false, 
+        checkInComplete: true 
+      }));
+      
+      // Auto-close after showing success
+      setTimeout(() => {
+        onClose();
+      }, 3000);
+    }, 2000);
+  };
+
+  const handleCameraCapture = () => {
+    setFormData(prev => ({ ...prev, documentUploaded: true }));
+    
+    // Simulate document verification
+    setTimeout(() => {
+      setFormData(prev => ({ ...prev, documentVerified: true }));
+    }, 2000);
   };
 
   const handleVoiceProcessed = (result: any) => {
@@ -213,13 +243,258 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Please capture or upload a photo of your identification document for verification.
             </Typography>
+            
+            {!formData.documentUploaded && (
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<CameraAlt />}
+                    onClick={handleCameraCapture}
+                    sx={{ py: 2 }}
+                  >
+                    Start Camera
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<Upload />}
+                    onClick={() => setFormData({...formData, documentUploaded: true})}
+                    sx={{ py: 2 }}
+                  >
+                    Upload Document
+                  </Button>
+                </Grid>
+              </Grid>
+            )}
+            
+            {formData.documentUploaded && !formData.documentVerified && (
+              <Paper sx={{ p: 3, mt: 3, bgcolor: 'info.light', textAlign: 'center' }}>
+                <CircularProgress sx={{ mb: 2 }} />
+                <Typography variant="body2" color="info.contrastText">
+                  Verifying document...
+                </Typography>
+              </Paper>
+            )}
+            
+            {formData.documentVerified && (
+              <Fade in={true}>
+                <Paper sx={{ p: 3, mt: 3, bgcolor: 'success.light', textAlign: 'center' }}>
+                  <CheckCircle sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                  <Typography variant="h6" color="success.main" gutterBottom>
+                    Document Verified Successfully!
+                  </Typography>
+                  <Typography variant="body2" color="success.contrastText">
+                    ✓ Identity confirmed
+                    <br />
+                    ✓ Document authentic
+                    <br />
+                    ✓ Details match reservation
+                  </Typography>
+                </Paper>
+              </Fade>
+            )}
+          </Box>
+        );
+
+      case 2:
+        if (formData.checkInComplete) {
+          return (
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Fade in={true}>
+                <Box>
+                  <Verified sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+                  <Typography variant="h4" color="success.main" gutterBottom>
+                    Welcome to Lagunacreek!
+                  </Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Check-in Complete
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Enjoy your stay, {formData.name}!
+                  </Typography>
+                </Box>
+              </Fade>
+            </Box>
+          );
+        }
+        
+        if (formData.isProcessing) {
+          return (
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <CircularProgress size={60} sx={{ mb: 3 }} />
+              <Typography variant="h6" gutterBottom>
+                Processing Check-in...
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Please wait while we complete your check-in
+              </Typography>
+            </Box>
+          );
+        }
+        
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CalendarToday color="primary" />
+              Check-in Summary
+            </Typography>
+            <Paper sx={{ p: 3, bgcolor: 'grey.50', mb: 3 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="bold">Guest Name:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">{formData.name}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="bold">Confirmation:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">{formData.confirmationNumber}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="bold">Check-in Date:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">{formData.checkInDate}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="bold">Room Type:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">{formData.roomType}</Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+            
+            <Alert severity="success" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                ✓ Document verified successfully
+              </Typography>
+            </Alert>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <input
+                type="checkbox"
+                checked={formData.signatureCompleted}
+                onChange={(e) => setFormData({...formData, signatureCompleted: e.target.checked})}
+              />
+              <Typography variant="body2">
+                I confirm that all information is correct and agree to the terms and conditions
+              </Typography>
+            </Box>
+          </Box>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderStepContent_old = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Person color="primary" />
+              Guest Information
+            </Typography>
+            
+            {/* Voice Input */}
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <VoiceInput
+                onVoiceProcessed={handleVoiceProcessed}
+                currentStep="check-in"
+                reservationData={formData}
+                size="medium"
+                showTranscript={true}
+              />
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  placeholder="Enter full name"
+                  sx={getFieldSx('name')}
+                  helperText={isVoiceFilled('name') ? '✓ Filled by voice' : ''}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Confirmation Number"
+                  value={formData.confirmationNumber}
+                  onChange={(e) => setFormData({...formData, confirmationNumber: e.target.value})}
+                  placeholder="LG123456"
+                  sx={getFieldSx('confirmationNumber')}
+                  helperText={isVoiceFilled('confirmationNumber') ? '✓ Filled by voice' : ''}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Check-in Date"
+                  type="date"
+                  value={formData.checkInDate}
+                  onChange={(e) => setFormData({...formData, checkInDate: e.target.value})}
+                  InputLabelProps={{ shrink: true }}
+                  sx={getFieldSx('checkInDate')}
+                  helperText={isVoiceFilled('checkInDate') ? '✓ Filled by voice' : ''}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Room Type</InputLabel>
+                  <Select
+                    value={formData.roomType}
+                    label="Room Type"
+                    onChange={(e) => setFormData({...formData, roomType: e.target.value})}
+                    sx={getFieldSx('roomType')}
+                  >
+                    <MenuItem value="Ocean View King Suite">Ocean View King Suite</MenuItem>
+                    <MenuItem value="Deluxe Garden Room">Deluxe Garden Room</MenuItem>
+                    <MenuItem value="Family Oceanfront Suite">Family Oceanfront Suite</MenuItem>
+                    <MenuItem value="Presidential Suite">Presidential Suite</MenuItem>
+                    <MenuItem value="Standard Double Room">Standard Double Room</MenuItem>
+                    <MenuItem value="Luxury Spa Suite">Luxury Spa Suite</MenuItem>
+                  </Select>
+                  {isVoiceFilled('roomType') && (
+                    <Typography variant="caption" color="success.main">
+                      ✓ Filled by voice
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Box>
+        );
+
+      case 1:
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CreditCard color="primary" />
+              Document Verification
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Please capture or upload a photo of your identification document for verification.
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <Button
                   fullWidth
                   variant="contained"
                   startIcon={<CameraAlt />}
-                  onClick={() => setFormData({...formData, documentUploaded: true})}
+                  onClick={handleCameraCapture}
                   sx={{ py: 2 }}
                 >
                   Start Camera
@@ -345,7 +620,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             onClick={handleNext}
             disabled={
               (currentStep === 0 && (!formData.name || !formData.confirmationNumber)) ||
-              (currentStep === 1 && !formData.documentUploaded)
+              (currentStep === 1 && !formData.documentVerified)
             }
           >
             Next
@@ -355,9 +630,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             variant="contained"
             color="success"
             onClick={handleComplete}
-            disabled={!formData.signatureCompleted}
+            disabled={!formData.signatureCompleted && !formData.checkInComplete}
           >
-            Complete Check-in
+            {formData.isProcessing ? 'Processing...' : 'Complete Check-in'}
           </Button>
         )}
       </DialogActions>
