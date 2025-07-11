@@ -263,3 +263,5 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
     </div>
   );
 };
+
+export default CheckInModal
