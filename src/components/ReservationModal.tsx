@@ -41,9 +41,39 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
       ...prev,
       ...initialData
     }));
+    
+    // Auto-advance to the next incomplete step
+    const nextStep = determineNextStep(initialData);
+    setCurrentStep(nextStep);
   }, [initialData]);
 
   const totalSteps = 4;
+
+  // Determine which step to show based on available data
+  const determineNextStep = (data: any): number => {
+    // Step 1: Dates & Guests
+    if (!data.checkIn || !data.checkOut || !data.adults) {
+      return 1;
+    }
+    
+    // Step 2: Room Selection
+    if (!data.roomType) {
+      return 2;
+    }
+    
+    // Step 3: Guest Information
+    if (!data.guestName || !data.phone || !data.email) {
+      return 3;
+    }
+    
+    // Step 4: Payment Method
+    if (!data.paymentMethod) {
+      return 4;
+    }
+    
+    // All steps complete, stay on payment step for final review
+    return 4;
+  };
 
   const roomTypes = [
     {
@@ -127,8 +157,13 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   type="date"
                   value={formData.checkIn}
                   onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formData.checkIn ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                  }`}
                 />
+                {formData.checkIn && (
+                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -138,8 +173,13 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   type="date"
                   value={formData.checkOut}
                   onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formData.checkOut ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                  }`}
                 />
+                {formData.checkOut && (
+                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
+                )}
               </div>
             </div>
 
@@ -151,12 +191,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 <select
                   value={formData.adults}
                   onChange={(e) => setFormData({...formData, adults: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formData.adults > 1 || initialData.adults ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                  }`}
                 >
                   {[1,2,3,4,5,6].map(num => (
                     <option key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</option>
                   ))}
                 </select>
+                {(formData.adults > 1 || initialData.adults) && (
+                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -165,12 +210,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 <select
                   value={formData.children}
                   onChange={(e) => setFormData({...formData, children: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formData.children > 0 || initialData.children ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                  }`}
                 >
                   {[0,1,2,3,4].map(num => (
                     <option key={num} value={num}>{num} {num === 1 ? 'Child' : 'Children'}</option>
                   ))}
                 </select>
+                {(formData.children > 0 || initialData.children) && (
+                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
+                )}
               </div>
             </div>
           </div>
@@ -196,7 +246,12 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   }`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-lg font-semibold text-gray-800">{room.name}</h4>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-800">{room.name}</h4>
+                      {formData.roomType === room.name && initialData.roomType && (
+                        <p className="text-xs text-green-600">✓ Auto-selected from voice</p>
+                      )}
+                    </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-blue-600">${room.price}</div>
                       <div className="text-sm text-gray-500">per night</div>

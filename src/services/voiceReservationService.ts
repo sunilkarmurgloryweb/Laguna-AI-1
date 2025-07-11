@@ -80,10 +80,10 @@ export class VoiceReservationService {
   public extractReservationData(text: string): Partial<ReservationData> {
     const data: Partial<ReservationData> = {};
     
-    // Extract dates
-    const dates = this.extractDates(text);
-    if (dates.checkIn) data.checkInDate = dates.checkIn;
-    if (dates.checkOut) data.checkOutDate = dates.checkOut;
+    // Enhanced date extraction with year support
+    const dates = this.extractDatesWithYear(text);
+    if (dates.checkIn) data.checkIn = dates.checkIn;
+    if (dates.checkOut) data.checkOut = dates.checkOut;
     
     // Extract guest count
     const guests = this.extractGuestCount(text);
@@ -171,8 +171,8 @@ export class VoiceReservationService {
   private extractDates(text: string): { checkIn?: string; checkOut?: string } {
     const dates: { checkIn?: string; checkOut?: string } = {};
     
-    // Simple date extraction (can be enhanced)
-    const dateMatches = text.match(/(\d{1,2})\s*(january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2})/gi);
+    // Enhanced date extraction with year support
+    const dateMatches = text.match(/(\d{1,2})\s*(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{4})?/gi);
     
     if (dateMatches && dateMatches.length >= 1) {
       dates.checkIn = this.formatDate(dateMatches[0]);
@@ -183,6 +183,65 @@ export class VoiceReservationService {
     }
     
     return dates;
+  }
+
+  private extractDatesWithYear(text: string): { checkIn?: string; checkOut?: string } {
+    const dates: { checkIn?: string; checkOut?: string } = {};
+    
+    // Enhanced patterns for date extraction with year support
+    const patterns = [
+      // "16 July to 18 July, 2025" or "16 July to 18 July 2025"
+      /(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+to\s+|\s+until\s+)(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:,?\s*(\d{4}))?/gi,
+      // "from 16 July to 18 July, 2025"
+      /from\s+(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+to\s+(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:,?\s*(\d{4}))?/gi,
+      // "July 16 to July 18, 2025"
+      /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\s+to\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:,?\s*(\d{4}))?/gi
+    ];
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const year = this.extractYear(text) || new Date().getFullYear();
+        
+        if (pattern.source.includes('from')) {
+          // "from 16 July to 18 July, 2025"
+          dates.checkIn = this.formatDateWithYear(match[1], match[2], year);
+          dates.checkOut = this.formatDateWithYear(match[3], match[4], year);
+        } else if (pattern.source.includes('january|february')) {
+          // "16 July to 18 July, 2025"
+          dates.checkIn = this.formatDateWithYear(match[1], match[2], year);
+          dates.checkOut = this.formatDateWithYear(match[3], match[4], year);
+        }
+        break;
+      }
+    }
+
+    // Fallback to simple extraction if complex patterns don't match
+    if (!dates.checkIn && !dates.checkOut) {
+      return this.extractDates(text);
+    }
+
+    return dates;
+  }
+
+  private extractYear(text: string): number | null {
+    const yearMatch = text.match(/\b(20\d{2})\b/);
+    return yearMatch ? parseInt(yearMatch[1]) : null;
+  }
+
+  private formatDateWithYear(day: string, month: string, year: number): string {
+    const monthMap: { [key: string]: number } = {
+      'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
+      'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
+    };
+    
+    const monthIndex = monthMap[month.toLowerCase()];
+    if (monthIndex !== undefined) {
+      const date = new Date(year, monthIndex, parseInt(day));
+      return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+    }
+    
+    return `${day} ${month} ${year}`;
   }
 
   private extractGuestCount(text: string): { adults?: number; children?: number } {
@@ -204,15 +263,26 @@ export class VoiceReservationService {
   }
 
   private extractRoomType(text: string): string | undefined {
-    const roomTypes = [
-      'standard', 'deluxe', 'suite', 'ocean view', 'city view', 'king', 'queen', 'twin',
-      'स्टैंडर्ड', 'डीलक्स', 'सूट', 'समुद्री दृश्य'
-    ];
+    const lowerText = text.toLowerCase();
     
-    for (const type of roomTypes) {
-      if (text.toLowerCase().includes(type)) {
-        return type;
-      }
+    // Map voice input to exact room type names
+    if (lowerText.includes('deluxe') || lowerText.includes('delex')) {
+      return 'Deluxe Garden Room';
+    }
+    if (lowerText.includes('ocean') && lowerText.includes('view')) {
+      return 'Ocean View King Suite';
+    }
+    if (lowerText.includes('family') || lowerText.includes('oceanfront')) {
+      return 'Family Oceanfront Suite';
+    }
+    if (lowerText.includes('presidential')) {
+      return 'Presidential Suite';
+    }
+    if (lowerText.includes('standard')) {
+      return 'Standard Double Room';
+    }
+    if (lowerText.includes('spa') || lowerText.includes('luxury')) {
+      return 'Luxury Spa Suite';
     }
     
     return undefined;
