@@ -105,7 +105,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
   };
 
   const handleVoiceInput = async (transcript: string) => {
-    if (!transcript.trim()) return;
+    // Robust validation for transcript
+    if (!transcript || typeof transcript !== 'string' || !transcript.trim()) {
+      console.warn('Invalid transcript received:', transcript);
+      return;
+    }
 
     // Auto-detect language from voice input
     const detectedLanguage = multilingualAI.detectLanguageFromText(transcript);
