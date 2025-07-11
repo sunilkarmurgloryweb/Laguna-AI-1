@@ -1,21 +1,5 @@
 import React from 'react';
-import { 
-  Box, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
-  Container,
-  Paper,
-  Avatar,
-  Rating,
-  Chip
-} from '@mui/material';
-import { 
-  Hotel as HotelIcon,
-  LocationOn,
-  Star
-} from '@mui/icons-material';
+import { Hotel as HotelIcon, MapPin, Star } from 'lucide-react';
 import { Hotel as HotelType } from '../types/reservation';
 import VoiceIndicator from './VoiceIndicator';
 import { VoiceState } from '../types/reservation';
@@ -43,164 +27,93 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   ];
 
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-        py: 4
-      }}
-    >
-      <Container maxWidth="lg">
-        <Paper 
-          elevation={24} 
-          sx={{ 
-            borderRadius: 4, 
-            overflow: 'hidden',
-            backgroundColor: 'white'
-          }}
-        >
-          <Box sx={{ p: 6 }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-8">
             {/* Header */}
-            <Box textAlign="center" mb={6}>
-              <Avatar 
-                sx={{ 
-                  width: 80, 
-                  height: 80, 
-                  mx: 'auto', 
-                  mb: 3,
-                  backgroundColor: '#1976d2'
-                }}
-              >
-                <HotelIcon sx={{ fontSize: 40 }} />
-              </Avatar>
-              <Typography 
-                variant="h3" 
-                component="h1" 
-                fontWeight={700}
-                color="primary.main"
-                gutterBottom
-              >
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HotelIcon className="w-10 h-10 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-blue-900 mb-2">
                 Welcome to Lagunacreek
-              </Typography>
-              <Typography 
-                variant="h5" 
-                color="text.secondary"
-                sx={{ mb: 4 }}
-              >
+              </h1>
+              <p className="text-xl text-gray-600">
                 How can I assist you today?
-              </Typography>
-            </Box>
+              </p>
+            </div>
 
             {/* Hotels Grid */}
-            <Grid container spacing={4} sx={{ mb: 6 }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {hotels.map((hotel) => (
-                <Grid item xs={12} md={4} key={hotel.id}>
-                  <Card 
-                    elevation={3}
-                    sx={{
-                      height: '100%',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: 8
-                      }
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box display="flex" alignItems="center" mb={2}>
-                        <HotelIcon sx={{ color: '#1976d2', mr: 1 }} />
-                        <Typography variant="h6" fontWeight={600}>
-                          {hotel.name}
-                        </Typography>
-                      </Box>
-                      
-                      <Typography 
-                        variant="body2" 
-                        color="text.secondary" 
-                        sx={{ mb: 2 }}
-                      >
-                        {hotel.description}
-                      </Typography>
-                      
-                      <Box display="flex" alignItems="center" mb={2}>
-                        <LocationOn sx={{ fontSize: 16, color: 'text.secondary', mr: 0.5 }} />
-                        <Typography variant="caption" color="text.secondary">
-                          {hotel.address}
-                        </Typography>
-                      </Box>
-                      
-                      <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Box display="flex" alignItems="center">
-                          <Rating value={hotel.rating} precision={0.1} size="small" readOnly />
-                          <Typography variant="body2" sx={{ ml: 1 }}>
-                            {hotel.rating}
-                          </Typography>
-                        </Box>
-                        <Chip 
-                          label="Available" 
-                          color="success" 
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <div 
+                  key={hotel.id}
+                  className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="flex items-center mb-3">
+                    <HotelIcon className="w-6 h-6 text-blue-600 mr-2" />
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {hotel.name}
+                    </h3>
+                  </div>
+                  
+                  <p className="text-gray-600 text-sm mb-3">
+                    {hotel.description}
+                  </p>
+                  
+                  <div className="flex items-center mb-3">
+                    <MapPin className="w-4 h-4 text-gray-500 mr-1" />
+                    <span className="text-xs text-gray-500">
+                      {hotel.address}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-yellow-500 mr-1" />
+                      <span className="text-sm font-medium">
+                        {hotel.rating}
+                      </span>
+                    </div>
+                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                      Available
+                    </span>
+                  </div>
+                </div>
               ))}
-            </Grid>
+            </div>
 
             {/* Voice Indicator */}
-            <Box textAlign="center" mb={6}>
+            <div className="text-center mb-8">
               <VoiceIndicator
                 voiceState={voiceState}
                 isSupported={isSupported}
                 onStartListening={onStartListening}
                 onStopListening={onStopListening}
               />
-            </Box>
+            </div>
 
             {/* Voice Commands Help */}
-            <Paper 
-              elevation={2} 
-              sx={{ 
-                p: 4, 
-                backgroundColor: '#f8f9fa',
-                borderRadius: 3
-              }}
-            >
-              <Typography 
-                variant="h6" 
-                fontWeight={600} 
-                color="primary.main"
-                gutterBottom
-              >
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">
                 Try saying:
-              </Typography>
-              <Grid container spacing={2}>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {voiceCommands.map((command, index) => (
-                  <Grid item xs={12} sm={6} key={index}>
-                    <Box display="flex" alignItems="center">
-                      <Box 
-                        sx={{ 
-                          width: 8, 
-                          height: 8, 
-                          borderRadius: '50%', 
-                          backgroundColor: '#1976d2',
-                          mr: 2 
-                        }} 
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        "{command}"
-                      </Typography>
-                    </Box>
-                  </Grid>
+                  <div key={index} className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full mr-3" />
+                    <span className="text-gray-700">
+                      "{command}"
+                    </span>
+                  </div>
                 ))}
-              </Grid>
-            </Paper>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

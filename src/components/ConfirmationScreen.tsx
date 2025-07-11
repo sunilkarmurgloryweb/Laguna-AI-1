@@ -1,32 +1,15 @@
 import React from 'react';
 import { 
-  Box, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
-  Container,
-  Paper,
-  Avatar,
-  Button,
-  Chip,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText
-} from '@mui/material';
-import { 
   CheckCircle,
-  CalendarToday,
-  People,
+  Calendar,
+  Users,
   Hotel as HotelIcon,
-  Person,
-  Payment,
-  Email,
+  User,
+  CreditCard,
+  Mail,
   Phone,
-  Notifications
-} from '@mui/icons-material';
+  Bell
+} from 'lucide-react';
 import { ReservationData } from '../types/reservation';
 
 interface ConfirmationScreenProps {
@@ -41,244 +24,137 @@ const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({
   const bookingId = `LG${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
   
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)',
-        py: 4
-      }}
-    >
-      <Container maxWidth="md">
-        <Paper 
-          elevation={24} 
-          sx={{ 
-            borderRadius: 4, 
-            overflow: 'hidden',
-            backgroundColor: 'white'
-          }}
-        >
-          <Box sx={{ p: 6 }}>
+    <div className="min-h-screen bg-gradient-to-br from-green-600 via-green-700 to-green-800">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-8">
             {/* Success Header */}
-            <Box textAlign="center" mb={6}>
-              <Avatar 
-                sx={{ 
-                  width: 100, 
-                  height: 100, 
-                  mx: 'auto', 
-                  mb: 3,
-                  backgroundColor: '#4caf50'
-                }}
-              >
-                <CheckCircle sx={{ fontSize: 60 }} />
-              </Avatar>
-              <Typography 
-                variant="h3" 
-                component="h1" 
-                fontWeight={700}
-                color="success.main"
-                gutterBottom
-              >
+            <div className="text-center mb-8">
+              <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-14 h-14 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-green-600 mb-2">
                 Booking Confirmed!
-              </Typography>
-              <Typography 
-                variant="h6" 
-                color="text.secondary"
-                sx={{ mb: 4 }}
-              >
+              </h1>
+              <p className="text-lg text-gray-600 mb-6">
                 Your reservation has been successfully created.
-              </Typography>
+              </p>
               
-              <Paper 
-                elevation={3} 
-                sx={{ 
-                  p: 3, 
-                  backgroundColor: '#e8f5e8',
-                  border: '2px solid #4caf50',
-                  borderRadius: 2,
-                  display: 'inline-block'
-                }}
-              >
-                <Typography 
-                  variant="h6" 
-                  color="success.dark" 
-                  fontWeight={600}
-                >
+              <div className="bg-green-50 border-2 border-green-500 rounded-xl p-4 inline-block">
+                <h2 className="text-xl font-semibold text-green-700">
                   Booking ID: {bookingId}
-                </Typography>
-              </Paper>
-            </Box>
+                </h2>
+              </div>
+            </div>
 
             {/* Reservation Details */}
-            <Paper elevation={3} sx={{ p: 4, mb: 4, backgroundColor: '#f8f9fa' }}>
-              <Typography variant="h5" fontWeight={600} color="primary.main" gutterBottom>
+            <div className="bg-gray-50 rounded-xl p-6 mb-6">
+              <h3 className="text-2xl font-semibold text-blue-900 mb-4">
                 Reservation Details
-              </Typography>
+              </h3>
               
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <CalendarToday sx={{ color: '#1976d2', mr: 2 }} />
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Check-in
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {reservationData.checkIn}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex items-center">
+                  <Calendar className="w-6 h-6 text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Check-in</p>
+                    <p className="font-semibold">{reservationData.checkIn}</p>
+                  </div>
+                </div>
                 
-                <Grid item xs={12} sm={6}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <CalendarToday sx={{ color: '#1976d2', mr: 2 }} />
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Check-out
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {reservationData.checkOut}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
+                <div className="flex items-center">
+                  <Calendar className="w-6 h-6 text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Check-out</p>
+                    <p className="font-semibold">{reservationData.checkOut}</p>
+                  </div>
+                </div>
                 
-                <Grid item xs={12} sm={6}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <People sx={{ color: '#1976d2', mr: 2 }} />
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Guests
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {reservationData.adults} adults, {reservationData.children} children
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
+                <div className="flex items-center">
+                  <Users className="w-6 h-6 text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Guests</p>
+                    <p className="font-semibold">
+                      {reservationData.adults} adults, {reservationData.children} children
+                    </p>
+                  </div>
+                </div>
                 
-                <Grid item xs={12} sm={6}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <HotelIcon sx={{ color: '#1976d2', mr: 2 }} />
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Room Type
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {reservationData.roomType}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
+                <div className="flex items-center">
+                  <HotelIcon className="w-6 h-6 text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Room Type</p>
+                    <p className="font-semibold">{reservationData.roomType}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Guest & Payment Info */}
-            <Paper elevation={3} sx={{ p: 4, mb: 4, backgroundColor: '#f8f9fa' }}>
-              <Typography variant="h5" fontWeight={600} color="primary.main" gutterBottom>
+            <div className="bg-gray-50 rounded-xl p-6 mb-6">
+              <h3 className="text-2xl font-semibold text-blue-900 mb-4">
                 Guest & Payment Information
-              </Typography>
+              </h3>
               
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <Person sx={{ color: '#757575', mr: 2 }} />
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Guest Name
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {reservationData.guestName}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex items-center">
+                  <User className="w-6 h-6 text-gray-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Guest Name</p>
+                    <p className="font-semibold">{reservationData.guestName}</p>
+                  </div>
+                </div>
                 
-                <Grid item xs={12} sm={6}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <Payment sx={{ color: '#757575', mr: 2 }} />
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Payment Method
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {reservationData.paymentMethod}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
+                <div className="flex items-center">
+                  <CreditCard className="w-6 h-6 text-gray-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-gray-500">Payment Method</p>
+                    <p className="font-semibold">{reservationData.paymentMethod}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* What's Next */}
-            <Paper 
-              elevation={2} 
-              sx={{ 
-                p: 4, 
-                mb: 4, 
-                backgroundColor: '#e3f2fd',
-                border: '1px solid #2196f3'
-              }}
-            >
-              <Typography variant="h6" fontWeight={600} color="primary.main" gutterBottom>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">
                 What's Next?
-              </Typography>
-              <List>
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Email sx={{ color: '#1976d2' }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={`A confirmation email has been sent to ${reservationData.email}`}
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Notifications sx={{ color: '#1976d2' }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="You'll receive a reminder 24 hours before check-in"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Phone sx={{ color: '#1976d2' }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Contact us at support@lagunacreek.com for any changes"
-                    primaryTypographyProps={{ variant: 'body2' }}
-                  />
-                </ListItem>
-              </List>
-            </Paper>
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <Mail className="w-5 h-5 text-blue-600 mr-3" />
+                  <span className="text-sm">
+                    A confirmation email has been sent to {reservationData.email}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Bell className="w-5 h-5 text-blue-600 mr-3" />
+                  <span className="text-sm">
+                    You'll receive a reminder 24 hours before check-in
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="w-5 h-5 text-blue-600 mr-3" />
+                  <span className="text-sm">
+                    Contact us at support@lagunacreek.com for any changes
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {/* Action Button */}
-            <Box textAlign="center">
-              <Button
-                variant="contained"
-                size="large"
+            <div className="text-center">
+              <button
                 onClick={onNewReservation}
-                sx={{
-                  px: 6,
-                  py: 2,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  backgroundColor: '#1976d2',
-                  '&:hover': {
-                    backgroundColor: '#1565c0'
-                  }
-                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl transition-colors duration-200"
               >
                 Make Another Reservation
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

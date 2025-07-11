@@ -1,35 +1,17 @@
 import React from 'react';
 import { 
-  Box, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
-  Container,
-  Paper,
-  Avatar,
-  Button,
-  Chip,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Alert
-} from '@mui/material';
-import { 
-  CalendarToday,
-  People,
+  Calendar,
+  Users,
   Hotel as HotelIcon,
-  Person,
-  Payment,
+  User,
+  CreditCard,
   CheckCircle,
   Wifi,
-  LocalBar,
-  Balcony,
-  Kitchen,
+  Coffee,
+  Car,
+  Utensils,
   Bed
-} from '@mui/icons-material';
+} from 'lucide-react';
 import { ReservationData, ReservationStep } from '../types/reservation';
 import { roomTypes, paymentMethods } from '../data/hotels';
 import VoiceIndicator from './VoiceIndicator';
@@ -61,20 +43,20 @@ const ReservationFlow: React.FC<ReservationFlowProps> = ({
   transcript
 }) => {
   const stepIcons = {
-    'dates-guests': CalendarToday,
+    'dates-guests': Calendar,
     'room-selection': HotelIcon,
-    'guest-info': Person,
-    'payment': Payment,
+    'guest-info': User,
+    'payment': CreditCard,
     'confirmation': CheckCircle
   };
 
   const getAmenityIcon = (amenity: string) => {
-    if (amenity.includes('WiFi')) return <Wifi />;
-    if (amenity.includes('Bar')) return <LocalBar />;
-    if (amenity.includes('Balcony')) return <Balcony />;
-    if (amenity.includes('Kitchen')) return <Kitchen />;
-    if (amenity.includes('Bed')) return <Bed />;
-    return <CheckCircle />;
+    if (amenity.includes('WiFi')) return <Wifi className="w-4 h-4" />;
+    if (amenity.includes('Bar')) return <Coffee className="w-4 h-4" />;
+    if (amenity.includes('Balcony')) return <Car className="w-4 h-4" />;
+    if (amenity.includes('Kitchen')) return <Utensils className="w-4 h-4" />;
+    if (amenity.includes('Bed')) return <Bed className="w-4 h-4" />;
+    return <CheckCircle className="w-4 h-4" />;
   };
 
   const canProceed = () => {
@@ -96,249 +78,218 @@ const ReservationFlow: React.FC<ReservationFlowProps> = ({
     switch (step) {
       case 'dates-guests':
         return (
-          <Box>
-            <Typography variant="h4" fontWeight={700} color="primary.main" gutterBottom>
+          <div>
+            <h2 className="text-3xl font-bold text-blue-900 mb-2">
               Let's Plan Your Stay
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            </h2>
+            <p className="text-gray-600 mb-6">
               Please tell me your check-in and check-out dates, number of adults, and number of children.
-            </Typography>
+            </p>
             
-            <Alert severity="info" sx={{ mb: 4 }}>
-              <Typography variant="body2">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800">
                 <strong>Example:</strong> "Check-in on July 15, check-out on July 18, 2 adults and 1 child"
-              </Typography>
-            </Alert>
+              </p>
+            </div>
 
             {reservationData.checkIn && (
-              <Alert severity="success" sx={{ mb: 4 }}>
-                <Typography variant="body2">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-green-800">
                   <strong>Captured:</strong> 
                   {reservationData.checkIn && ` Check-in: ${reservationData.checkIn}`}
                   {reservationData.checkOut && `, Check-out: ${reservationData.checkOut}`}
                   {reservationData.adults > 0 && `, ${reservationData.adults} adults`}
                   {reservationData.children > 0 && `, ${reservationData.children} children`}
-                </Typography>
-              </Alert>
+                </p>
+              </div>
             )}
-          </Box>
+          </div>
         );
       
       case 'room-selection':
         return (
-          <Box>
-            <Typography variant="h4" fontWeight={700} color="primary.main" gutterBottom>
+          <div>
+            <h2 className="text-3xl font-bold text-blue-900 mb-2">
               Choose Your Room
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            </h2>
+            <p className="text-gray-600 mb-6">
               Here are our available room types. Please say the room type you'd like to book.
-            </Typography>
+            </p>
             
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {roomTypes.map((room) => (
-                <Grid item xs={12} md={4} key={room.id}>
-                  <Card 
-                    elevation={reservationData.roomType === room.name ? 8 : 2}
-                    sx={{
-                      height: '100%',
-                      border: reservationData.roomType === room.name ? '2px solid #1976d2' : '2px solid transparent',
-                      backgroundColor: reservationData.roomType === room.name ? '#e3f2fd' : 'white',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                        <Typography variant="h6" fontWeight={600}>
-                          {room.name}
-                        </Typography>
-                        <Chip 
-                          label={`${room.available} available`} 
-                          color="success" 
-                          size="small"
-                        />
-                      </Box>
-                      
-                      <Typography 
-                        variant="h4" 
-                        color="primary.main" 
-                        fontWeight={700}
-                        sx={{ mb: 1 }}
-                      >
-                        ${room.price}
-                        <Typography component="span" variant="body2" color="text.secondary">
-                          /night
-                        </Typography>
-                      </Typography>
-                      
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {room.description}
-                      </Typography>
-                      
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Max occupancy: {room.maxOccupancy} guests
-                      </Typography>
-                      
-                      <Divider sx={{ my: 2 }} />
-                      
-                      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                        Amenities:
-                      </Typography>
-                      <List dense>
-                        {room.amenities.slice(0, 3).map((amenity, index) => (
-                          <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
-                            <ListItemIcon sx={{ minWidth: 32 }}>
-                              {getAmenityIcon(amenity)}
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary={amenity} 
-                              primaryTypographyProps={{ variant: 'body2' }}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <div 
+                  key={room.id}
+                  className={`border-2 rounded-xl p-6 transition-all duration-300 ${
+                    reservationData.roomType === room.name 
+                      ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                      : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {room.name}
+                    </h3>
+                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                      {room.available} available
+                    </span>
+                  </div>
+                  
+                  <div className="text-2xl font-bold text-blue-600 mb-2">
+                    ${room.price}
+                    <span className="text-sm text-gray-500 font-normal">/night</span>
+                  </div>
+                  
+                  <p className="text-gray-600 text-sm mb-3">
+                    {room.description}
+                  </p>
+                  
+                  <p className="text-gray-600 text-sm mb-3">
+                    Max occupancy: {room.maxOccupancy} guests
+                  </p>
+                  
+                  <div className="border-t pt-3">
+                    <p className="text-sm font-medium mb-2">Amenities:</p>
+                    <div className="space-y-1">
+                      {room.amenities.slice(0, 3).map((amenity, index) => (
+                        <div key={index} className="flex items-center text-sm text-gray-600">
+                          {getAmenityIcon(amenity)}
+                          <span className="ml-2">{amenity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </Grid>
+            </div>
 
             {reservationData.roomType && (
-              <Alert severity="success">
-                <Typography variant="body2">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800">
                   <strong>Selected:</strong> {reservationData.roomType}
-                </Typography>
-              </Alert>
+                </p>
+              </div>
             )}
-          </Box>
+          </div>
         );
       
       case 'guest-info':
         return (
-          <Box>
-            <Typography variant="h4" fontWeight={700} color="primary.main" gutterBottom>
+          <div>
+            <h2 className="text-3xl font-bold text-blue-900 mb-2">
               Guest Information
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            </h2>
+            <p className="text-gray-600 mb-6">
               Please say your full name, contact number, and email address.
-            </Typography>
+            </p>
             
-            <Alert severity="info" sx={{ mb: 4 }}>
-              <Typography variant="body2">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800">
                 <strong>Example:</strong> "My name is John Smith, my number is 1234567890, and my email is john@example.com"
-              </Typography>
-            </Alert>
+              </p>
+            </div>
 
             {reservationData.guestName && (
-              <Alert severity="success">
-                <Typography variant="body2">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800">
                   <strong>Captured:</strong> {reservationData.guestName} 
                   {reservationData.phone && `, ${reservationData.phone}`}
                   {reservationData.email && `, ${reservationData.email}`}
-                </Typography>
-              </Alert>
+                </p>
+              </div>
             )}
-          </Box>
+          </div>
         );
       
       case 'payment':
         return (
-          <Box>
-            <Typography variant="h4" fontWeight={700} color="primary.main" gutterBottom>
+          <div>
+            <h2 className="text-3xl font-bold text-blue-900 mb-2">
               Payment Method
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            </h2>
+            <p className="text-gray-600 mb-6">
               Please choose your preferred payment method.
-            </Typography>
+            </p>
             
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               {paymentMethods.map((method) => (
-                <Grid item xs={12} sm={4} key={method.id}>
-                  <Card 
-                    elevation={reservationData.paymentMethod === method.name ? 8 : 2}
-                    sx={{
-                      height: '100%',
-                      border: reservationData.paymentMethod === method.name ? '2px solid #1976d2' : '2px solid transparent',
-                      backgroundColor: reservationData.paymentMethod === method.name ? '#e3f2fd' : 'white',
-                      transition: 'all 0.3s ease',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                      <Typography variant="h6" fontWeight={600}>
-                        {method.name}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <div
+                  key={method.id}
+                  className={`border-2 rounded-xl p-6 cursor-pointer transition-all duration-300 text-center ${
+                    reservationData.paymentMethod === method.name
+                      ? 'border-blue-500 bg-blue-50 shadow-lg'
+                      : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
+                  }`}
+                >
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {method.name}
+                  </h3>
+                </div>
               ))}
-            </Grid>
+            </div>
 
             {reservationData.paymentMethod && (
-              <Alert severity="success">
-                <Typography variant="body2">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800">
                   <strong>Selected:</strong> {reservationData.paymentMethod}
-                </Typography>
-              </Alert>
+                </p>
+              </div>
             )}
-          </Box>
+          </div>
         );
       
       case 'confirmation':
         return (
-          <Box>
-            <Typography variant="h4" fontWeight={700} color="primary.main" gutterBottom>
+          <div>
+            <h2 className="text-3xl font-bold text-blue-900 mb-2">
               Booking Confirmation
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            </h2>
+            <p className="text-gray-600 mb-6">
               Please review your reservation details and say "Yes, confirm the booking" to proceed.
-            </Typography>
+            </p>
             
-            <Paper elevation={3} sx={{ p: 4, mb: 4, backgroundColor: '#f8f9fa' }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Hotel</Typography>
-                  <Typography variant="body1" fontWeight={600}>{reservationData.hotel}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Room Type</Typography>
-                  <Typography variant="body1" fontWeight={600}>{reservationData.roomType}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Check-in</Typography>
-                  <Typography variant="body1" fontWeight={600}>{reservationData.checkIn}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Check-out</Typography>
-                  <Typography variant="body1" fontWeight={600}>{reservationData.checkOut}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Guests</Typography>
-                  <Typography variant="body1" fontWeight={600}>
+            <div className="bg-gray-50 rounded-xl p-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Hotel</p>
+                  <p className="font-semibold">{reservationData.hotel}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Room Type</p>
+                  <p className="font-semibold">{reservationData.roomType}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Check-in</p>
+                  <p className="font-semibold">{reservationData.checkIn}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Check-out</p>
+                  <p className="font-semibold">{reservationData.checkOut}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Guests</p>
+                  <p className="font-semibold">
                     {reservationData.adults} adults, {reservationData.children} children
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Payment Method</Typography>
-                  <Typography variant="body1" fontWeight={600}>{reservationData.paymentMethod}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary">Guest Name</Typography>
-                  <Typography variant="body1" fontWeight={600}>{reservationData.guestName}</Typography>
-                </Grid>
-              </Grid>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Payment Method</p>
+                  <p className="font-semibold">{reservationData.paymentMethod}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-sm text-gray-500">Guest Name</p>
+                  <p className="font-semibold">{reservationData.guestName}</p>
+                </div>
+              </div>
               
-              <Divider sx={{ my: 3 }} />
-              
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6" fontWeight={600}>
-                  Total Amount:
-                </Typography>
-                <Typography variant="h4" color="primary.main" fontWeight={700}>
+              <div className="border-t mt-4 pt-4 flex justify-between items-center">
+                <span className="text-lg font-semibold">Total Amount:</span>
+                <span className="text-2xl font-bold text-blue-600">
                   ${reservationData.roomPrice}/night
-                </Typography>
-              </Box>
-            </Paper>
-          </Box>
+                </span>
+              </div>
+            </div>
+          </div>
         );
       
       default:
@@ -348,135 +299,79 @@ const ReservationFlow: React.FC<ReservationFlowProps> = ({
 
   const getCurrentIcon = () => {
     const IconComponent = stepIcons[step as keyof typeof stepIcons];
-    return IconComponent ? <IconComponent sx={{ fontSize: 40 }} /> : null;
+    return IconComponent ? <IconComponent className="w-10 h-10" /> : null;
   };
 
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-        py: 4
-      }}
-    >
-      <Container maxWidth="lg">
-        <Paper 
-          elevation={24} 
-          sx={{ 
-            borderRadius: 4, 
-            overflow: 'hidden',
-            backgroundColor: 'white'
-          }}
-        >
-          <Box sx={{ p: 6 }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-8">
             {/* Header */}
-            <Box textAlign="center" mb={6}>
-              <Avatar 
-                sx={{ 
-                  width: 80, 
-                  height: 80, 
-                  mx: 'auto', 
-                  mb: 3,
-                  backgroundColor: '#1976d2'
-                }}
-              >
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                 {getCurrentIcon()}
-              </Avatar>
+              </div>
               {getStepContent()}
-            </Box>
+            </div>
 
             {/* Voice Indicator */}
-            <Box textAlign="center" mb={6}>
+            <div className="text-center mb-8">
               <VoiceIndicator
                 voiceState={voiceState}
                 isSupported={isSupported}
                 onStartListening={onStartListening}
                 onStopListening={onStopListening}
               />
-            </Box>
+            </div>
 
             {/* Transcript Display */}
             {transcript && (
-              <Paper 
-                elevation={2} 
-                sx={{ 
-                  p: 3, 
-                  mb: 4, 
-                  backgroundColor: '#f5f5f5',
-                  borderRadius: 2
-                }}
-              >
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Last heard:
-                </Typography>
-                <Typography variant="body1" fontStyle="italic">
-                  "{transcript}"
-                </Typography>
-              </Paper>
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-500 mb-1">Last heard:</p>
+                <p className="italic">"{transcript}"</p>
+              </div>
             )}
 
             {/* Action Buttons */}
-            <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
-              <Button
-                variant="contained"
-                size="large"
+            <div className="flex justify-center gap-4 flex-wrap">
+              <button
                 onClick={onNext}
                 disabled={!canProceed()}
-                sx={{
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: 2
-                }}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl transition-colors duration-200"
               >
                 Next Step
-              </Button>
+              </button>
               
               {onHelp && (
-                <Button
-                  variant="outlined"
-                  size="large"
+                <button
                   onClick={onHelp}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    borderRadius: 2
-                  }}
+                  className="border border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3 rounded-xl transition-colors duration-200"
                 >
                   Get Help
-                </Button>
+                </button>
               )}
               
               {onReset && (
-                <Button
-                  variant="text"
-                  size="small"
+                <button
                   onClick={onReset}
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    fontSize: '0.9rem',
-                    color: 'text.secondary'
-                  }}
+                  className="text-gray-500 hover:text-gray-700 text-sm px-4 py-2 transition-colors duration-200"
                 >
                   Start Over
-                </Button>
+                </button>
               )}
-            </Box>
+            </div>
 
             {/* Help Text */}
-            <Box mt={4} textAlign="center">
-              <Typography variant="body2" color="text.secondary">
+            <div className="text-center mt-6">
+              <p className="text-sm text-gray-500">
                 Say "Next" to continue • Say "Help" for guidance • Voice commands work at any time
-              </Typography>
-            </Box>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

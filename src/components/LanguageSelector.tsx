@@ -1,15 +1,5 @@
 import React from 'react';
-import { 
-  Box, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
-  Avatar,
-  Container,
-  Paper
-} from '@mui/material';
-import { Language as LanguageIcon } from '@mui/icons-material';
+import { Languages } from 'lucide-react';
 import { Language } from '../types/reservation';
 
 interface LanguageSelectorProps {
@@ -25,114 +15,54 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ onLanguageSelect })
   ];
 
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        py: 4
-      }}
-    >
-      <Container maxWidth="md">
-        <Paper 
-          elevation={24} 
-          sx={{ 
-            borderRadius: 4, 
-            overflow: 'hidden',
-            backgroundColor: 'white'
-          }}
-        >
-          <Box sx={{ p: 6 }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-8">
             {/* Header */}
-            <Box textAlign="center" mb={6}>
-              <Avatar 
-                sx={{ 
-                  width: 80, 
-                  height: 80, 
-                  mx: 'auto', 
-                  mb: 3,
-                  backgroundColor: '#1976d2'
-                }}
-              >
-                <LanguageIcon sx={{ fontSize: 40 }} />
-              </Avatar>
-              <Typography 
-                variant="h3" 
-                component="h1" 
-                fontWeight={700}
-                color="primary.main"
-                gutterBottom
-              >
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Languages className="w-10 h-10 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-blue-900 mb-2">
                 Welcome to Lagunacreek
-              </Typography>
-              <Typography 
-                variant="h6" 
-                color="text.secondary"
-                sx={{ maxWidth: 400, mx: 'auto' }}
-              >
+              </h1>
+              <p className="text-lg text-gray-600 max-w-md mx-auto">
                 Please select your preferred language to continue
-              </Typography>
-            </Box>
+              </p>
+            </div>
             
             {/* Language Options */}
-            <Grid container spacing={3}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               {languages.map((language) => (
-                <Grid item xs={12} sm={6} key={language.code}>
-                  <Card
-                    onClick={() => onLanguageSelect(language.code)}
-                    sx={{
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: 8,
-                        backgroundColor: '#f8f9fa',
-                        borderColor: '#1976d2'
-                      },
-                      border: '2px solid transparent',
-                    }}
-                    elevation={2}
-                  >
-                    <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                      <Typography 
-                        variant="h2" 
-                        component="div" 
-                        sx={{ mb: 2, fontSize: '3rem' }}
-                      >
-                        {language.flag}
-                      </Typography>
-                      <Typography 
-                        variant="h6" 
-                        component="h3" 
-                        fontWeight={600}
-                        color="text.primary"
-                        gutterBottom
-                      >
-                        {language.name}
-                      </Typography>
-                      <Typography 
-                        variant="body2" 
-                        color="text.secondary"
-                      >
-                        {language.subtitle}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <div
+                  key={language.code}
+                  onClick={() => onLanguageSelect(language.code)}
+                  className="bg-white border-2 border-gray-200 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:border-blue-500 hover:shadow-lg hover:-translate-y-1 text-center"
+                >
+                  <div className="text-5xl mb-3">
+                    {language.flag}
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                    {language.name}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {language.subtitle}
+                  </p>
+                </div>
               ))}
-            </Grid>
+            </div>
             
             {/* Footer */}
-            <Box mt={6} textAlign="center">
-              <Typography variant="body2" color="text.secondary">
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
                 You can also use voice commands: "1 for English", "2 for Spanish", "3 for Hindi", or "4 for UK English"
-              </Typography>
-            </Box>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
