@@ -28,6 +28,7 @@ import {
   CameraAlt,
   Upload
 } from '@mui/icons-material';
+import VoiceInput from './VoiceInput';
 
 interface CheckInModalProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     documentUploaded: false,
     signatureCompleted: false
   });
+  const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
   const steps = ['Guest Information', 'Document Verification', 'Check-in Summary'];
 
@@ -74,6 +76,47 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     onClose();
   };
 
+  const handleVoiceProcessed = (result: any) => {
+    if (result.extractedData) {
+      const updates: any = {};
+      const newVoiceFields = new Set(voiceFilledFields);
+      
+      if (result.extractedData.guestName) {
+        updates.name = result.extractedData.guestName;
+        newVoiceFields.add('name');
+      }
+      if (result.extractedData.checkIn) {
+        updates.checkInDate = result.extractedData.checkIn;
+        newVoiceFields.add('checkInDate');
+      }
+      if (result.extractedData.roomType) {
+        updates.roomType = result.extractedData.roomType;
+        newVoiceFields.add('roomType');
+      }
+      
+      // Extract confirmation number from entities
+      if (result.entities.confirmationNumber) {
+        updates.confirmationNumber = result.entities.confirmationNumber;
+        newVoiceFields.add('confirmationNumber');
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({ ...prev, ...updates }));
+        setVoiceFilledFields(newVoiceFields);
+      }
+    }
+  };
+
+  const isVoiceFilled = (field: string) => voiceFilledFields.has(field);
+
+  const getFieldSx = (field: string) => ({
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: isVoiceFilled(field) ? 'success.light' : 'background.paper',
+      '& fieldset': {
+        borderColor: isVoiceFilled(field) ? 'success.main' : undefined,
+      },
+    },
+  });
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -83,6 +126,18 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               <Person color="primary" />
               Guest Information
             </Typography>
+            
+            {/* Voice Input */}
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <VoiceInput
+                onVoiceProcessed={handleVoiceProcessed}
+                currentStep="check-in"
+                reservationData={formData}
+                size="medium"
+                showTranscript={true}
+              />
+            </Box>
+            
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -91,6 +146,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="Enter full name"
+                  sx={getFieldSx('name')}
+                  helperText={isVoiceFilled('name') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -100,6 +157,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                   value={formData.confirmationNumber}
                   onChange={(e) => setFormData({...formData, confirmationNumber: e.target.value})}
                   placeholder="LG123456"
+                  sx={getFieldSx('confirmationNumber')}
+                  helperText={isVoiceFilled('confirmationNumber') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -110,6 +169,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                   value={formData.checkInDate}
                   onChange={(e) => setFormData({...formData, checkInDate: e.target.value})}
                   InputLabelProps={{ shrink: true }}
+                  sx={getFieldSx('checkInDate')}
+                  helperText={isVoiceFilled('checkInDate') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -119,6 +180,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                     value={formData.roomType}
                     label="Room Type"
                     onChange={(e) => setFormData({...formData, roomType: e.target.value})}
+                    sx={getFieldSx('roomType')}
                   >
                     <MenuItem value="Ocean View King Suite">Ocean View King Suite</MenuItem>
                     <MenuItem value="Deluxe Garden Room">Deluxe Garden Room</MenuItem>
@@ -127,6 +189,11 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                     <MenuItem value="Standard Double Room">Standard Double Room</MenuItem>
                     <MenuItem value="Luxury Spa Suite">Luxury Spa Suite</MenuItem>
                   </Select>
+                  {isVoiceFilled('roomType') && (
+                    <Typography variant="caption" color="success.main">
+                      ✓ Filled by voice
+                    </Typography>
+                  )}
                 </FormControl>
               </Grid>
             </Grid>

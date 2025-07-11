@@ -31,6 +31,7 @@ import {
   CreditCard,
   CheckCircle
 } from '@mui/icons-material';
+import VoiceInput from './VoiceInput';
 
 interface CheckOutModalProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
   const steps = ['Guest Folio', 'Payment Method', 'Checkout Confirmation'];
 
@@ -87,6 +89,24 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
     onClose();
   };
 
+  const handleVoiceProcessed = (result: any) => {
+    if (result.extractedData) {
+      const newVoiceFields = new Set(voiceFilledFields);
+      
+      if (result.extractedData.paymentMethod) {
+        const method = result.extractedData.paymentMethod.toLowerCase();
+        if (method.includes('card') || method.includes('credit')) {
+          setPaymentMethod('card');
+        } else if (method.includes('cash') || method.includes('hotel')) {
+          setPaymentMethod('cash');
+        }
+        newVoiceFields.add('paymentMethod');
+        setVoiceFilledFields(newVoiceFields);
+      }
+    }
+  };
+
+  const isVoiceFilled = (field: string) => voiceFilledFields.has(field);
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -199,11 +219,27 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
               Select your preferred payment method to settle the outstanding balance.
             </Typography>
 
+            {/* Voice Input */}
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <VoiceInput
+                onVoiceProcessed={handleVoiceProcessed}
+                currentStep="payment"
+                reservationData={{ paymentMethod }}
+                size="medium"
+                showTranscript={true}
+              />
+            </Box>
             <RadioGroup
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
             >
-              <Paper sx={{ p: 2, mb: 2 }}>
+              <Paper sx={{ 
+                p: 2, 
+                mb: 2,
+                backgroundColor: paymentMethod === 'card' && isVoiceFilled('paymentMethod') ? 'success.light' : 'background.paper',
+                border: paymentMethod === 'card' && isVoiceFilled('paymentMethod') ? 1 : 0,
+                borderColor: 'success.main'
+              }}>
                 <FormControlLabel
                   value="card"
                   control={<Radio />}
@@ -211,6 +247,11 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
                     <Box>
                       <Typography variant="body1" fontWeight="medium">
                         Credit/Debit Card on File
+                        {paymentMethod === 'card' && isVoiceFilled('paymentMethod') && (
+                          <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>
+                            ✓ Selected by voice
+                          </Typography>
+                        )}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         **** **** **** 1234
@@ -220,7 +261,12 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
                 />
               </Paper>
 
-              <Paper sx={{ p: 2 }}>
+              <Paper sx={{ 
+                p: 2,
+                backgroundColor: paymentMethod === 'cash' && isVoiceFilled('paymentMethod') ? 'success.light' : 'background.paper',
+                border: paymentMethod === 'cash' && isVoiceFilled('paymentMethod') ? 1 : 0,
+                borderColor: 'success.main'
+              }}>
                 <FormControlLabel
                   value="cash"
                   control={<Radio />}
@@ -228,6 +274,11 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
                     <Box>
                       <Typography variant="body1" fontWeight="medium">
                         Cash Payment
+                        {paymentMethod === 'cash' && isVoiceFilled('paymentMethod') && (
+                          <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>
+                            ✓ Selected by voice
+                          </Typography>
+                        )}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Pay at front desk

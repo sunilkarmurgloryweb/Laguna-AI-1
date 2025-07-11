@@ -31,6 +31,9 @@ import {
   CreditCard,
   CheckCircle
 } from '@mui/icons-material';
+import VoiceInput from './VoiceInput';
+import { useAppDispatch } from '../hooks/useAppDispatch';
+import { updateReservationData } from '../store/slices/reservationSlice';
 
 interface ReservationModalProps {
   isOpen?: boolean;
@@ -53,6 +56,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   onClose,
   initialData = {}
 }) => {
+  const dispatch = useAppDispatch();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     checkIn: initialData.checkIn || '',
@@ -65,6 +69,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     email: initialData.email || '',
     paymentMethod: initialData.paymentMethod || ''
   });
+  const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
   const steps = ['Dates & Guests', 'Room Selection', 'Guest Information', 'Payment Method'];
 
@@ -160,6 +165,67 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   const isAutoFilled = (field: string) => {
     return initialData[field as keyof typeof initialData] !== undefined;
   };
+  const handleVoiceProcessed = (result: any) => {
+    if (result.extractedData) {
+      const updates: any = {};
+      const newVoiceFields = new Set(voiceFilledFields);
+      
+      // Map extracted data to form fields
+      if (result.extractedData.checkIn) {
+        updates.checkIn = result.extractedData.checkIn;
+        newVoiceFields.add('checkIn');
+      }
+      if (result.extractedData.checkOut) {
+        updates.checkOut = result.extractedData.checkOut;
+        newVoiceFields.add('checkOut');
+      }
+      if (result.extractedData.adults) {
+        updates.adults = result.extractedData.adults;
+        newVoiceFields.add('adults');
+      }
+      if (result.extractedData.children !== undefined) {
+        updates.children = result.extractedData.children;
+        newVoiceFields.add('children');
+      }
+      if (result.extractedData.roomType) {
+        updates.roomType = result.extractedData.roomType;
+        newVoiceFields.add('roomType');
+      }
+      if (result.extractedData.guestName) {
+        updates.guestName = result.extractedData.guestName;
+        newVoiceFields.add('guestName');
+      }
+      if (result.extractedData.phone) {
+        updates.phone = result.extractedData.phone;
+        newVoiceFields.add('phone');
+      }
+      if (result.extractedData.email) {
+        updates.email = result.extractedData.email;
+        newVoiceFields.add('email');
+      }
+      if (result.extractedData.paymentMethod) {
+        updates.paymentMethod = result.extractedData.paymentMethod;
+        newVoiceFields.add('paymentMethod');
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({ ...prev, ...updates }));
+        setVoiceFilledFields(newVoiceFields);
+        dispatch(updateReservationData(updates));
+      }
+    }
+  };
+
+  const isVoiceFilled = (field: string) => voiceFilledFields.has(field);
+
+  const getFieldSx = (field: string) => ({
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: isVoiceFilled(field) ? 'success.light' : 'background.paper',
+      '& fieldset': {
+        borderColor: isVoiceFilled(field) ? 'success.main' : undefined,
+      },
+    },
+  });
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -171,6 +237,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               Dates & Guests
             </Typography>
             
+            {/* Voice Input */}
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <VoiceInput
+                onVoiceProcessed={handleVoiceProcessed}
+                currentStep="dates-guests"
+                reservationData={formData}
+                size="medium"
+                showTranscript={true}
+              />
+            </Box>
+            
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -180,13 +257,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   value={formData.checkIn}
                   onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
                   InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderColor: isAutoFilled('checkIn') ? 'success.main' : undefined,
-                      bgcolor: isAutoFilled('checkIn') ? 'success.light' : undefined
-                    }
-                  }}
-                  helperText={isAutoFilled('checkIn') ? '✓ Auto-filled from voice' : ''}
+                  sx={getFieldSx('checkIn')}
+                  helperText={isVoiceFilled('checkIn') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -197,13 +269,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   value={formData.checkOut}
                   onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
                   InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderColor: isAutoFilled('checkOut') ? 'success.main' : undefined,
-                      bgcolor: isAutoFilled('checkOut') ? 'success.light' : undefined
-                    }
-                  }}
-                  helperText={isAutoFilled('checkOut') ? '✓ Auto-filled from voice' : ''}
+                  sx={getFieldSx('checkOut')}
+                  helperText={isVoiceFilled('checkOut') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -213,18 +280,15 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     value={formData.adults}
                     label="Adults"
                     onChange={(e) => setFormData({...formData, adults: Number(e.target.value)})}
-                    sx={{
-                      borderColor: isAutoFilled('adults') ? 'success.main' : undefined,
-                      bgcolor: isAutoFilled('adults') ? 'success.light' : undefined
-                    }}
+                    sx={getFieldSx('adults')}
                   >
                     {[1,2,3,4,5,6].map(num => (
                       <MenuItem key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</MenuItem>
                     ))}
                   </Select>
-                  {isAutoFilled('adults') && (
+                  {isVoiceFilled('adults') && (
                     <Typography variant="caption" color="success.main">
-                      ✓ Auto-filled from voice
+                      ✓ Filled by voice
                     </Typography>
                   )}
                 </FormControl>
@@ -236,18 +300,15 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     value={formData.children}
                     label="Children"
                     onChange={(e) => setFormData({...formData, children: Number(e.target.value)})}
-                    sx={{
-                      borderColor: isAutoFilled('children') ? 'success.main' : undefined,
-                      bgcolor: isAutoFilled('children') ? 'success.light' : undefined
-                    }}
+                    sx={getFieldSx('children')}
                   >
                     {[0,1,2,3,4].map(num => (
                       <MenuItem key={num} value={num}>{num} {num === 1 ? 'Child' : 'Children'}</MenuItem>
                     ))}
                   </Select>
-                  {isAutoFilled('children') && (
+                  {isVoiceFilled('children') && (
                     <Typography variant="caption" color="success.main">
-                      ✓ Auto-filled from voice
+                      ✓ Filled by voice
                     </Typography>
                   )}
                 </FormControl>
@@ -264,6 +325,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               Select Room
             </Typography>
             
+            {/* Voice Input */}
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <VoiceInput
+                onVoiceProcessed={handleVoiceProcessed}
+                currentStep="room-selection"
+                reservationData={formData}
+                size="medium"
+                showTranscript={true}
+              />
+            </Box>
+            
             <Grid container spacing={2}>
               {roomTypes.map((room) => (
                 <Grid item xs={12} key={room.id}>
@@ -271,8 +343,12 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     sx={{
                       cursor: 'pointer',
                       border: formData.roomType === room.name ? 2 : 1,
-                      borderColor: formData.roomType === room.name ? 'primary.main' : 'divider',
-                      bgcolor: formData.roomType === room.name ? 'primary.light' : 'background.paper',
+                      borderColor: formData.roomType === room.name 
+                        ? (isVoiceFilled('roomType') ? 'success.main' : 'primary.main') 
+                        : 'divider',
+                      bgcolor: formData.roomType === room.name 
+                        ? (isVoiceFilled('roomType') ? 'success.light' : 'primary.light') 
+                        : 'background.paper',
                       '&:hover': { borderColor: 'primary.main' }
                     }}
                     onClick={() => setFormData({...formData, roomType: room.name})}
@@ -291,9 +367,9 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                           </Typography>
                         </Box>
                       </Box>
-                      {formData.roomType === room.name && isAutoFilled('roomType') && (
+                      {formData.roomType === room.name && isVoiceFilled('roomType') && (
                         <Typography variant="caption" color="success.main">
-                          ✓ Auto-selected from voice
+                          ✓ Selected by voice
                         </Typography>
                       )}
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -326,6 +402,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               Guest Information
             </Typography>
             
+            {/* Voice Input */}
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <VoiceInput
+                onVoiceProcessed={handleVoiceProcessed}
+                currentStep="guest-info"
+                reservationData={formData}
+                size="medium"
+                showTranscript={true}
+              />
+            </Box>
+            
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <TextField
@@ -334,6 +421,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   value={formData.guestName}
                   onChange={(e) => setFormData({...formData, guestName: e.target.value})}
                   placeholder="Enter your full name"
+                  sx={getFieldSx('guestName')}
+                  helperText={isVoiceFilled('guestName') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -343,6 +432,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   placeholder="Enter phone number"
+                  sx={getFieldSx('phone')}
+                  helperText={isVoiceFilled('phone') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -353,6 +444,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   placeholder="Enter email address"
+                  sx={getFieldSx('email')}
+                  helperText={isVoiceFilled('email') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
             </Grid>
@@ -367,6 +460,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               Payment Method
             </Typography>
             
+            {/* Voice Input */}
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <VoiceInput
+                onVoiceProcessed={handleVoiceProcessed}
+                currentStep="payment"
+                reservationData={formData}
+                size="medium"
+                showTranscript={true}
+              />
+            </Box>
+            
             <Grid container spacing={2} sx={{ mb: 3 }}>
               {paymentMethods.map((method) => (
                 <Grid item xs={12} key={method.id}>
@@ -374,8 +478,12 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     sx={{
                       cursor: 'pointer',
                       border: formData.paymentMethod === method.name ? 2 : 1,
-                      borderColor: formData.paymentMethod === method.name ? 'primary.main' : 'divider',
-                      bgcolor: formData.paymentMethod === method.name ? 'primary.light' : 'background.paper',
+                      borderColor: formData.paymentMethod === method.name 
+                        ? (isVoiceFilled('paymentMethod') ? 'success.main' : 'primary.main') 
+                        : 'divider',
+                      bgcolor: formData.paymentMethod === method.name 
+                        ? (isVoiceFilled('paymentMethod') ? 'success.light' : 'primary.light') 
+                        : 'background.paper',
                       '&:hover': { borderColor: 'primary.main' }
                     }}
                     onClick={() => setFormData({...formData, paymentMethod: method.name})}
@@ -383,6 +491,14 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     <CardContent>
                       <Typography variant="h6" fontWeight="bold" gutterBottom>
                         {method.name}
+                        {formData.paymentMethod === method.name && isVoiceFilled('paymentMethod') && (
+                          <Chip 
+                            label="✓ Voice Selected" 
+                            size="small" 
+                            color="success" 
+                            sx={{ ml: 1 }} 
+                          />
+                        )}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {method.description}
