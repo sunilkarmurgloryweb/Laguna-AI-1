@@ -94,6 +94,28 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleOpenModal = (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: any) => {
+    // Close the chat interface temporarily while modal is open
+    // The main app will handle the modal display
+    switch (modalType) {
+      case 'reservation':
+        onOpenModal('reservation', data);
+        break;
+      case 'checkin':
+        onOpenModal('checkin', data);
+        break;
+      case 'checkout':
+        onOpenModal('checkout', data);
+        break;
+      case 'availability':
+        onOpenModal('availability', data);
+        break;
+      default:
+        console.warn('Unknown modal type:', modalType);
+        break;
+    }
+  };
+
   const handleSendMessage = async (messageText?: string) => {
     const textToSend = messageText || inputText.trim();
     if (!textToSend) return;
@@ -131,6 +153,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           onOpenModal('checkin', result.response.extractedData);
         } else if (result.response.intent === 'checkout') {
           onOpenModal('checkout', result.response.extractedData);
+        } else if (result.response.intent === 'availability') {
+          onOpenModal('availability', result.response.extractedData);
         }
       }
 

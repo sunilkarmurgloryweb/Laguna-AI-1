@@ -402,6 +402,9 @@ Format your response as JSON:
     if (lowerMessage.includes('check out') || lowerMessage.includes('checkout')) {
       return 'checkout';
     }
+    if (lowerMessage.includes('available') || lowerMessage.includes('availability') || lowerMessage.includes('rooms available')) {
+      return 'availability';
+    }
     if (lowerMessage.includes('help') || lowerMessage.includes('assist')) {
       return 'help';
     }
