@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Mic, MicOff, Volume2, User, Bot, Globe } from 'lucide-react';
+import { X, Send, Mic, MicOff, Volume2, User, Bot, Globe, MessageCircle } from 'lucide-react';
 import { useVoiceRedux } from '../hooks/useVoiceRedux';
 import { voiceReservationService } from '../services/voiceReservationService';
 import { multilingualAI } from '../services/multilingualAIService';
@@ -23,6 +23,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [showLanguageSelector, setShowLanguageSelector] = useState(true);
   const [reservationData, setReservationData] = useState<any>({});
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const {
@@ -49,11 +50,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
 
   // Initialize with welcome message
   useEffect(() => {
-    if (!showLanguageSelector) {
+    if (!showLanguageSelector && !isMinimized) {
       const welcomeMessage = multilingualAI.getGreeting('welcome');
       addMessage('ai', welcomeMessage);
     }
-  }, [showLanguageSelector, currentLanguage]);
+  }, [showLanguageSelector, currentLanguage, isMinimized]);
 
   const addMessage = (type: 'user' | 'ai', content: string, language?: string) => {
     const newMessage: Message = {
@@ -135,6 +136,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
 
   const availableLanguages = multilingualAI.getAvailableLanguages();
 
+  // Language Selection Screen
   if (showLanguageSelector) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -212,6 +214,64 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
     );
   }
 
+  // Minimized Chat Interface
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-3">
+        {/* Voice Button */}
+        <button
+          onClick={handleVoiceToggle}
+          className={`w-12 h-12 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center ${
+            voiceState === 'listening' 
+              ? 'bg-red-500 text-white animate-pulse' 
+              : 'bg-gray-600 text-white hover:bg-gray-700'
+          }`}
+        >
+          {voiceState === 'listening' ? (
+            <MicOff className="w-6 h-6" />
+          ) : (
+            <Mic className="w-6 h-6" />
+          )}
+        </button>
+
+        {/* AI Assistant Button */}
+        <button
+          onClick={() => setIsMinimized(false)}
+          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center"
+        >
+          <Bot className="w-7 h-7" />
+        </button>
+
+        {/* Voice Status Indicator */}
+        {voiceState !== 'idle' && (
+          <div className="bg-white rounded-lg shadow-lg p-3 max-w-xs">
+            <div className="flex items-center space-x-2 text-sm">
+              {voiceState === 'listening' && (
+                <>
+                  <Mic className="w-4 h-4 text-red-500 animate-pulse" />
+                  <span className="text-gray-700">Listening...</span>
+                </>
+              )}
+              {voiceState === 'processing' && (
+                <>
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-gray-700">Processing...</span>
+                </>
+              )}
+              {voiceState === 'speaking' && (
+                <>
+                  <Volume2 className="w-4 h-4 text-green-500" />
+                  <span className="text-gray-700">Speaking...</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full Chat Interface
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-md h-[600px] flex flex-col shadow-2xl">
@@ -236,6 +296,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
               title="Change Language"
             >
               <Globe className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-white hover:bg-blue-500 p-2 rounded-full transition-colors"
+              title="Minimize"
+            >
+              <MessageCircle className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
@@ -363,7 +430,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder={`Type in ${availableLanguages.find(l => l.code === currentLanguage)?.name} or use voice...`}
+                placeholder="Type your message or use voice..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={isTyping}
               />

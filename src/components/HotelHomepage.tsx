@@ -8,6 +8,8 @@ import {
   Calendar,
   Star,
   MessageCircle,
+  Mic,
+  Bot,
   X,
   Camera,
   Upload,
@@ -231,12 +233,25 @@ const HotelHomepage: React.FC = () => {
       </div>
 
       {/* AI Chatbot Button */}
-      <button
-        onClick={() => setShowChatbot(true)}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-colors z-50"
-      >
-        <MessageCircle className="w-6 h-6" />
-      </button>
+      {!showChatbot && (
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-3">
+          {/* Voice Button */}
+          <button
+            onClick={() => setShowChatbot(true)}
+            className="w-12 h-12 bg-gray-600 hover:bg-gray-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center"
+          >
+            <Mic className="w-6 h-6" />
+          </button>
+
+          {/* AI Assistant Button */}
+          <button
+            onClick={() => setShowChatbot(true)}
+            className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center"
+          >
+            <Bot className="w-7 h-7" />
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       {showReservationModal && (
