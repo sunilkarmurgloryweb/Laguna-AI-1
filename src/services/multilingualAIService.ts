@@ -272,8 +272,9 @@ class MultilingualAIService {
     return config?.prompts[type] || languageConfigs.en.prompts[type];
   }
 
-  public getResponse(type: keyof LanguageConfig['responses'], variables?: Record<string, string>): string {
-    const config = languageConfigs[this.currentLanguage];
+  public getResponse(type: keyof LanguageConfig['responses'], variables?: Record<string, string>, languageCode?: string): string {
+    const lang = languageCode || this.currentLanguage;
+    const config = languageConfigs[lang];
     let response = config?.responses[type] || languageConfigs.en.responses[type];
     
     if (variables) {
@@ -324,8 +325,12 @@ class MultilingualAIService {
     // Simple language detection based on common words/patterns
     const lowerText = text.toLowerCase();
     
+    // Enhanced Hindi detection with more patterns
+    if (/[\u0900-\u097F]/.test(text)) return 'hi'; // Devanagari script detection
+    if (/\b(नमस्ते|धन्यवाद|कमरा|बुकिंग|होटल|आरक्षण|चेक|इन|आउट)\b/.test(lowerText)) return 'hi';
+    if (/\b(मुझे|चाहिए|करना|है|के|लिए|में|से|का|की|को)\b/.test(lowerText)) return 'hi';
+    
     if (/\b(hola|gracias|por favor|habitación|reserva)\b/.test(lowerText)) return 'es';
-    if (/\b(नमस्ते|धन्यवाद|कमरा|बुकिंग)\b/.test(lowerText)) return 'hi';
     if (/\b(bonjour|merci|chambre|réservation)\b/.test(lowerText)) return 'fr';
     if (/\b(hallo|danke|zimmer|reservierung)\b/.test(lowerText)) return 'de';
     
