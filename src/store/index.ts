@@ -1,5 +1,4 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { baseApi } from './api/baseApi';
 import { geminiApi } from './api/geminiApi';
 import reservationReducer from './slices/reservationSlice';
 import voiceReducer from './slices/voiceSlice';
@@ -7,7 +6,7 @@ import uiReducer from './slices/uiSlice';
 
 export const store = configureStore({
   reducer: {
-    [baseApi.reducerPath]: baseApi.reducer,
+    [geminiApi.reducerPath]: geminiApi.reducer,
     reservation: reservationReducer,
     voice: voiceReducer,
     ui: uiReducer,
@@ -18,7 +17,7 @@ export const store = configureStore({
         ignoredActions: ['voice/setRecognition', 'persist/PERSIST'],
         ignoredPaths: ['voice.recognition', 'register'],
       },
-    }).concat(baseApi.middleware),
+    }).concat(geminiApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

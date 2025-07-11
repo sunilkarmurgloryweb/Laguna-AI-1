@@ -17,7 +17,7 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import { useProcessVoiceInputMutation } from '../store/api/geminiApi';
+import { useSendMessageMutation } from '../store/api/geminiApi';
 
 export interface VoiceInputProps {
   onTranscriptChange?: (transcript: string, isInterim: boolean) => void;
@@ -29,6 +29,7 @@ export interface VoiceInputProps {
   size?: 'small' | 'medium' | 'large';
   showTranscript?: boolean;
   autoProcess?: boolean;
+  context?: string;
 }
 
 export const VoiceInput: React.FC<VoiceInputProps> = ({
@@ -40,7 +41,8 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   disabled = false,
   size = 'medium',
   showTranscript = true,
-  autoProcess = true
+  autoProcess = true,
+  context = 'hotel_reservation'
 }) => {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   
@@ -56,12 +58,12 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
     resetTranscript
   } = useSpeechRecognition(language, false, true);
 
-  const [processVoiceInput, { 
+  const [sendMessage, { 
     isLoading: isProcessing, 
     error: apiError,
     isSuccess,
     isError
-  }] = useProcessVoiceInputMutation();
+  }] = useSendMessageMutation();
 
   // Handle transcript changes
   useEffect(() => {
@@ -74,6 +76,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   useEffect(() => {
     if (finalTranscript && autoProcess && !isProcessing) {
       handleProcessVoice(finalTranscript);
+      resetTranscript();
     }
   }, [finalTranscript, autoProcess, isProcessing]);
 
@@ -81,42 +84,30 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
     if (!text.trim()) return;
 
     try {
-      const result = await processVoiceInput({
-        text,
-        currentStep,
-        reservationData,
-        language,
-        context: `Processing voice input for ${currentStep} step`
+      const result = await sendMessage({
+        message: text,
+        currentFormData: reservationData,
+        context: context
       }).unwrap();
 
       if (onVoiceProcessed) {
-        onVoiceProcessed(result);
+        onVoiceProcessed({
+          ...result.response,
+          chatMessage: result.chatMessage
+        });
       }
 
-      // Speak the response
-      if (result.response && 'speechSynthesis' in window) {
-        setIsSpeaking(true);
-        const utterance = new SpeechSynthesisUtterance(result.response);
-        utterance.lang = language;
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        
-        speechSynthesis.speak(utterance);
-      }
     } catch (error) {
       console.error('Voice processing error:', error);
       
-      // Show error feedback to user
       if (onVoiceProcessed) {
         onVoiceProcessed({
           intent: 'error',
           confidence: 0,
-          entities: {},
-          response: 'Sorry, I had trouble processing that. Please try again.',
           extractedData: {},
+          text: 'Sorry, I had trouble processing that. Please try again.',
+          shouldFillForm: false,
+          validationErrors: ['Processing error'],
           suggestions: ['Try speaking more clearly', 'Check your internet connection']
         });
       }

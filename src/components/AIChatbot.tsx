@@ -14,7 +14,9 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Divider
+  Divider,
+  Alert,
+  Fade
 } from '@mui/material';
 import {
   Mic,
@@ -23,248 +25,151 @@ import {
   SmartToy,
   Person,
   Language,
-  VolumeUp
+  VolumeUp,
+  VolumeOff,
+  Refresh,
+  CheckCircle,
+  Error as ErrorIcon
 } from '@mui/icons-material';
-import { multilingualAI } from '../services/multilingualAIService';
-import voiceReservationService from '../services/voiceReservationService';
-
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: Date;
-  language?: string;
-  data?: any;
-}
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useSendMessageMutation, useResetChatMutation, useSetContextMutation } from '../store/api/geminiApi';
+import { ChatMessage } from '../services/geminiService';
 
 interface AIChatbotProps {
   onOpenModal: (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: any) => void;
+  onFormDataUpdate?: (data: Record<string, any>) => void;
+  currentFormData?: Record<string, any>;
+  context?: string;
 }
 
-const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
-  const [showLanguageSelector, setShowLanguageSelector] = useState(true);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [messages, setMessages] = useState<Message[]>([]);
+const AIChatbot: React.FC<AIChatbotProps> = ({ 
+  onOpenModal, 
+  onFormDataUpdate,
+  currentFormData = {},
+  context = 'hotel_general'
+}) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const availableLanguages = [
-    { code: 'en', name: 'English', flag: '🇺🇸', description: 'English - Voice & Text Support' },
-    { code: 'es', name: 'Español', flag: '🇪🇸', description: 'Español - Soporte de voz y texto' },
-    { code: 'hi', name: 'हिंदी', flag: '🇮🇳', description: 'हिंदी - आवाज और पाठ समर्थन' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷', description: 'Français - Support vocal et textuel' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪', description: 'Deutsch - Sprach- und Textunterstützung' }
-  ];
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    finalTranscript,
+    isSupported: speechSupported,
+    error: speechError,
+    startListening,
+    stopListening,
+    resetTranscript
+  } = useSpeechRecognition('en-US', false, true);
 
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = getLanguageCode(currentLanguage);
-      
-      recognitionInstance.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        handleVoiceInput(transcript);
-      };
-      
-      recognitionInstance.onend = () => {
-        setIsListening(false);
-      };
-      
-      recognitionInstance.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
-      
-      setRecognition(recognitionInstance);
-    }
-  }, [currentLanguage]);
+  const [sendMessage, { 
+    isLoading: isProcessing, 
+    error: apiError 
+  }] = useSendMessageMutation();
+
+  const [resetChat] = useResetChatMutation();
+  const [setContext] = useSetContextMutation();
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const getLanguageCode = (lang: string) => {
-    const codes: { [key: string]: string } = {
-      'en': 'en-US',
-      'es': 'es-ES',
-      'hi': 'hi-IN',
-      'fr': 'fr-FR',
-      'de': 'de-DE'
-    };
-    return codes[lang] || 'en-US';
-  };
+  useEffect(() => {
+    if (context) {
+      setContext(context);
+    }
+  }, [context, setContext]);
+
+  useEffect(() => {
+    if (finalTranscript && finalTranscript.trim()) {
+      handleSendMessage(finalTranscript);
+      resetTranscript();
+    }
+  }, [finalTranscript]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleLanguageSelect = async (languageCode: string) => {
-    setCurrentLanguage(languageCode);
-    multilingualAI.setLanguage(languageCode);
-    setShowLanguageSelector(false);
-    
-    if (recognition) {
-      recognition.lang = getLanguageCode(languageCode);
-    }
-    
-    const welcomeMessage: Message = {
+  const handleSendMessage = async (messageText?: string) => {
+    const textToSend = messageText || inputText.trim();
+    if (!textToSend) return;
+
+    // Add user message
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: multilingualAI.getGreeting('welcome'),
-      sender: 'ai',
-      timestamp: new Date(),
-      language: languageCode
-    };
-    setMessages([welcomeMessage]);
-    
-    await multilingualAI.speak(welcomeMessage.text, languageCode);
-  };
-
-  const handleVoiceInput = async (transcript: string) => {
-    // Robust validation for transcript
-    if (!transcript || typeof transcript !== 'string' || !transcript.trim()) {
-      console.warn('Invalid transcript received:', transcript);
-      return;
-    }
-
-    const detectedLanguage = multilingualAI.detectLanguageFromText(transcript);
-    if (detectedLanguage !== currentLanguage) {
-      setCurrentLanguage(detectedLanguage);
-      multilingualAI.setLanguage(detectedLanguage);
-      
-      const languageInfo = multilingualAI.getLanguageInfo(detectedLanguage);
-      const switchMessage: Message = {
-        id: Date.now().toString() + '_lang_switch',
-        text: `Language switched to ${languageInfo.name} ${languageInfo.flag}`,
-        sender: 'ai',
-        timestamp: new Date(),
-        language: detectedLanguage
-      };
-      setMessages(prev => [...prev, switchMessage]);
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: transcript,
-      sender: 'user',
-      timestamp: new Date(),
-      language: detectedLanguage
+      role: 'user',
+      content: textToSend,
+      timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
+    setInputText('');
 
     try {
-      setIsProcessing(true);
-      
-      const response = await voiceReservationService.processVoiceCommand(
-        transcript,
-        currentLanguage,
-        onOpenModal,
-        detectedLanguage
-      );
+      const result = await sendMessage({
+        message: textToSend,
+        currentFormData,
+        context
+      }).unwrap();
 
-      const aiMessage: Message = {
-        id: Date.now().toString() + '_ai',
-        text: response,
-        sender: 'ai',
-        timestamp: new Date(),
-        language: detectedLanguage
-      };
-      setMessages(prev => [...prev, aiMessage]);
+      // Add AI response
+      setMessages(prev => [...prev, result.chatMessage]);
 
-      await multilingualAI.speak(response, detectedLanguage);
-      
+      // Handle form filling if applicable
+      if (result.response.shouldFillForm && result.response.extractedData) {
+        if (onFormDataUpdate) {
+          onFormDataUpdate(result.response.extractedData);
+        }
+
+        // Handle modal opening based on intent
+        if (result.response.intent === 'reservation') {
+          onOpenModal('reservation', result.response.extractedData);
+        } else if (result.response.intent === 'checkin') {
+          onOpenModal('checkin', result.response.extractedData);
+        } else if (result.response.intent === 'checkout') {
+          onOpenModal('checkout', result.response.extractedData);
+        }
+      }
+
     } catch (error) {
-      console.error('Voice processing error:', error);
-      const errorMessage: Message = {
+      console.error('Failed to send message:', error);
+      
+      const errorMessage: ChatMessage = {
         id: Date.now().toString() + '_error',
-        text: multilingualAI.getResponse('error', {}, detectedLanguage),
-        sender: 'ai',
-        timestamp: new Date(),
-        language: detectedLanguage
+        role: 'assistant',
+        content: "I'm sorry, I'm having trouble processing your request right now. Please try again.",
+        timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
-  const startVoiceRecognition = () => {
-    if (recognition && !isListening) {
-      setIsListening(true);
-      recognition.start();
+  const handleVoiceToggle = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
     }
   };
 
-  const stopVoiceRecognition = () => {
-    if (recognition && isListening) {
-      recognition.stop();
-      setIsListening(false);
-    }
-  };
-
-  const handleTextInput = async (text: string) => {
-    if (!text.trim()) return;
-
-    const detectedLanguage = multilingualAI.detectLanguageFromText(text);
-    if (detectedLanguage !== currentLanguage) {
-      setCurrentLanguage(detectedLanguage);
-      multilingualAI.setLanguage(detectedLanguage);
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: text,
-      sender: 'user',
-      timestamp: new Date(),
-      language: detectedLanguage
-    };
-    setMessages(prev => [...prev, userMessage]);
-
+  const handleResetChat = async () => {
     try {
-      setIsProcessing(true);
+      await resetChat().unwrap();
+      setMessages([]);
       
-      const response = await voiceReservationService.processVoiceCommand(
-        text,
-        currentLanguage,
-        onOpenModal,
-        detectedLanguage
-      );
-
-      const aiMessage: Message = {
-        id: Date.now().toString() + '_ai',
-        text: response,
-        sender: 'ai',
-        timestamp: new Date(),
-        language: detectedLanguage
+      // Add welcome message
+      const welcomeMessage: ChatMessage = {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Hello! I'm your AI assistant for Lagunacreek Hotels. I can help you with reservations, check-ins, check-outs, and answer any questions about our services. How can I assist you today?",
+        timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiMessage]);
-
-      await multilingualAI.speak(response, detectedLanguage);
-      
+      setMessages([welcomeMessage]);
     } catch (error) {
-      console.error('Text processing error:', error);
-      const errorMessage: Message = {
-        id: Date.now().toString() + '_error',
-        text: multilingualAI.getResponse('error', {}, detectedLanguage),
-        sender: 'ai',
-        timestamp: new Date(),
-        language: detectedLanguage
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSendMessage = () => {
-    if (inputText.trim()) {
-      handleTextInput(inputText);
-      setInputText('');
+      console.error('Failed to reset chat:', error);
     }
   };
 
@@ -275,49 +180,76 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
     }
   };
 
-  if (showLanguageSelector) {
+  const getMessageIcon = (message: ChatMessage) => {
+    if (message.role === 'assistant') {
+      return (
+        <Avatar sx={{ bgcolor: 'primary.light', width: 32, height: 32 }}>
+          <SmartToy sx={{ fontSize: 16 }} />
+        </Avatar>
+      );
+    }
     return (
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 3 }}>
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Avatar sx={{ bgcolor: 'primary.light', width: 64, height: 64, mx: 'auto', mb: 2 }}>
-            <Language sx={{ fontSize: 32 }} />
-          </Avatar>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Choose Language
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Select your preferred language
-          </Typography>
-        </Box>
-
-        <List sx={{ flex: 1 }}>
-          {availableLanguages.map((lang) => (
-            <ListItem
-              key={lang.code}
-              component={Paper}
-              sx={{ 
-                mb: 1, 
-                cursor: 'pointer',
-                '&:hover': { bgcolor: 'primary.light', color: 'primary.contrastText' }
-              }}
-              onClick={() => handleLanguageSelect(lang.code)}
-            >
-              <ListItemAvatar>
-                <Typography variant="h5">{lang.flag}</Typography>
-              </ListItemAvatar>
-              <ListItemText
-                primary={lang.name}
-                secondary={lang.description}
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Box>
+      <Avatar sx={{ bgcolor: 'grey.300', width: 32, height: 32 }}>
+        <Person sx={{ fontSize: 16 }} />
+      </Avatar>
     );
-  }
+  };
+
+  const getMessageColor = (message: ChatMessage) => {
+    return message.role === 'user' ? 'primary.main' : 'grey.100';
+  };
+
+  const getTextColor = (message: ChatMessage) => {
+    return message.role === 'user' ? 'primary.contrastText' : 'text.primary';
+  };
+
+  // Initialize with welcome message
+  useEffect(() => {
+    if (messages.length === 0) {
+      const welcomeMessage: ChatMessage = {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Hello! I'm your AI assistant for Lagunacreek Hotels. I can help you with reservations, check-ins, check-outs, and answer any questions about our services. How can I assist you today?",
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, []);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+              <SmartToy sx={{ fontSize: 16 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" fontWeight="bold">
+                AI Assistant
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Powered by Gemini AI
+              </Typography>
+            </Box>
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton
+              size="small"
+              onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
+              color={isSpeechEnabled ? 'primary' : 'default'}
+            >
+              {isSpeechEnabled ? <VolumeUp /> : <VolumeOff />}
+            </IconButton>
+            <IconButton size="small" onClick={handleResetChat}>
+              <Refresh />
+            </IconButton>
+          </Box>
+        </Box>
+      </Box>
+
       {/* Messages */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {messages.map((message) => (
@@ -325,43 +257,67 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
             key={message.id}
             sx={{
               display: 'flex',
-              justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+              justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
               mb: 2
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, maxWidth: '80%' }}>
-              {message.sender === 'ai' && (
-                <Avatar sx={{ bgcolor: 'primary.light', width: 32, height: 32 }}>
-                  <SmartToy sx={{ fontSize: 16 }} />
-                </Avatar>
-              )}
-              <Paper
-                sx={{
-                  p: 1.5,
-                  bgcolor: message.sender === 'user' ? 'primary.main' : 'grey.100',
-                  color: message.sender === 'user' ? 'primary.contrastText' : 'text.primary'
-                }}
-              >
-                <Typography variant="body2">{message.text}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Typography>
-                  {message.language && message.language !== 'en' && (
-                    <Typography variant="caption">
-                      {availableLanguages.find(l => l.code === message.language)?.flag}
-                    </Typography>
+              {message.role === 'assistant' && getMessageIcon(message)}
+              
+              <Box>
+                <Paper
+                  sx={{
+                    p: 1.5,
+                    bgcolor: getMessageColor(message),
+                    color: getTextColor(message),
+                    borderRadius: 2,
+                    maxWidth: '100%'
+                  }}
+                >
+                  <Typography variant="body2">{message.content}</Typography>
+                  
+                  {/* Show extracted data if available */}
+                  {message.extractedData && Object.keys(message.extractedData).length > 0 && (
+                    <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" gutterBottom>
+                        Extracted Information:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {Object.entries(message.extractedData).map(([key, value]) => (
+                          <Chip
+                            key={key}
+                            label={`${key}: ${value}`}
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
+                    </Box>
                   )}
-                </Box>
-              </Paper>
-              {message.sender === 'user' && (
-                <Avatar sx={{ bgcolor: 'grey.300', width: 32, height: 32 }}>
-                  <Person sx={{ fontSize: 16 }} />
-                </Avatar>
-              )}
+                  
+                  {/* Show form filled indicator */}
+                  {message.formFilled && (
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CheckCircle sx={{ fontSize: 14, color: 'success.main' }} />
+                      <Typography variant="caption" color="success.main">
+                        Form data updated
+                      </Typography>
+                    </Box>
+                  )}
+                </Paper>
+                
+                <Typography variant="caption" sx={{ opacity: 0.7, mt: 0.5, display: 'block' }}>
+                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Typography>
+              </Box>
+              
+              {message.role === 'user' && getMessageIcon(message)}
             </Box>
           </Box>
         ))}
+        
+        {/* Processing indicator */}
         {isProcessing && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
@@ -371,17 +327,44 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
               <Paper sx={{ p: 1.5, bgcolor: 'grey.100' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <CircularProgress size={16} />
-                  <Typography variant="body2">Processing...</Typography>
+                  <Typography variant="body2">AI is thinking...</Typography>
                 </Box>
               </Paper>
             </Box>
           </Box>
         )}
+        
         <div ref={messagesEndRef} />
       </Box>
 
+      {/* Voice transcript display */}
+      {(transcript || interimTranscript) && (
+        <Fade in={true}>
+          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'action.hover' }}>
+            <Typography variant="caption" color="text.secondary" gutterBottom>
+              {isListening ? 'Listening...' : 'Voice input:'}
+            </Typography>
+            <Typography variant="body2">
+              {transcript}
+              {interimTranscript && (
+                <span style={{ opacity: 0.6, fontStyle: 'italic' }}>
+                  {interimTranscript}
+                </span>
+              )}
+            </Typography>
+          </Box>
+        </Fade>
+      )}
+
+      {/* Error display */}
+      {(speechError || apiError) && (
+        <Alert severity="error" sx={{ m: 2 }}>
+          {speechError || 'Failed to process message. Please try again.'}
+        </Alert>
+      )}
+
       {/* Input Area */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
           <TextField
             fullWidth
@@ -390,30 +373,51 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message or use voice..."
+            disabled={isProcessing}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <Chip
-                    label={availableLanguages.find(l => l.code === currentLanguage)?.flag}
+                    label={context.replace('_', ' ').toUpperCase()}
                     size="small"
+                    color="primary"
+                    variant="outlined"
                   />
                 </InputAdornment>
               ),
             }}
           />
+          
+          {/* Voice button */}
+          {speechSupported && (
+            <IconButton
+              onClick={handleVoiceToggle}
+              disabled={isProcessing}
+              color={isListening ? 'error' : 'default'}
+              sx={{ 
+                bgcolor: isListening ? 'error.light' : 'grey.200',
+                '&:hover': { bgcolor: isListening ? 'error.main' : 'grey.300' },
+                animation: isListening ? 'pulse 1.5s infinite' : 'none',
+                '@keyframes pulse': {
+                  '0%': {
+                    boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.7)',
+                  },
+                  '70%': {
+                    boxShadow: '0 0 0 10px rgba(244, 67, 54, 0)',
+                  },
+                  '100%': {
+                    boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)',
+                  },
+                },
+              }}
+            >
+              {isListening ? <MicOff /> : <Mic />}
+            </IconButton>
+          )}
+          
+          {/* Send button */}
           <IconButton
-            onClick={isListening ? stopVoiceRecognition : startVoiceRecognition}
-            disabled={isProcessing}
-            color={isListening ? 'error' : 'default'}
-            sx={{ 
-              bgcolor: isListening ? 'error.light' : 'grey.200',
-              '&:hover': { bgcolor: isListening ? 'error.main' : 'grey.300' }
-            }}
-          >
-            {isListening ? <MicOff /> : <Mic />}
-          </IconButton>
-          <IconButton
-            onClick={handleSendMessage}
+            onClick={() => handleSendMessage()}
             disabled={!inputText.trim() || isProcessing}
             color="primary"
           >
@@ -422,14 +426,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
         </Box>
         
         <Box sx={{ textAlign: 'center' }}>
-          <Button
-            size="small"
-            startIcon={<Language />}
-            onClick={() => setShowLanguageSelector(true)}
-            sx={{ textTransform: 'none' }}
-          >
-            Change Language
-          </Button>
+          <Typography variant="caption" color="text.secondary">
+            {speechSupported 
+              ? 'Type or speak your message. AI responses include automatic speech.'
+              : 'Type your message. Speech recognition not available.'
+            }
+          </Typography>
         </Box>
       </Box>
     </Box>
