@@ -77,7 +77,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ onLanguageSelect })
             
             {/* Language Options */}
             <Grid container spacing={3}>
-              {languages.map((language, index) => (
+              {languages.map((language) => (
                 <Grid item xs={12} sm={6} key={language.code}>
                   <Card
                     onClick={() => onLanguageSelect(language.code)}
@@ -87,12 +87,10 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ onLanguageSelect })
                       '&:hover': {
                         transform: 'translateY(-4px)',
                         boxShadow: 8,
-                        backgroundColor: '#f8f9fa'
+                        backgroundColor: '#f8f9fa',
+                        borderColor: '#1976d2'
                       },
                       border: '2px solid transparent',
-                      '&:hover': {
-                        borderColor: '#1976d2'
-                      }
                     }}
                     elevation={2}
                   >
