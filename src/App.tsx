@@ -4,7 +4,7 @@ import { store } from './store';
 import { useAppDispatch } from './hooks/useAppDispatch';
 import { useAppSelector } from './hooks/useAppSelector';
 import { useVoiceRedux } from './hooks/useVoiceRedux';
-import { voiceProcessingService } from './services/voiceProcessingService';
+import { enhancedVoiceProcessingService } from './services/enhancedVoiceProcessingService';
 import { 
   setCurrentStep,
   setDatesAndGuests,
@@ -60,45 +60,83 @@ function AppContent() {
 
   // Handle voice transcript processing
   useEffect(() => {
-    if (transcript && voiceState === 'processing') {
-      processVoiceInput(transcript);
+    if (transcript && voiceState === 'processing' && transcript.trim()) {
+      processVoiceInputAsync(transcript);
     }
   }, [transcript, voiceState]);
 
-  const processVoiceInput = (input: string) => {
-    const result = voiceProcessingService.processVoiceInput(input, currentStep, reservationData);
+  const processVoiceInputAsync = async (input: string) => {
+    try {
+      const result = await enhancedVoiceProcessingService.processVoiceInput(input, currentStep, reservationData);
+      
+      // Speak the response
+      speak(result.response);
+      
+      // Handle actions
+      if (result.action) {
+        handleVoiceAction(result.action);
+      }
+    } catch (error) {
+      console.error('Voice processing error:', error);
+      speak("I'm sorry, I'm having trouble processing that. Could you please try again?");
+    }
+  };
+
+  const handleVoiceAction = (action: any) => {
+    switch (action.type) {
+      case 'SET_STEP':
+        dispatch(setCurrentStep(action.payload));
+        break;
+      case 'UPDATE_DATES_GUESTS':
+        dispatch(setDatesAndGuests(action.payload));
+        break;
+      case 'SET_ROOM':
+        dispatch(setRoomSelection(action.payload));
+        break;
+      case 'UPDATE_GUEST_INFO':
+        dispatch(setGuestInfo(action.payload));
+        break;
+      case 'SET_PAYMENT':
+        dispatch(setPaymentMethod(action.payload));
+        break;
+      case 'CONFIRM_BOOKING':
+        dispatch(addNotification({
+          message: 'Booking confirmed successfully!',
+          type: 'success'
+        }));
+        setTimeout(() => {
+          dispatch(resetReservation());
+        }, 3000);
+        break;
+    }
+  };
+
+  // Handle help requests
+  const handleHelpRequest = async () => {
+    try {
+      const helpText = await enhancedVoiceProcessingService.getStepHelp(currentStep, reservationData);
+      speak(helpText);
+    } catch (error) {
+      speak("I'm here to help you with your reservation. Please let me know what you need assistance with.");
+    }
+  };
+
+  // Enhanced voice processing with AI
+  const processVoiceInput = async (input: string) => {
+    // Check for help requests
+    if (input.toLowerCase().includes('help')) {
+      await handleHelpRequest();
+      return;
+    }
     
-    // Speak the response
+    const result = await enhancedVoiceProcessingService.processVoiceInput(input, currentStep, reservationData);
+    
+    // Speak the AI-generated response
     speak(result.response);
     
     // Handle actions
     if (result.action) {
-      switch (result.action.type) {
-        case 'SET_STEP':
-          dispatch(setCurrentStep(result.action.payload));
-          break;
-        case 'UPDATE_DATES_GUESTS':
-          dispatch(setDatesAndGuests(result.action.payload));
-          break;
-        case 'SET_ROOM':
-          dispatch(setRoomSelection(result.action.payload));
-          break;
-        case 'UPDATE_GUEST_INFO':
-          dispatch(setGuestInfo(result.action.payload));
-          break;
-        case 'SET_PAYMENT':
-          dispatch(setPaymentMethod(result.action.payload));
-          break;
-        case 'CONFIRM_BOOKING':
-          dispatch(addNotification({
-            message: 'Booking confirmed successfully!',
-            type: 'success'
-          }));
-          setTimeout(() => {
-            dispatch(resetReservation());
-          }, 3000);
-          break;
-      }
+      handleVoiceAction(result.action);
     }
 
     // Handle "next" command
@@ -146,6 +184,11 @@ function AppContent() {
 
   const handleResetReservation = () => {
     dispatch(resetReservation());
+    speak("Starting a new reservation. Please select your language to continue.");
+  };
+
+  const handleEmergencyReset = () => {
+    dispatch(resetReservation());
   };
 
   const renderCurrentStep = () => {
@@ -177,6 +220,8 @@ function AppContent() {
             onStartListening={startListening}
             onStopListening={stopListening}
             onNext={handleNext}
+            onHelp={handleHelpRequest}
+            onReset={handleEmergencyReset}
             transcript={transcript}
           />
         );

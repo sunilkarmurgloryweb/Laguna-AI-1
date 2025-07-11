@@ -7,19 +7,28 @@ import {
 } from 'lucide-react';
 import { VoiceState } from '../types/reservation';
 import { useAppSelector } from '../hooks/useAppSelector';
+import AIStatusIndicator from './AIStatusIndicator';
 
 interface VoiceIndicatorProps {
   voiceState: VoiceState;
   isSupported: boolean;
   onStartListening: () => void;
   onStopListening: () => void;
+  showAIStatus?: boolean;
+  aiProcessing?: boolean;
+  aiConfidence?: number;
+  aiError?: string;
 }
 
 const VoiceIndicator: React.FC<VoiceIndicatorProps> = ({
   voiceState,
   isSupported,
   onStartListening,
-  onStopListening
+  onStopListening,
+  showAIStatus = true,
+  aiProcessing = false,
+  aiConfidence = 0,
+  aiError
 }) => {
   const { lastError } = useAppSelector((state) => state.voice);
 
@@ -87,6 +96,16 @@ const VoiceIndicator: React.FC<VoiceIndicatorProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-4">
+      {showAIStatus && (
+        <div className="w-full max-w-md">
+          <AIStatusIndicator
+            isProcessing={aiProcessing || voiceState === 'processing'}
+            confidence={aiConfidence}
+            error={aiError}
+          />
+        </div>
+      )}
+      
       <button
         onClick={handleClick}
         disabled={voiceState === 'processing' || voiceState === 'speaking'}
@@ -104,6 +123,12 @@ const VoiceIndicator: React.FC<VoiceIndicatorProps> = ({
       <span className="text-sm text-gray-600 font-medium">
         {getStatusText()}
       </span>
+      
+      {voiceState === 'processing' && (
+        <div className="text-xs text-blue-600 animate-pulse">
+          🤖 AI is analyzing your request...
+        </div>
+      )}
       
       {lastError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-w-xs">

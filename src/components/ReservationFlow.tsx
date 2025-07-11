@@ -43,6 +43,8 @@ interface ReservationFlowProps {
   onStartListening: () => void;
   onStopListening: () => void;
   onNext: () => void;
+  onHelp?: () => void;
+  onReset?: () => void;
   transcript: string;
 }
 
@@ -54,6 +56,8 @@ const ReservationFlow: React.FC<ReservationFlowProps> = ({
   onStartListening,
   onStopListening,
   onNext,
+  onHelp,
+  onReset,
   transcript
 }) => {
   const stepIcons = {
@@ -412,7 +416,7 @@ const ReservationFlow: React.FC<ReservationFlowProps> = ({
             )}
 
             {/* Action Buttons */}
-            <Box display="flex" justifyContent="center" gap={2}>
+            <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
               <Button
                 variant="contained"
                 size="large"
@@ -428,12 +432,45 @@ const ReservationFlow: React.FC<ReservationFlowProps> = ({
               >
                 Next Step
               </Button>
+              
+              {onHelp && (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={onHelp}
+                  sx={{
+                    px: 4,
+                    py: 1.5,
+                    fontSize: '1.1rem',
+                    fontWeight: 600,
+                    borderRadius: 2
+                  }}
+                >
+                  Get Help
+                </Button>
+              )}
+              
+              {onReset && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={onReset}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    fontSize: '0.9rem',
+                    color: 'text.secondary'
+                  }}
+                >
+                  Start Over
+                </Button>
+              )}
             </Box>
 
             {/* Help Text */}
             <Box mt={4} textAlign="center">
               <Typography variant="body2" color="text.secondary">
-                Say "Next" or press the "Next Step" button to continue
+                Say "Next" to continue • Say "Help" for guidance • Voice commands work at any time
               </Typography>
             </Box>
           </Box>
