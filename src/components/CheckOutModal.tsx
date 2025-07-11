@@ -32,6 +32,7 @@ import {
   CheckCircle
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
+import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
 
 interface CheckOutModalProps {
   isOpen: boolean;
@@ -90,11 +91,13 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
   };
 
   const handleVoiceProcessed = (result: any) => {
-    if (result.extractedData) {
+    const voiceResult = result as ProcessedVoiceResponse;
+    
+    if (voiceResult.extractedData) {
       const newVoiceFields = new Set(voiceFilledFields);
       
-      if (result.extractedData.paymentMethod) {
-        const method = result.extractedData.paymentMethod.toLowerCase();
+      if (voiceResult.extractedData.paymentMethod) {
+        const method = voiceResult.extractedData.paymentMethod.toLowerCase();
         if (method.includes('card') || method.includes('credit')) {
           setPaymentMethod('card');
         } else if (method.includes('cash') || method.includes('hotel')) {

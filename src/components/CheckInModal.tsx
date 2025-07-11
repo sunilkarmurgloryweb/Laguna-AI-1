@@ -29,6 +29,7 @@ import {
   Upload
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
+import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
 
 interface CheckInModalProps {
   isOpen: boolean;
@@ -77,26 +78,28 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   };
 
   const handleVoiceProcessed = (result: any) => {
-    if (result.extractedData) {
+    const voiceResult = result as ProcessedVoiceResponse;
+    
+    if (voiceResult.extractedData) {
       const updates: any = {};
       const newVoiceFields = new Set(voiceFilledFields);
       
-      if (result.extractedData.guestName) {
-        updates.name = result.extractedData.guestName;
+      if (voiceResult.extractedData.guestName) {
+        updates.name = voiceResult.extractedData.guestName;
         newVoiceFields.add('name');
       }
-      if (result.extractedData.checkIn) {
-        updates.checkInDate = result.extractedData.checkIn;
+      if (voiceResult.extractedData.checkIn) {
+        updates.checkInDate = voiceResult.extractedData.checkIn;
         newVoiceFields.add('checkInDate');
       }
-      if (result.extractedData.roomType) {
-        updates.roomType = result.extractedData.roomType;
+      if (voiceResult.extractedData.roomType) {
+        updates.roomType = voiceResult.extractedData.roomType;
         newVoiceFields.add('roomType');
       }
       
       // Extract confirmation number from entities
-      if (result.entities.confirmationNumber) {
-        updates.confirmationNumber = result.entities.confirmationNumber;
+      if (voiceResult.extractedData.confirmationNumber) {
+        updates.confirmationNumber = voiceResult.extractedData.confirmationNumber;
         newVoiceFields.add('confirmationNumber');
       }
       

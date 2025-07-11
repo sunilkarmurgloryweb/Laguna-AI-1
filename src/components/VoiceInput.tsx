@@ -58,7 +58,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
 
   const [processVoiceInput, { 
     isLoading: isProcessing, 
-    error: apiError 
+    error: apiError,
+    isSuccess,
+    isError
   }] = useProcessVoiceInputMutation();
 
   // Handle transcript changes
@@ -83,7 +85,8 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
         text,
         currentStep,
         reservationData,
-        language
+        language,
+        context: `Processing voice input for ${currentStep} step`
       }).unwrap();
 
       if (onVoiceProcessed) {
@@ -105,6 +108,18 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       }
     } catch (error) {
       console.error('Voice processing error:', error);
+      
+      // Show error feedback to user
+      if (onVoiceProcessed) {
+        onVoiceProcessed({
+          intent: 'error',
+          confidence: 0,
+          entities: {},
+          response: 'Sorry, I had trouble processing that. Please try again.',
+          extractedData: {},
+          suggestions: ['Try speaking more clearly', 'Check your internet connection']
+        });
+      }
     }
   };
 
@@ -147,6 +162,8 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   };
 
   const getButtonColor = () => {
+    if (isError) return 'error';
+    if (isSuccess) return 'success';
     if (isProcessing) return 'primary';
     if (isSpeaking) return 'success';
     if (isListening) return 'error';
@@ -156,6 +173,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   const getTooltipText = () => {
     if (!isSupported) return 'Speech recognition not supported';
     if (disabled) return 'Voice input disabled';
+    if (isError) return 'Error processing voice - click to retry';
     if (isProcessing) return 'Processing speech...';
     if (isSpeaking) return 'AI is speaking...';
     if (isListening) return 'Listening... Click to stop';
@@ -163,6 +181,8 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   };
 
   const getStatusText = () => {
+    if (isError) return 'Error - Retry';
+    if (isSuccess) return 'Success!';
     if (isProcessing) return 'Processing...';
     if (isSpeaking) return 'AI Speaking...';
     if (isListening) return 'Listening...';
@@ -258,9 +278,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       )}
 
       {/* Error Display */}
-      {(speechError || apiError) && (
+      {(speechError || (apiError && 'message' in apiError)) && (
         <Alert severity="error" sx={{ maxWidth: 400 }}>
-          {speechError || 'Failed to process voice input. Please try again.'}
+          {speechError || (apiError as any)?.message || 'Failed to process voice input. Please try again.'}
         </Alert>
       )}
     </Box>

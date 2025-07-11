@@ -34,6 +34,7 @@ import {
 import VoiceInput from './VoiceInput';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { updateReservationData } from '../store/slices/reservationSlice';
+import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
 
 interface ReservationModalProps {
   isOpen?: boolean;
@@ -166,45 +167,47 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     return initialData[field as keyof typeof initialData] !== undefined;
   };
   const handleVoiceProcessed = (result: any) => {
-    if (result.extractedData) {
+    const voiceResult = result as ProcessedVoiceResponse;
+    
+    if (voiceResult.extractedData) {
       const updates: any = {};
       const newVoiceFields = new Set(voiceFilledFields);
       
       // Map extracted data to form fields
-      if (result.extractedData.checkIn) {
-        updates.checkIn = result.extractedData.checkIn;
+      if (voiceResult.extractedData.checkIn) {
+        updates.checkIn = voiceResult.extractedData.checkIn;
         newVoiceFields.add('checkIn');
       }
-      if (result.extractedData.checkOut) {
-        updates.checkOut = result.extractedData.checkOut;
+      if (voiceResult.extractedData.checkOut) {
+        updates.checkOut = voiceResult.extractedData.checkOut;
         newVoiceFields.add('checkOut');
       }
-      if (result.extractedData.adults) {
-        updates.adults = result.extractedData.adults;
+      if (voiceResult.extractedData.adults) {
+        updates.adults = voiceResult.extractedData.adults;
         newVoiceFields.add('adults');
       }
-      if (result.extractedData.children !== undefined) {
-        updates.children = result.extractedData.children;
+      if (voiceResult.extractedData.children !== undefined) {
+        updates.children = voiceResult.extractedData.children;
         newVoiceFields.add('children');
       }
-      if (result.extractedData.roomType) {
-        updates.roomType = result.extractedData.roomType;
+      if (voiceResult.extractedData.roomType) {
+        updates.roomType = voiceResult.extractedData.roomType;
         newVoiceFields.add('roomType');
       }
-      if (result.extractedData.guestName) {
-        updates.guestName = result.extractedData.guestName;
+      if (voiceResult.extractedData.guestName) {
+        updates.guestName = voiceResult.extractedData.guestName;
         newVoiceFields.add('guestName');
       }
-      if (result.extractedData.phone) {
-        updates.phone = result.extractedData.phone;
+      if (voiceResult.extractedData.phone) {
+        updates.phone = voiceResult.extractedData.phone;
         newVoiceFields.add('phone');
       }
-      if (result.extractedData.email) {
-        updates.email = result.extractedData.email;
+      if (voiceResult.extractedData.email) {
+        updates.email = voiceResult.extractedData.email;
         newVoiceFields.add('email');
       }
-      if (result.extractedData.paymentMethod) {
-        updates.paymentMethod = result.extractedData.paymentMethod;
+      if (voiceResult.extractedData.paymentMethod) {
+        updates.paymentMethod = voiceResult.extractedData.paymentMethod;
         newVoiceFields.add('paymentMethod');
       }
       
@@ -212,6 +215,13 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
         setFormData(prev => ({ ...prev, ...updates }));
         setVoiceFilledFields(newVoiceFields);
         dispatch(updateReservationData(updates));
+        
+        // Auto-advance to next step if current step is complete
+        if (canProceedToNext() && voiceResult.intent !== 'help_request') {
+          setTimeout(() => {
+            handleNext();
+          }, 1500); // Give user time to see the filled data
+        }
       }
     }
   };
