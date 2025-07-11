@@ -1,4 +1,5 @@
 import { ReservationData, CheckInData, CheckOutData, RoomAvailabilityData } from '../types/reservation';
+import { multilingualAI } from './multilingualAIService';
 
 // Voice command patterns for different languages
 const VOICE_PATTERNS = {
@@ -284,5 +285,61 @@ export class VoiceReservationService {
     return 'en';
   }
 }
+
+  // Process voice command and handle modal opening
+  public async processVoiceCommand(
+    text: string,
+    currentLanguage: string,
+    onOpenModal: (modalType: string, data?: any) => void,
+    detectedLanguage: string
+  ): Promise<string> {
+    try {
+      const intent = this.detectIntent(text);
+      
+      switch (intent) {
+        case 'reservation':
+          const reservationData = this.extractReservationData(text);
+          onOpenModal('reservation', reservationData);
+          return detectedLanguage === 'hi' 
+            ? 'मैं आपकी बुकिंग में मदद करूंगा। कृपया विवरण भरें।'
+            : detectedLanguage === 'es'
+            ? 'Te ayudaré con tu reserva. Por favor completa los detalles.'
+            : 'I\'ll help you with your reservation. Please fill in the details.';
+            
+        case 'checkin':
+          const checkInData = this.extractCheckInData(text);
+          onOpenModal('checkin', checkInData);
+          return detectedLanguage === 'hi'
+            ? 'चेक-इन प्रक्रिया शुरू कर रहा हूं। कृपया जानकारी प्रदान करें।'
+            : detectedLanguage === 'es'
+            ? 'Iniciando el proceso de check-in. Por favor proporciona la información.'
+            : 'Starting check-in process. Please provide your information.';
+            
+        case 'checkout':
+          const checkOutData = this.extractCheckOutData(text);
+          onOpenModal('checkout', checkOutData);
+          return detectedLanguage === 'hi'
+            ? 'चेक-आउट प्रक्रिया शुरू कर रहा हूं।'
+            : detectedLanguage === 'es'
+            ? 'Iniciando el proceso de check-out.'
+            : 'Starting check-out process.';
+            
+        case 'availability':
+          const availabilityData = this.extractAvailabilityData(text);
+          onOpenModal('availability', availabilityData);
+          return detectedLanguage === 'hi'
+            ? 'उपलब्ध कमरे दिखा रहा हूं।'
+            : detectedLanguage === 'es'
+            ? 'Mostrando habitaciones disponibles.'
+            : 'Showing available rooms.';
+            
+        default:
+          return await multilingualAI.getResponse('error', {}, detectedLanguage);
+      }
+    } catch (error) {
+      console.error('Error processing voice command:', error);
+      return await multilingualAI.getResponse('error', {}, detectedLanguage);
+    }
+  }
 
 export default VoiceReservationService.getInstance();
