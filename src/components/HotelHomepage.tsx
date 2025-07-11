@@ -1,36 +1,94 @@
 import React, { useState } from 'react';
-import { 
-  MapPin, 
-  Wifi, 
-  Car, 
-  Phone, 
-  Users, 
-  Calendar,
-  Star,
-  MessageCircle,
-  Mic,
-  Bot,
-  X,
-  Camera,
-  Upload,
-  CreditCard,
-  Menu,
-  Settings,
-  Bell,
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  TextField,
+  IconButton,
+  Badge,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  Avatar,
+  Rating,
+  Divider,
+  Paper,
+  InputAdornment
+} from '@mui/material';
+import {
   Search,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
+  Notifications,
+  Settings,
+  People,
+  CalendarToday,
+  LocationOn,
+  CreditCard,
+  Hotel,
+  Menu as MenuIcon
+} from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
 import AIChatbot from './AIChatbot';
 import ReservationModal from './ReservationModal';
 import CheckInModal from './CheckInModal';
 import CheckOutModal from './CheckOutModal';
 
+const ResizeHandle = styled(Box)(({ theme }) => ({
+  width: 4,
+  backgroundColor: theme.palette.divider,
+  cursor: 'col-resize',
+  position: 'relative',
+  '&:hover': {
+    backgroundColor: theme.palette.primary.main,
+    '& .resize-indicator': {
+      opacity: 1,
+    },
+  },
+  '& .resize-indicator': {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    opacity: 0,
+    transition: 'opacity 0.2s',
+    display: 'flex',
+    gap: 1,
+  },
+}));
+
+const StatsCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  transition: 'transform 0.2s, box-shadow 0.2s',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[4],
+  },
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  height: 64,
+  borderRadius: theme.spacing(1.5),
+  textTransform: 'none',
+  fontSize: '1rem',
+  fontWeight: 600,
+}));
+
+const RoomCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  transition: 'transform 0.2s, box-shadow 0.2s',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[4],
+  },
+}));
+
 const HotelHomepage: React.FC = () => {
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
-  const [aiPanelWidth, setAiPanelWidth] = useState(400); // Default width for AI panel
+  const [aiPanelWidth, setAiPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
 
   const accommodations = [
@@ -98,11 +156,11 @@ const HotelHomepage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Available': return 'bg-green-100 text-green-800';
-      case 'Occupied': return 'bg-red-100 text-red-800';
-      case 'Maintenance': return 'bg-yellow-100 text-yellow-800';
-      case 'Cleaning': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Available': return 'success';
+      case 'Occupied': return 'error';
+      case 'Maintenance': return 'warning';
+      case 'Cleaning': return 'info';
+      default: return 'default';
     }
   };
 
@@ -157,241 +215,338 @@ const HotelHomepage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.50' }}>
       {/* Full Width Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 z-10">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">L</span>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Lagunacreek PMS</h1>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <span className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      Resort & Spa Management
-                    </span>
-                    <span>📞 +1 (555) 123-4567</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <AppBar position="static" color="default" elevation={1}>
+        <Toolbar sx={{ px: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <Avatar sx={{ bgcolor: 'primary.main', mr: 2, width: 40, height: 40 }}>
+              <Hotel />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" component="h1" fontWeight="bold">
+                Lagunacreek PMS
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                  <LocationOn sx={{ fontSize: 14, mr: 0.5 }} />
+                  Resort & Spa Management
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  📞 +1 (555) 123-4567
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
 
-            {/* Header Actions */}
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search guests, rooms..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-                />
-              </div>
-              <button className="p-2 text-gray-600 hover:text-gray-800 relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
-              <button className="p-2 text-gray-600 hover:text-gray-800">
-                <Settings className="w-5 h-5" />
-              </button>
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center">
-                  {[1,2,3,4,5].map((star) => (
-                    <Star key={star} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                  <span className="ml-2 text-sm font-medium">4.8 Rating</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          {/* Header Actions */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Search guests, rooms..."
+              sx={{ width: 250 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <IconButton>
+              <Badge badgeContent={4} color="error">
+                <Notifications />
+              </Badge>
+            </IconButton>
+            <IconButton>
+              <Settings />
+            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Rating value={4.8} precision={0.1} size="small" readOnly />
+              <Typography variant="body2" fontWeight="medium">
+                4.8 Rating
+              </Typography>
+            </Box>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Left Side - Main App */}
-        <div 
-          className="flex-1 overflow-y-auto bg-gray-50"
-          style={{ width: `calc(100% - ${aiPanelWidth}px)` }}
+        <Box 
+          sx={{ 
+            flex: 1, 
+            overflow: 'auto', 
+            width: `calc(100% - ${aiPanelWidth}px)`,
+            p: 3
+          }}
         >
-          <div className="p-6">
-            {/* Dashboard Stats */}
-            <div className="grid grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Rooms</p>
-                    <p className="text-2xl font-bold text-gray-900">156</p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Occupied</p>
-                    <p className="text-2xl font-bold text-green-600">124</p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-green-600" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Available</p>
-                    <p className="text-2xl font-bold text-blue-600">28</p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Maintenance</p>
-                    <p className="text-2xl font-bold text-orange-600">4</p>
-                  </div>
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Settings className="w-6 h-6 text-orange-600" />
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Dashboard Stats */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="text.secondary" variant="body2">
+                        Total Rooms
+                      </Typography>
+                      <Typography variant="h4" fontWeight="bold">
+                        156
+                      </Typography>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main' }}>
+                      <People />
+                    </Avatar>
+                  </Box>
+                </CardContent>
+              </StatsCard>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="text.secondary" variant="body2">
+                        Occupied
+                      </Typography>
+                      <Typography variant="h4" fontWeight="bold" color="success.main">
+                        124
+                      </Typography>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'success.light', color: 'success.main' }}>
+                      <CalendarToday />
+                    </Avatar>
+                  </Box>
+                </CardContent>
+              </StatsCard>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="text.secondary" variant="body2">
+                        Available
+                      </Typography>
+                      <Typography variant="h4" fontWeight="bold" color="primary.main">
+                        28
+                      </Typography>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main' }}>
+                      <LocationOn />
+                    </Avatar>
+                  </Box>
+                </CardContent>
+              </StatsCard>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="text.secondary" variant="body2">
+                        Maintenance
+                      </Typography>
+                      <Typography variant="h4" fontWeight="bold" color="warning.main">
+                        4
+                      </Typography>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.main' }}>
+                      <Settings />
+                    </Avatar>
+                  </Box>
+                </CardContent>
+              </StatsCard>
+            </Grid>
+          </Grid>
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl p-6 shadow-sm mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-4 gap-4">
-                <button 
+          {/* Quick Actions */}
+          <Paper sx={{ p: 3, mb: 4 }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+              Quick Actions
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <ActionButton
+                  variant="contained"
+                  fullWidth
+                  startIcon={<CalendarToday />}
                   onClick={() => setShowReservationModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors"
                 >
-                  <Calendar className="w-5 h-5" />
-                  <span>New Reservation</span>
-                </button>
-                <button 
+                  New Reservation
+                </ActionButton>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <ActionButton
+                  variant="contained"
+                  color="success"
+                  fullWidth
+                  startIcon={<People />}
                   onClick={() => setShowCheckInModal(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors"
                 >
-                  <Users className="w-5 h-5" />
-                  <span>Check In</span>
-                </button>
-                <button 
+                  Check In
+                </ActionButton>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <ActionButton
+                  variant="contained"
+                  color="warning"
+                  fullWidth
+                  startIcon={<CreditCard />}
                   onClick={() => setShowCheckOutModal(true)}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors"
                 >
-                  <CreditCard className="w-5 h-5" />
-                  <span>Check Out</span>
-                </button>
-                <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors">
-                  <Search className="w-5 h-5" />
-                  <span>Room Status</span>
-                </button>
-              </div>
-            </div>
+                  Check Out
+                </ActionButton>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <ActionButton
+                  variant="contained"
+                  color="secondary"
+                  fullWidth
+                  startIcon={<Search />}
+                >
+                  Room Status
+                </ActionButton>
+              </Grid>
+            </Grid>
+          </Paper>
 
-            {/* Room Management */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Room Management</h3>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  View All Rooms
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-6">
-                {accommodations.map((room, index) => (
-                  <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="font-semibold text-lg text-gray-900">{room.name}</h4>
-                        <p className="text-sm text-gray-600">Room {room.roomNumber}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(room.status)}`}>
-                        {room.status}
-                      </span>
-                    </div>
-                    
-                    <div className="text-2xl font-bold text-blue-600 mb-2">
-                      ${room.price}
-                      <span className="text-sm text-gray-500 font-normal ml-1">{room.period}</span>
-                    </div>
-                    
-                    <p className="text-sm text-gray-600 mb-3">{room.capacity}</p>
-                    
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Amenities:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {room.amenities.slice(0, 3).map((amenity, i) => (
-                          <span key={i} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                            {amenity}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 flex space-x-2">
-                      <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm font-medium transition-colors">
-                        View Details
-                      </button>
-                      <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
-                        Manage
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+          {/* Room Management */}
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+              <Typography variant="h6" fontWeight="bold">
+                Room Management
+              </Typography>
+              <Button color="primary">
+                View All Rooms
+              </Button>
+            </Box>
+            
+            <Grid container spacing={3}>
+              {accommodations.map((room, index) => (
+                <Grid item xs={12} md={6} key={index}>
+                  <RoomCard>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Box>
+                          <Typography variant="h6" fontWeight="bold">
+                            {room.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Room {room.roomNumber}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={room.status}
+                          color={getStatusColor(room.status) as any}
+                          size="small"
+                        />
+                      </Box>
+                      
+                      <Typography variant="h4" color="primary.main" fontWeight="bold" sx={{ mb: 1 }}>
+                        ${room.price}
+                        <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                          {room.period}
+                        </Typography>
+                      </Typography>
+                      
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {room.capacity}
+                      </Typography>
+                      
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" fontWeight="medium" sx={{ mb: 1 }}>
+                          Amenities:
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {room.amenities.slice(0, 3).map((amenity, i) => (
+                            <Chip
+                              key={i}
+                              label={amenity}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                        >
+                          View Details
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          fullWidth
+                        >
+                          Manage
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </RoomCard>
+                </Grid>
+              ))}
+            </Grid>
+          </Paper>
+        </Box>
 
         {/* Resizer */}
-        <div
-          className="w-1 bg-gray-300 hover:bg-gray-400 cursor-col-resize flex-shrink-0 relative group"
-          onMouseDown={handleMouseDown}
-        >
-          <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-blue-500 group-hover:bg-opacity-20 transition-colors"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="flex space-x-1">
-              <ChevronLeft className="w-3 h-3 text-gray-600" />
-              <ChevronRight className="w-3 h-3 text-gray-600" />
-            </div>
-          </div>
-        </div>
+        <ResizeHandle onMouseDown={handleMouseDown}>
+          <Box className="resize-indicator">
+            <Box sx={{ width: 2, height: 20, bgcolor: 'grey.400' }} />
+            <Box sx={{ width: 2, height: 20, bgcolor: 'grey.400' }} />
+          </Box>
+        </ResizeHandle>
 
         {/* Right Side - AI Assistant */}
-        <div 
-          className="bg-white border-l border-gray-200 flex flex-col"
-          style={{ width: `${aiPanelWidth}px`, minWidth: '300px' }}
+        <Box 
+          sx={{ 
+            width: `${aiPanelWidth}px`,
+            minWidth: 300,
+            bgcolor: 'background.paper',
+            borderLeft: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
         >
-          <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                <Bot className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">AI Assistant</h3>
-                <p className="text-xs text-blue-100">Powered by Gemini AI</p>
-              </div>
-            </div>
-          </div>
+          <Box sx={{ 
+            p: 2, 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
+            color: 'white'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 32, height: 32 }}>
+                <Settings />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  AI Assistant
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  Powered by Gemini AI
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
           
-          <div className="flex-1">
+          <Box sx={{ flex: 1 }}>
             <AIChatbot onOpenModal={handleOpenModal} />
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Modals */}
       {showReservationModal && (
@@ -411,7 +566,7 @@ const HotelHomepage: React.FC = () => {
           onClose={() => setShowCheckOutModal(false)} 
         />
       )}
-    </div>
+    </Box>
   );
 };
 

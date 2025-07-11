@@ -1,5 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Users, Hotel, CreditCard, CheckCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Grid,
+  Typography,
+  Box,
+  Stepper,
+  Step,
+  StepLabel,
+  Card,
+  CardContent,
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+  LinearProgress,
+  IconButton
+} from '@mui/material';
+import {
+  Close,
+  CalendarToday,
+  People,
+  Hotel,
+  CreditCard,
+  CheckCircle
+} from '@mui/icons-material';
 
 interface ReservationModalProps {
   isOpen?: boolean;
@@ -22,7 +53,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   onClose,
   initialData = {}
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     checkIn: initialData.checkIn || '',
     checkOut: initialData.checkOut || '',
@@ -35,44 +66,32 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     paymentMethod: initialData.paymentMethod || ''
   });
 
-  // Update form data when initialData changes
+  const steps = ['Dates & Guests', 'Room Selection', 'Guest Information', 'Payment Method'];
+
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
       ...initialData
     }));
     
-    // Auto-advance to the next incomplete step
     const nextStep = determineNextStep(initialData);
     setCurrentStep(nextStep);
   }, [initialData]);
 
-  const totalSteps = 4;
-
-  // Determine which step to show based on available data
   const determineNextStep = (data: any): number => {
-    // Step 1: Dates & Guests
     if (!data.checkIn || !data.checkOut || !data.adults) {
+      return 0;
+    }
+    if (!data.roomType) {
       return 1;
     }
-    
-    // Step 2: Room Selection
-    if (!data.roomType) {
+    if (!data.guestName || !data.phone || !data.email) {
       return 2;
     }
-    
-    // Step 3: Guest Information
-    if (!data.guestName || !data.phone || !data.email) {
+    if (!data.paymentMethod) {
       return 3;
     }
-    
-    // Step 4: Payment Method
-    if (!data.paymentMethod) {
-      return 4;
-    }
-    
-    // All steps complete, stay on payment step for final review
-    return 4;
+    return 3;
   };
 
   const roomTypes = [
@@ -106,13 +125,13 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   ];
 
   const handleNext = () => {
-    if (currentStep < totalSteps) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handlePrevious = () => {
-    if (currentStep > 1) {
+  const handleBack = () => {
+    if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -125,263 +144,302 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
 
   const canProceedToNext = () => {
     switch (currentStep) {
-      case 1:
+      case 0:
         return formData.checkIn && formData.checkOut && formData.adults > 0;
-      case 2:
+      case 1:
         return formData.roomType;
-      case 3:
+      case 2:
         return formData.guestName && formData.phone && formData.email;
-      case 4:
+      case 3:
         return formData.paymentMethod;
       default:
         return false;
     }
   };
 
-  const renderStep = () => {
+  const isAutoFilled = (field: string) => {
+    return initialData[field as keyof typeof initialData] !== undefined;
+  };
+
+  const renderStepContent = () => {
     switch (currentStep) {
-      case 1:
+      case 0:
         return (
-          <div className="space-y-6">
-            <div className="flex items-center mb-4">
-              <Calendar className="w-6 h-6 text-blue-600 mr-3" />
-              <h3 className="text-xl font-semibold text-gray-800">Dates & Guests</h3>
-            </div>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CalendarToday color="primary" />
+              Dates & Guests
+            </Typography>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-in Date
-                </label>
-                <input
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Check-in Date"
                   type="date"
                   value={formData.checkIn}
                   onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formData.checkIn ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                  }`}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderColor: isAutoFilled('checkIn') ? 'success.main' : undefined,
+                      bgcolor: isAutoFilled('checkIn') ? 'success.light' : undefined
+                    }
+                  }}
+                  helperText={isAutoFilled('checkIn') ? '✓ Auto-filled from voice' : ''}
                 />
-                {formData.checkIn && (
-                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-out Date
-                </label>
-                <input
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Check-out Date"
                   type="date"
                   value={formData.checkOut}
                   onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formData.checkOut ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                  }`}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderColor: isAutoFilled('checkOut') ? 'success.main' : undefined,
+                      bgcolor: isAutoFilled('checkOut') ? 'success.light' : undefined
+                    }
+                  }}
+                  helperText={isAutoFilled('checkOut') ? '✓ Auto-filled from voice' : ''}
                 />
-                {formData.checkOut && (
-                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
-                )}
-              </div>
-            </div>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Adults</InputLabel>
+                  <Select
+                    value={formData.adults}
+                    label="Adults"
+                    onChange={(e) => setFormData({...formData, adults: Number(e.target.value)})}
+                    sx={{
+                      borderColor: isAutoFilled('adults') ? 'success.main' : undefined,
+                      bgcolor: isAutoFilled('adults') ? 'success.light' : undefined
+                    }}
+                  >
+                    {[1,2,3,4,5,6].map(num => (
+                      <MenuItem key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</MenuItem>
+                    ))}
+                  </Select>
+                  {isAutoFilled('adults') && (
+                    <Typography variant="caption" color="success.main">
+                      ✓ Auto-filled from voice
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Children</InputLabel>
+                  <Select
+                    value={formData.children}
+                    label="Children"
+                    onChange={(e) => setFormData({...formData, children: Number(e.target.value)})}
+                    sx={{
+                      borderColor: isAutoFilled('children') ? 'success.main' : undefined,
+                      bgcolor: isAutoFilled('children') ? 'success.light' : undefined
+                    }}
+                  >
+                    {[0,1,2,3,4].map(num => (
+                      <MenuItem key={num} value={num}>{num} {num === 1 ? 'Child' : 'Children'}</MenuItem>
+                    ))}
+                  </Select>
+                  {isAutoFilled('children') && (
+                    <Typography variant="caption" color="success.main">
+                      ✓ Auto-filled from voice
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Box>
+        );
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Adults
-                </label>
-                <select
-                  value={formData.adults}
-                  onChange={(e) => setFormData({...formData, adults: parseInt(e.target.value)})}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formData.adults > 1 || initialData.adults ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                  }`}
-                >
-                  {[1,2,3,4,5,6].map(num => (
-                    <option key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</option>
-                  ))}
-                </select>
-                {(formData.adults > 1 || initialData.adults) && (
-                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Children
-                </label>
-                <select
-                  value={formData.children}
-                  onChange={(e) => setFormData({...formData, children: parseInt(e.target.value)})}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formData.children > 0 || initialData.children ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                  }`}
-                >
-                  {[0,1,2,3,4].map(num => (
-                    <option key={num} value={num}>{num} {num === 1 ? 'Child' : 'Children'}</option>
-                  ))}
-                </select>
-                {(formData.children > 0 || initialData.children) && (
-                  <p className="text-xs text-green-600 mt-1">✓ Auto-filled from voice</p>
-                )}
-              </div>
-            </div>
-          </div>
+      case 1:
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Hotel color="primary" />
+              Select Room
+            </Typography>
+            
+            <Grid container spacing={2}>
+              {roomTypes.map((room) => (
+                <Grid item xs={12} key={room.id}>
+                  <Card
+                    sx={{
+                      cursor: 'pointer',
+                      border: formData.roomType === room.name ? 2 : 1,
+                      borderColor: formData.roomType === room.name ? 'primary.main' : 'divider',
+                      bgcolor: formData.roomType === room.name ? 'primary.light' : 'background.paper',
+                      '&:hover': { borderColor: 'primary.main' }
+                    }}
+                    onClick={() => setFormData({...formData, roomType: room.name})}
+                  >
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {room.name}
+                        </Typography>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="h5" color="primary.main" fontWeight="bold">
+                            ${room.price}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            per night
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {formData.roomType === room.name && isAutoFilled('roomType') && (
+                        <Typography variant="caption" color="success.main">
+                          ✓ Auto-selected from voice
+                        </Typography>
+                      )}
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {room.description}
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {room.amenities.map((amenity, index) => (
+                          <Chip
+                            key={index}
+                            label={amenity}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
         );
 
       case 2:
         return (
-          <div className="space-y-6">
-            <div className="flex items-center mb-4">
-              <Hotel className="w-6 h-6 text-blue-600 mr-3" />
-              <h3 className="text-xl font-semibold text-gray-800">Select Room</h3>
-            </div>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <People color="primary" />
+              Guest Information
+            </Typography>
             
-            <div className="space-y-4">
-              {roomTypes.map((room) => (
-                <div
-                  key={room.id}
-                  onClick={() => setFormData({...formData, roomType: room.name})}
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                    formData.roomType === room.name
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-800">{room.name}</h4>
-                      {formData.roomType === room.name && initialData.roomType && (
-                        <p className="text-xs text-green-600">✓ Auto-selected from voice</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-blue-600">${room.price}</div>
-                      <div className="text-sm text-gray-500">per night</div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 mb-3">{room.description}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {room.amenities.map((amenity, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                      >
-                        {amenity}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  value={formData.guestName}
+                  onChange={(e) => setFormData({...formData, guestName: e.target.value})}
+                  placeholder="Enter your full name"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Phone Number"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="Enter phone number"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </Grid>
+            </Grid>
+          </Box>
         );
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="flex items-center mb-4">
-              <Users className="w-6 h-6 text-blue-600 mr-3" />
-              <h3 className="text-xl font-semibold text-gray-800">Guest Information</h3>
-            </div>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CreditCard color="primary" />
+              Payment Method
+            </Typography>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.guestName}
-                  onChange={(e) => setFormData({...formData, guestName: e.target.value})}
-                  placeholder="Enter your full name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    placeholder="Enter phone number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="Enter email address"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center mb-4">
-              <CreditCard className="w-6 h-6 text-blue-600 mr-3" />
-              <h3 className="text-xl font-semibold text-gray-800">Payment Method</h3>
-            </div>
-            
-            <div className="space-y-4">
+            <Grid container spacing={2} sx={{ mb: 3 }}>
               {paymentMethods.map((method) => (
-                <div
-                  key={method.id}
-                  onClick={() => setFormData({...formData, paymentMethod: method.name})}
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                    formData.paymentMethod === method.name
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <h4 className="text-lg font-semibold text-gray-800 mb-1">{method.name}</h4>
-                  <p className="text-gray-600 text-sm">{method.description}</p>
-                </div>
+                <Grid item xs={12} key={method.id}>
+                  <Card
+                    sx={{
+                      cursor: 'pointer',
+                      border: formData.paymentMethod === method.name ? 2 : 1,
+                      borderColor: formData.paymentMethod === method.name ? 'primary.main' : 'divider',
+                      bgcolor: formData.paymentMethod === method.name ? 'primary.light' : 'background.paper',
+                      '&:hover': { borderColor: 'primary.main' }
+                    }}
+                    onClick={() => setFormData({...formData, paymentMethod: method.name})}
+                  >
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        {method.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {method.description}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
               ))}
-            </div>
+            </Grid>
 
             {/* Booking Summary */}
-            <div className="bg-gray-50 rounded-lg p-4 mt-6">
-              <h4 className="font-semibold text-gray-800 mb-3">Booking Summary</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Check-in:</span>
-                  <span>{formData.checkIn}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Check-out:</span>
-                  <span>{formData.checkOut}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Guests:</span>
-                  <span>{formData.adults} adults, {formData.children} children</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Room:</span>
-                  <span>{formData.roomType}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Guest:</span>
-                  <span>{formData.guestName}</span>
-                </div>
-                <div className="flex justify-between font-semibold pt-2 border-t">
-                  <span>Payment:</span>
-                  <span>{formData.paymentMethod}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+            <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Booking Summary
+              </Typography>
+              <Grid container spacing={1}>
+                <Grid item xs={6}>
+                  <Typography variant="body2">Check-in:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="medium">{formData.checkIn}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">Check-out:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="medium">{formData.checkOut}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">Guests:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="medium">
+                    {formData.adults} adults, {formData.children} children
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">Room:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="medium">{formData.roomType}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2">Guest:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="medium">{formData.guestName}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="bold">Payment:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight="bold">{formData.paymentMethod}</Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Box>
         );
 
       default:
@@ -389,74 +447,66 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Make Reservation</h2>
-            <div className="flex items-center mt-2">
-              <span className="text-sm text-gray-600">Step {currentStep} of {totalSteps}</span>
-              <div className="ml-4 flex-1 max-w-xs">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <span className="ml-4 text-sm font-medium text-blue-600">
-                {Math.round((currentStep / totalSteps) * 100)}% Complete
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h5" fontWeight="bold">
+            Make Reservation
+          </Typography>
+          <IconButton onClick={onClose}>
+            <Close />
+          </IconButton>
+        </Box>
+        <Box sx={{ mt: 2 }}>
+          <Stepper activeStep={currentStep} alternativeLabel>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+          <LinearProgress 
+            variant="determinate" 
+            value={(currentStep + 1) / steps.length * 100} 
+            sx={{ mt: 2 }}
+          />
+        </Box>
+      </DialogTitle>
 
-        {/* Content */}
-        <div className="p-6">
-          {renderStep()}
-        </div>
+      <DialogContent>
+        {renderStepContent()}
+      </DialogContent>
 
-        {/* Footer */}
-        <div className="flex justify-between items-center p-6 border-t bg-gray-50">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-            className="px-6 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      <DialogActions sx={{ p: 3, bgcolor: 'grey.50' }}>
+        <Button
+          onClick={handleBack}
+          disabled={currentStep === 0}
+        >
+          Previous
+        </Button>
+        <Box sx={{ flex: 1 }} />
+        {currentStep < steps.length - 1 ? (
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            disabled={!canProceedToNext()}
           >
-            Previous
-          </button>
-          
-          {currentStep < totalSteps ? (
-            <button
-              onClick={handleNext}
-              disabled={!canProceedToNext()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={!canProceedToNext()}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Confirm Reservation
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+            Next
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleSubmit}
+            disabled={!canProceedToNext()}
+            startIcon={<CheckCircle />}
+          >
+            Confirm Reservation
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 };
 

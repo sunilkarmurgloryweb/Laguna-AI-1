@@ -1,5 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Mic, MicOff, Volume2, Globe, X, Minimize2, Send, Bot, User } from 'lucide-react';
+import {
+  Box,
+  Typography,
+  TextField,
+  IconButton,
+  Paper,
+  Avatar,
+  Button,
+  Chip,
+  CircularProgress,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Divider
+} from '@mui/material';
+import {
+  Mic,
+  MicOff,
+  Send,
+  SmartToy,
+  Person,
+  Language,
+  VolumeUp
+} from '@mui/icons-material';
 import { multilingualAI } from '../services/multilingualAIService';
 import voiceReservationService from '../services/voiceReservationService';
 
@@ -23,7 +48,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -85,12 +109,10 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
     multilingualAI.setLanguage(languageCode);
     setShowLanguageSelector(false);
     
-    // Update speech recognition language
     if (recognition) {
       recognition.lang = getLanguageCode(languageCode);
     }
     
-    // Add welcome message in selected language
     const welcomeMessage: Message = {
       id: Date.now().toString(),
       text: multilingualAI.getGreeting('welcome'),
@@ -100,7 +122,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
     };
     setMessages([welcomeMessage]);
     
-    // Speak welcome message
     await multilingualAI.speak(welcomeMessage.text, languageCode);
   };
 
@@ -111,13 +132,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
       return;
     }
 
-    // Auto-detect language from voice input
     const detectedLanguage = multilingualAI.detectLanguageFromText(transcript);
     if (detectedLanguage !== currentLanguage) {
       setCurrentLanguage(detectedLanguage);
       multilingualAI.setLanguage(detectedLanguage);
       
-      // Add language switch message
       const languageInfo = multilingualAI.getLanguageInfo(detectedLanguage);
       const switchMessage: Message = {
         id: Date.now().toString() + '_lang_switch',
@@ -129,7 +148,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
       setMessages(prev => [...prev, switchMessage]);
     }
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: transcript,
@@ -142,7 +160,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
     try {
       setIsProcessing(true);
       
-      // Process the voice command
       const response = await voiceReservationService.processVoiceCommand(
         transcript,
         currentLanguage,
@@ -150,7 +167,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
         detectedLanguage
       );
 
-      // Add AI response
       const aiMessage: Message = {
         id: Date.now().toString() + '_ai',
         text: response,
@@ -160,7 +176,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
       };
       setMessages(prev => [...prev, aiMessage]);
 
-      // Speak the response in the appropriate language
       await multilingualAI.speak(response, detectedLanguage);
       
     } catch (error) {
@@ -195,14 +210,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
   const handleTextInput = async (text: string) => {
     if (!text.trim()) return;
 
-    // Auto-detect language from text input
     const detectedLanguage = multilingualAI.detectLanguageFromText(text);
     if (detectedLanguage !== currentLanguage) {
       setCurrentLanguage(detectedLanguage);
       multilingualAI.setLanguage(detectedLanguage);
     }
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: text,
@@ -214,9 +227,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
 
     try {
       setIsProcessing(true);
-      setIsTyping(true);
       
-      // Process the text command
       const response = await voiceReservationService.processVoiceCommand(
         text,
         currentLanguage,
@@ -224,7 +235,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
         detectedLanguage
       );
 
-      // Add AI response
       const aiMessage: Message = {
         id: Date.now().toString() + '_ai',
         text: response,
@@ -234,7 +244,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
       };
       setMessages(prev => [...prev, aiMessage]);
 
-      // Speak the response
       await multilingualAI.speak(response, detectedLanguage);
       
     } catch (error) {
@@ -249,7 +258,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsProcessing(false);
-      setIsTyping(false);
     }
   };
 
@@ -267,146 +275,164 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onOpenModal }) => {
     }
   };
 
-  // Language Selection Screen
   if (showLanguageSelector) {
     return (
-      <div className="h-full flex flex-col bg-white">
-        <div className="p-6 text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Globe className="w-8 h-8 text-blue-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Choose Language</h3>
-          <p className="text-sm text-gray-600 mb-6">Select your preferred language</p>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 3 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Avatar sx={{ bgcolor: 'primary.light', width: 64, height: 64, mx: 'auto', mb: 2 }}>
+            <Language sx={{ fontSize: 32 }} />
+          </Avatar>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Choose Language
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Select your preferred language
+          </Typography>
+        </Box>
 
-          <div className="space-y-3">
-            {availableLanguages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => handleLanguageSelect(lang.code)}
-                className="w-full p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left"
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="text-xl">{lang.flag}</span>
-                  <div>
-                    <div className="font-medium text-gray-800">{lang.name}</div>
-                    <div className="text-xs text-gray-500">{lang.description}</div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+        <List sx={{ flex: 1 }}>
+          {availableLanguages.map((lang) => (
+            <ListItem
+              key={lang.code}
+              component={Paper}
+              sx={{ 
+                mb: 1, 
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'primary.light', color: 'primary.contrastText' }
+              }}
+              onClick={() => handleLanguageSelect(lang.code)}
+            >
+              <ListItemAvatar>
+                <Typography variant="h5">{lang.flag}</Typography>
+              </ListItemAvatar>
+              <ListItemText
+                primary={lang.name}
+                secondary={lang.description}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </Box>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {messages.map((message) => (
-          <div
+          <Box
             key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            sx={{
+              display: 'flex',
+              justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+              mb: 2
+            }}
           >
-            <div className={`flex items-start space-x-2 max-w-[80%]`}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, maxWidth: '80%' }}>
               {message.sender === 'ai' && (
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-blue-600" />
-                </div>
+                <Avatar sx={{ bgcolor: 'primary.light', width: 32, height: 32 }}>
+                  <SmartToy sx={{ fontSize: 16 }} />
+                </Avatar>
               )}
-              <div
-                className={`p-3 rounded-lg ${
-                  message.sender === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
+              <Paper
+                sx={{
+                  p: 1.5,
+                  bgcolor: message.sender === 'user' ? 'primary.main' : 'grey.100',
+                  color: message.sender === 'user' ? 'primary.contrastText' : 'text.primary'
+                }}
               >
-                <p className="text-sm">{message.text}</p>
-                <div className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <Typography variant="body2">{message.text}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Typography>
                   {message.language && message.language !== 'en' && (
-                    <span className="ml-2">
+                    <Typography variant="caption">
                       {availableLanguages.find(l => l.code === message.language)?.flag}
-                    </span>
+                    </Typography>
                   )}
-                </div>
-              </div>
+                </Box>
+              </Paper>
               {message.sender === 'user' && (
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-gray-600" />
-                </div>
+                <Avatar sx={{ bgcolor: 'grey.300', width: 32, height: 32 }}>
+                  <Person sx={{ fontSize: 16 }} />
+                </Avatar>
               )}
-            </div>
-          </div>
+            </Box>
+          </Box>
         ))}
         {isProcessing && (
-          <div className="flex justify-start">
-            <div className="flex items-start space-x-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <Bot className="w-4 h-4 text-blue-600" />
-              </div>
-              <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span className="text-sm">Processing...</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+              <Avatar sx={{ bgcolor: 'primary.light', width: 32, height: 32 }}>
+                <SmartToy sx={{ fontSize: 16 }} />
+              </Avatar>
+              <Paper sx={{ p: 1.5, bgcolor: 'grey.100' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={16} />
+                  <Typography variant="body2">Processing...</Typography>
+                </Box>
+              </Paper>
+            </Box>
+          </Box>
         )}
         <div ref={messagesEndRef} />
-      </div>
+      </Box>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 p-4">
-        <div className="flex items-center space-x-2">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message or use voice..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-              <span className="text-xs text-gray-500">
-                {availableLanguages.find(l => l.code === currentLanguage)?.flag}
-              </span>
-            </div>
-          </div>
-          <button
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Type your message or use voice..."
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Chip
+                    label={availableLanguages.find(l => l.code === currentLanguage)?.flag}
+                    size="small"
+                  />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <IconButton
             onClick={isListening ? stopVoiceRecognition : startVoiceRecognition}
             disabled={isProcessing}
-            className={`p-2 rounded-lg transition-colors ${
-              isListening
-                ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
-                : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-            }`}
+            color={isListening ? 'error' : 'default'}
+            sx={{ 
+              bgcolor: isListening ? 'error.light' : 'grey.200',
+              '&:hover': { bgcolor: isListening ? 'error.main' : 'grey.300' }
+            }}
           >
-            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-          </button>
-          <button
+            {isListening ? <MicOff /> : <Mic />}
+          </IconButton>
+          <IconButton
             onClick={handleSendMessage}
             disabled={!inputText.trim() || isProcessing}
-            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg transition-colors"
+            color="primary"
           >
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
+            <Send />
+          </IconButton>
+        </Box>
         
-        <div className="mt-2 text-center">
-          <button
+        <Box sx={{ textAlign: 'center' }}>
+          <Button
+            size="small"
+            startIcon={<Language />}
             onClick={() => setShowLanguageSelector(true)}
-            className="text-xs text-gray-500 hover:text-gray-700 flex items-center justify-center space-x-1"
+            sx={{ textTransform: 'none' }}
           >
-            <Globe className="w-3 h-3" />
-            <span>Change Language</span>
-          </button>
-        </div>
-      </div>
-    </div>
+            Change Language
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

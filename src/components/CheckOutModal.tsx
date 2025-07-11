@@ -1,5 +1,36 @@
 import React, { useState } from 'react';
-import { X, FileText, CreditCard, Receipt } from 'lucide-react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
+  Stepper,
+  Step,
+  StepLabel,
+  Grid,
+  Paper,
+  LinearProgress,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Divider
+} from '@mui/material';
+import {
+  Close,
+  Receipt,
+  CreditCard,
+  CheckCircle
+} from '@mui/icons-material';
 
 interface CheckOutModalProps {
   isOpen: boolean;
@@ -12,7 +43,7 @@ interface CheckOutModalProps {
   };
 }
 
-export const CheckOutModal: React.FC<CheckOutModalProps> = ({ 
+const CheckOutModal: React.FC<CheckOutModalProps> = ({ 
   isOpen, 
   onClose,
   guestData = {
@@ -22,8 +53,10 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
     checkOut: 'January 17, 2024'
   }
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
+  const [currentStep, setCurrentStep] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState('card');
+
+  const steps = ['Guest Folio', 'Payment Method', 'Checkout Confirmation'];
 
   const charges = [
     { description: 'Room Charge - Ocean View King Suite', date: '2024-01-15', amount: 299.00 },
@@ -33,268 +66,296 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
   ];
 
   const totalAmount = charges.reduce((sum, charge) => sum + charge.amount, 0);
-  const roomCharges = charges.filter(c => c.description.includes('Room Charge')).reduce((sum, c) => sum + c.amount, 0);
-  const services = charges.filter(c => !c.description.includes('Room Charge')).reduce((sum, c) => sum + c.amount, 0);
   const taxes = totalAmount * 0.12;
   const fees = 25.00;
   const finalTotal = totalAmount + taxes + fees;
 
   const handleNext = () => {
-    if (currentStep < totalSteps) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handlePrevious = () => {
-    if (currentStep > 1) {
+  const handleBack = () => {
+    if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
 
   const handleSettleBalance = () => {
-    // Handle checkout completion
     alert('Checkout completed successfully!');
     onClose();
   };
 
-  if (!isOpen) return null;
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Receipt color="primary" />
+              Guest Folio
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Review your charges and settle any outstanding balance.
+            </Typography>
+
+            {/* Guest Information */}
+            <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2" fontWeight="bold">Guest Information</Typography>
+                  <Typography variant="body2">Guest Name:</Typography>
+                  <Typography variant="body1" fontWeight="medium">{guestData.name}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2" fontWeight="bold">Room</Typography>
+                  <Typography variant="body1" fontWeight="medium">{guestData.room}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2" fontWeight="bold">Check In</Typography>
+                  <Typography variant="body1" fontWeight="medium">{guestData.checkIn}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2" fontWeight="bold">Check Out</Typography>
+                  <Typography variant="body1" fontWeight="medium">{guestData.checkOut}</Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {/* Charge Details */}
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+              Charge Details
+            </Typography>
+            <TableContainer component={Paper} sx={{ mb: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Description</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {charges.map((charge, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{charge.description}</TableCell>
+                      <TableCell>{charge.date}</TableCell>
+                      <TableCell align="right">${charge.amount.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Total Breakdown */}
+            <Paper sx={{ p: 2, bgcolor: 'primary.light' }}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+                Total Outstanding:
+              </Typography>
+              <Grid container spacing={1}>
+                <Grid item xs={8}>
+                  <Typography variant="body2">Subtotal</Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="body2" align="right">${totalAmount.toFixed(2)}</Typography>
+                </Grid>
+                <Grid item xs={8}>
+                  <Typography variant="body2">Taxes</Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="body2" align="right">${taxes.toFixed(2)}</Typography>
+                </Grid>
+                <Grid item xs={8}>
+                  <Typography variant="body2">Fees</Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="body2" align="right">${fees.toFixed(2)}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                </Grid>
+                <Grid item xs={8}>
+                  <Typography variant="h6" fontWeight="bold">Total Outstanding:</Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="h6" fontWeight="bold" color="primary.main" align="right">
+                    ${finalTotal.toFixed(2)}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Box>
+        );
+
+      case 1:
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CreditCard color="primary" />
+              Payment Method
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Select your preferred payment method to settle the outstanding balance.
+            </Typography>
+
+            <RadioGroup
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <Paper sx={{ p: 2, mb: 2 }}>
+                <FormControlLabel
+                  value="card"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body1" fontWeight="medium">
+                        Credit/Debit Card on File
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        **** **** **** 1234
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Paper>
+
+              <Paper sx={{ p: 2 }}>
+                <FormControlLabel
+                  value="cash"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body1" fontWeight="medium">
+                        Cash Payment
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Pay at front desk
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Paper>
+            </RadioGroup>
+
+            <Paper sx={{ p: 2, mt: 3, bgcolor: 'warning.light' }}>
+              <Typography variant="body2" color="warning.contrastText">
+                <strong>Note:</strong> Payment will be processed immediately upon confirmation.
+              </Typography>
+            </Paper>
+          </Box>
+        );
+
+      case 2:
+        return (
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              <CheckCircle color="success" />
+              Checkout Confirmation
+            </Typography>
+            
+            <Box sx={{ mb: 3 }}>
+              <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
+              <Typography variant="h5" fontWeight="bold" gutterBottom>
+                Ready to Check Out
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Please review your final charges and confirm checkout.
+              </Typography>
+            </Box>
+
+            <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+              <Grid container spacing={1}>
+                <Grid item xs={6}>
+                  <Typography variant="body1" fontWeight="medium">Total Amount:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="h5" fontWeight="bold" color="success.main" align="right">
+                    ${finalTotal.toFixed(2)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" align="right">
+                    {paymentMethod === 'card' ? 'Credit Card (**** 1234)' : 'Cash Payment'}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            <Paper sx={{ p: 2, bgcolor: 'primary.light' }}>
+              <Typography variant="body2" color="primary.contrastText">
+                <strong>Thank you for staying with us!</strong> We hope you enjoyed your experience at Lagunacreek Resort & Spa.
+              </Typography>
+            </Paper>
+          </Box>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">Guest Check-Out</h2>
-            <div className="flex items-center mt-2">
-              <span className="text-sm text-gray-600">Step {currentStep} of {totalSteps}</span>
-              <div className="ml-4 flex-1 max-w-xs">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <span className="ml-4 text-sm font-medium text-blue-600">
-                {Math.round((currentStep / totalSteps) * 100)}% Complete
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+    <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h5" fontWeight="bold">
+            Guest Check-Out
+          </Typography>
+          <IconButton onClick={onClose}>
+            <Close />
+          </IconButton>
+        </Box>
+        <Box sx={{ mt: 2 }}>
+          <Stepper activeStep={currentStep} alternativeLabel>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+          <LinearProgress 
+            variant="determinate" 
+            value={(currentStep + 1) / steps.length * 100} 
+            sx={{ mt: 2 }}
+          />
+        </Box>
+      </DialogTitle>
+
+      <DialogContent>
+        {renderStepContent()}
+      </DialogContent>
+
+      <DialogActions sx={{ p: 3, bgcolor: 'grey.50' }}>
+        <Button
+          onClick={handleBack}
+          disabled={currentStep === 0}
+        >
+          Previous
+        </Button>
+        <Box sx={{ flex: 1 }} />
+        {currentStep < steps.length - 1 ? (
+          <Button
+            variant="contained"
+            onClick={handleNext}
           >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {currentStep === 1 && (
-            <div>
-              <div className="flex items-center mb-6">
-                <FileText className="w-6 h-6 text-blue-600 mr-3" />
-                <h3 className="text-lg font-semibold text-gray-800">Guest Folio</h3>
-              </div>
-              <p className="text-gray-600 mb-6">
-                Review your charges and settle any outstanding balance.
-              </p>
-
-              {/* Guest Information */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">Guest Information</h4>
-                    <p className="text-sm text-gray-600">Guest Name:</p>
-                    <p className="font-medium">{guestData.name}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">Room</h4>
-                    <p className="font-medium">{guestData.room}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">Check In</h4>
-                    <p className="font-medium">{guestData.checkIn}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">Check Out</h4>
-                    <p className="font-medium">{guestData.checkOut}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Charge Details */}
-              <div className="mb-6">
-                <h4 className="font-medium text-gray-800 mb-4">Charge Details</h4>
-                <div className="space-y-3">
-                  {charges.map((charge, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <div>
-                        <p className="font-medium text-gray-800">{charge.description}</p>
-                        <p className="text-sm text-gray-500">{charge.date}</p>
-                      </div>
-                      <p className="font-medium text-gray-800">${charge.amount.toFixed(2)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Total Breakdown */}
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-3">Total Outstanding:</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Room Charges</span>
-                    <span>${roomCharges.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Services</span>
-                    <span>${services.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Taxes</span>
-                    <span>${taxes.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Fees</span>
-                    <span>${fees.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                    <span>Total Outstanding:</span>
-                    <span className="text-blue-600">${finalTotal.toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center text-xs text-gray-500">
-                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                  <span>Room Charges</span>
-                  <span className="w-3 h-3 bg-green-500 rounded-full ml-4 mr-2"></span>
-                  <span>Services</span>
-                  <span className="w-3 h-3 bg-yellow-500 rounded-full ml-4 mr-2"></span>
-                  <span>Taxes</span>
-                  <span className="w-3 h-3 bg-red-500 rounded-full ml-4 mr-2"></span>
-                  <span>Fees</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div>
-              <div className="flex items-center mb-6">
-                <CreditCard className="w-6 h-6 text-blue-600 mr-3" />
-                <h3 className="text-lg font-semibold text-gray-800">Payment Method</h3>
-              </div>
-              <p className="text-gray-600 mb-6">
-                Select your preferred payment method to settle the outstanding balance.
-              </p>
-
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors">
-                  <div className="flex items-center">
-                    <input type="radio" name="payment" id="card" className="mr-3" defaultChecked />
-                    <label htmlFor="card" className="flex-1 cursor-pointer">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Credit/Debit Card on File</p>
-                          <p className="text-sm text-gray-500">**** **** **** 1234</p>
-                        </div>
-                        <CreditCard className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="border rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors">
-                  <div className="flex items-center">
-                    <input type="radio" name="payment" id="cash" className="mr-3" />
-                    <label htmlFor="cash" className="flex-1 cursor-pointer">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Cash Payment</p>
-                          <p className="text-sm text-gray-500">Pay at front desk</p>
-                        </div>
-                        <Receipt className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> Payment will be processed immediately upon confirmation.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div>
-              <div className="flex items-center mb-6">
-                <Receipt className="w-6 h-6 text-green-600 mr-3" />
-                <h3 className="text-lg font-semibold text-gray-800">Checkout Confirmation</h3>
-              </div>
-              
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Receipt className="w-8 h-8 text-green-600" />
-                </div>
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">Ready to Check Out</h4>
-                <p className="text-gray-600">
-                  Please review your final charges and confirm checkout.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Total Amount:</span>
-                  <span className="text-xl font-bold text-green-600">${finalTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm text-gray-600">
-                  <span>Payment Method:</span>
-                  <span>Credit Card (**** 1234)</span>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Thank you for staying with us!</strong> We hope you enjoyed your experience at Lagunacreek Resort & Spa.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-between items-center p-6 border-t bg-gray-50">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            Next
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleSettleBalance}
           >
-            Previous
-          </button>
-          
-          {currentStep < totalSteps ? (
-            <button
-              onClick={handleNext}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              onClick={handleSettleBalance}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Settle Balance
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+            Settle Balance
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 };
 
-export default CheckOutModal
+export default CheckOutModal;
