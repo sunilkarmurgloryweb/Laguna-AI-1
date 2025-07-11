@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Mic, MicOff, Volume2, Globe, X, Minimize2, Send } from 'lucide-react';
 import { multilingualAI } from '../services/multilingualAIService';
-import { voiceReservationService } from '../services/voiceReservationService';
+import voiceReservationService from '../services/voiceReservationService';
 
 interface Message {
   id: string;
