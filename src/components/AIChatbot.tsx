@@ -74,6 +74,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
     
     // Speak welcome message in selected language
     const welcomeMessage = multilingualAI.getGreeting('welcome');
+    addMessage('ai', welcomeMessage);
     setTimeout(() => {
       multilingualAI.speak(welcomeMessage, languageCode);
     }, 500);
@@ -137,15 +138,15 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
   if (showLanguageSelector) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
           <div className="bg-blue-600 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                 <Globe className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold">Select Language</h3>
-                <p className="text-sm text-blue-100">Choose your preferred language</p>
+                <h3 className="font-semibold text-lg">Select Your Language</h3>
+                <p className="text-sm text-blue-100">Choose your preferred language for assistance</p>
               </div>
             </div>
             <button
@@ -157,17 +158,53 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
           </div>
 
           <div className="p-6">
-            <div className="grid grid-cols-1 gap-3">
+            <div className="text-center mb-6">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                Welcome to Lagunacreek Resort & Spa
+              </h4>
+              <p className="text-sm text-gray-600">
+                Our AI assistant speaks multiple languages. Please select your preferred language to continue.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
               {availableLanguages.map((lang) => (
                 <button
                   key={lang.code}
                   onClick={() => handleLanguageSelect(lang.code)}
-                  className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                  className="flex items-center space-x-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 hover:shadow-md group"
                 >
-                  <span className="text-2xl">{lang.flag}</span>
-                  <span className="font-medium text-gray-900">{lang.name}</span>
+                  <span className="text-3xl">{lang.flag}</span>
+                  <div className="flex-1 text-left">
+                    <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {lang.name}
+                    </span>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {lang.code === 'en' && 'English - Voice & Text Support'}
+                      {lang.code === 'es' && 'Español - Soporte de voz y texto'}
+                      {lang.code === 'hi' && 'हिंदी - आवाज और पाठ समर्थन'}
+                      {lang.code === 'fr' && 'Français - Support vocal et textuel'}
+                      {lang.code === 'de' && 'Deutsch - Sprach- und Textunterstützung'}
+                    </div>
+                  </div>
+                  <div className="w-6 h-6 border-2 border-gray-300 rounded-full group-hover:border-blue-500 transition-colors flex items-center justify-center">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </div>
                 </button>
               ))}
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-2 mb-2">
+                <Mic className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Voice Assistant Features</span>
+              </div>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>• Complete voice-powered reservations</li>
+                <li>• Natural language understanding</li>
+                <li>• Multi-language speech recognition</li>
+                <li>• Real-time voice responses</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -189,7 +226,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
               <p className="text-sm text-blue-100 flex items-center">
                 <span className="mr-2">{availableLanguages.find(l => l.code === currentLanguage)?.flag}</span>
                 {isTyping ? 'Typing...' : 'Online'}
-              </p>
+              {isTyping ? 'Typing...' : `Online - ${availableLanguages.find(l => l.code === currentLanguage)?.name}`}
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -303,6 +340,22 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
 
         {/* Input */}
         <div className="p-4 border-t">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <span className="flex items-center">
+                <span className="mr-1">{availableLanguages.find(l => l.code === currentLanguage)?.flag}</span>
+                Speaking in {availableLanguages.find(l => l.code === currentLanguage)?.name}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowLanguageSelector(true)}
+              className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+            >
+              <Globe className="w-3 h-3" />
+              <span>Change</span>
+            </button>
+          </div>
+          
           <div className="flex items-center space-x-2">
             <div className="flex-1 relative">
               <input

@@ -302,6 +302,24 @@ class MultilingualAIService {
     }));
   }
 
+  public getLanguageInfo(code: string): {code: string, name: string, flag: string, nativeName?: string} {
+    const config = languageConfigs[code];
+    const nativeNames: Record<string, string> = {
+      'en': 'English',
+      'es': 'Español', 
+      'hi': 'हिंदी',
+      'fr': 'Français',
+      'de': 'Deutsch'
+    };
+    
+    return {
+      code: config?.code || 'en',
+      name: config?.name || 'English',
+      flag: config?.flag || '🇺🇸',
+      nativeName: nativeNames[code] || 'English'
+    };
+  }
+
   public detectLanguageFromText(text: string): string {
     // Simple language detection based on common words/patterns
     const lowerText = text.toLowerCase();
