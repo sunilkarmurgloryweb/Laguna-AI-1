@@ -225,8 +225,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onClose }) => {
               <h3 className="font-semibold">AI Assistant</h3>
               <p className="text-sm text-blue-100 flex items-center">
                 <span className="mr-2">{availableLanguages.find(l => l.code === currentLanguage)?.flag}</span>
-                {isTyping ? 'Typing...' : 'Online'}
-              {isTyping ? 'Typing...' : `Online - ${availableLanguages.find(l => l.code === currentLanguage)?.name}`}
+                {isTyping ? 'Typing...' : `Online - ${availableLanguages.find(l => l.code === currentLanguage)?.name}`}
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
