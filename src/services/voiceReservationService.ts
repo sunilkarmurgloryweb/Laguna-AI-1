@@ -188,40 +188,38 @@ export class VoiceReservationService {
   private extractDatesWithYear(text: string): { checkIn?: string; checkOut?: string } {
     const dates: { checkIn?: string; checkOut?: string } = {};
     
-    // Enhanced patterns for date extraction with year support
-    const patterns = [
-      // "16 July to 18 July, 2025" or "16 July to 18 July 2025"
-      /(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+to\s+|\s+until\s+)(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:,?\s*(\d{4}))?/gi,
-      // "from 16 July to 18 July, 2025"
-      /from\s+(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+to\s+(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:,?\s*(\d{4}))?/gi,
-      // "July 16 to July 18, 2025"
-      /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\s+to\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:,?\s*(\d{4}))?/gi
-    ];
+    // Pattern 1: "16 July to 18 July, 2025" or "16 July to 18 July 2025"
+    const pattern1 = /(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+to\s+(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:,?\s*(\d{4}))?/gi;
+    let match = text.match(pattern1);
+    if (match) {
+      const year = match[5] ? parseInt(match[5]) : new Date().getFullYear();
+      dates.checkIn = this.formatDateWithYear(match[1], match[2], year);
+      dates.checkOut = this.formatDateWithYear(match[3], match[4], year);
+      return dates;
+    }
 
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match) {
-        const year = this.extractYear(text) || new Date().getFullYear();
-        
-        if (pattern.source.includes('from')) {
-          // "from 16 July to 18 July, 2025"
-          dates.checkIn = this.formatDateWithYear(match[1], match[2], year);
-          dates.checkOut = this.formatDateWithYear(match[3], match[4], year);
-        } else if (pattern.source.includes('january|february')) {
-          // "16 July to 18 July, 2025"
-          dates.checkIn = this.formatDateWithYear(match[1], match[2], year);
-          dates.checkOut = this.formatDateWithYear(match[3], match[4], year);
-        }
-        break;
-      }
+    // Pattern 2: "from 16 July to 18 July, 2025"
+    const pattern2 = /from\s+(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+to\s+(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:,?\s*(\d{4}))?/gi;
+    match = text.match(pattern2);
+    if (match) {
+      const year = match[5] ? parseInt(match[5]) : new Date().getFullYear();
+      dates.checkIn = this.formatDateWithYear(match[1], match[2], year);
+      dates.checkOut = this.formatDateWithYear(match[3], match[4], year);
+      return dates;
+    }
+
+    // Pattern 3: "July 16 to July 18, 2025"
+    const pattern3 = /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\s+to\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:,?\s*(\d{4}))?/gi;
+    match = text.match(pattern3);
+    if (match) {
+      const year = match[5] ? parseInt(match[5]) : new Date().getFullYear();
+      dates.checkIn = this.formatDateWithYear(match[2], match[1], year);
+      dates.checkOut = this.formatDateWithYear(match[4], match[3], year);
+      return dates;
     }
 
     // Fallback to simple extraction if complex patterns don't match
-    if (!dates.checkIn && !dates.checkOut) {
-      return this.extractDates(text);
-    }
-
-    return dates;
+    return this.extractDates(text);
   }
 
   private extractYear(text: string): number | null {
@@ -230,12 +228,17 @@ export class VoiceReservationService {
   }
 
   private formatDateWithYear(day: string, month: string, year: number): string {
+    // Validate inputs
+    if (!day || !month || !year) {
+      return '';
+    }
+
     const monthMap: { [key: string]: number } = {
       'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
       'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
     };
     
-    const monthIndex = monthMap[month.toLowerCase()];
+    const monthIndex = monthMap[month?.toLowerCase()];
     if (monthIndex !== undefined) {
       const date = new Date(year, monthIndex, parseInt(day));
       return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
@@ -244,29 +247,47 @@ export class VoiceReservationService {
     return `${day} ${month} ${year}`;
   }
 
+  // Helper function to convert word numbers to digits
+  private convertWordToNumber(word: string): number | null {
+    const wordMap: { [key: string]: number } = {
+      'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+      'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+      'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+      'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20
+    };
+    
+    return wordMap[word.toLowerCase()] || null;
+  }
+
   private extractGuestCount(text: string): { adults?: number; children?: number } {
     const guests: { adults?: number; children?: number } = {};
     
     // Extract adults
-    const adultMatch = text.match(/(\d+)\s*(adult|adults|guest|guests|person|people|वयस्क|अतिथि)/i);
+    const adultMatch = text.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(adult|adults|guest|guests|person|people|वयस्क|अतिथि)/i);
     if (adultMatch) {
-      guests.adults = parseInt(adultMatch[1]);
+      const count = parseInt(adultMatch[1]) || this.convertWordToNumber(adultMatch[1]);
+      if (count) guests.adults = count;
     }
     
     // Extract children
-    const childMatch = text.match(/(\d+)\s*(child|children|kid|kids|बच्चा|बच्चे)/i);
+    const childMatch = text.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(child|children|kid|kids|बच्चा|बच्चे)/i);
     if (childMatch) {
-      guests.children = parseInt(childMatch[1]);
+      const count = parseInt(childMatch[1]) || this.convertWordToNumber(childMatch[1]);
+      if (count) guests.children = count;
     }
     
     return guests;
   }
 
   private extractRoomType(text: string): string | undefined {
+    if (!text || typeof text !== 'string') {
+      return undefined;
+    }
+    
     const lowerText = text.toLowerCase();
     
     // Map voice input to exact room type names
-    if (lowerText.includes('deluxe') || lowerText.includes('delex')) {
+    if (lowerText.includes('deluxe') || lowerText.includes('delex') || lowerText.includes('delux')) {
       return 'Deluxe Garden Room';
     }
     if (lowerText.includes('ocean') && lowerText.includes('view')) {
@@ -362,6 +383,15 @@ export class VoiceReservationService {
     onOpenModal: (modalType: string, data?: any) => void,
     detectedLanguage: string
   ): Promise<string> {
+    // Validate input
+    if (!text || typeof text !== 'string') {
+      return detectedLanguage === 'hi' 
+        ? 'कृपया अपना संदेश दोहराएं।'
+        : detectedLanguage === 'es'
+        ? 'Por favor repite tu mensaje.'
+        : 'Please repeat your message.';
+    }
+
     try {
       const intent = this.detectIntent(text);
       
