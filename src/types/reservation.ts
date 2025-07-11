@@ -30,7 +30,7 @@ export interface RoomType {
   available: number;
 }
 
-export type Language = 'en' | 'es' | 'hi' | 'en-uk';
+export type Language = 'en' | 'es' | 'hi' | 'fr' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
 
 export type ReservationStep = 
   | 'language'

@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useAppDispatch } from './useAppDispatch';
 import { useAppSelector } from './useAppSelector';
+import { multilingualAI } from '../services/multilingualAIService';
 import {
   setVoiceState,
   setIsSupported,
@@ -9,7 +10,6 @@ import {
   clearError,
   setRecognition,
 } from '../store/slices/voiceSlice';
-import { getLanguageCode } from '../utils/voiceCommands';
 
 export const useVoiceRedux = () => {
   const dispatch = useAppDispatch();
@@ -25,7 +25,7 @@ export const useVoiceRedux = () => {
       
       recognitionInstance.continuous = false;
       recognitionInstance.interimResults = false;
-      recognitionInstance.lang = getLanguageCode(selectedLanguage);
+      recognitionInstance.lang = multilingualAI.getSpeechRecognitionLanguage();
       
       recognitionInstance.onstart = () => {
         dispatch(setVoiceState('listening'));
@@ -71,22 +71,20 @@ export const useVoiceRedux = () => {
   const speak = useCallback((text: string, lang?: string) => {
     if ('speechSynthesis' in window) {
       dispatch(setVoiceState('speaking'));
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang || getLanguageCode(selectedLanguage);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
       
-      utterance.onend = () => {
+      multilingualAI.speak(text, lang).then(() => {
         dispatch(setVoiceState('idle'));
-      };
-      
-      speechSynthesis.speak(utterance);
+      }).catch((error) => {
+        console.error('Speech error:', error);
+        dispatch(setVoiceState('idle'));
+      });
     }
-  }, [dispatch, selectedLanguage]);
+  }, [dispatch]);
 
   const setLanguage = useCallback((lang: string) => {
+    multilingualAI.setLanguage(lang);
     if (recognition) {
-      recognition.lang = lang;
+      recognition.lang = multilingualAI.getSpeechRecognitionLanguage();
     }
   }, [recognition]);
 
