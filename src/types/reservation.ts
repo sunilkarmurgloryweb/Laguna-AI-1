@@ -43,3 +43,23 @@ export type ReservationStep =
   | 'confirmation';
 
 export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
+
+export interface CheckInData {
+  guestName?: string;
+  email?: string;
+  phone?: string;
+  confirmationNumber?: string;
+}
+
+export interface CheckOutData {
+  roomNumber?: string;
+  guestName?: string;
+}
+
+export interface RoomAvailabilityData {
+  checkInDate?: string;
+  checkOutDate?: string;
+  adults?: number;
+  children?: number;
+  roomType?: string;
+}

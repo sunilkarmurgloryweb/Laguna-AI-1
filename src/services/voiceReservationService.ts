@@ -284,7 +284,6 @@ export class VoiceReservationService {
     // Default to English
     return 'en';
   }
-}
 
   // Process voice command and handle modal opening
   public async processVoiceCommand(
@@ -341,5 +340,6 @@ export class VoiceReservationService {
       return await multilingualAI.getResponse('error', {}, detectedLanguage);
     }
   }
+}
 
 export default VoiceReservationService.getInstance();
