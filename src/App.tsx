@@ -6,7 +6,9 @@ import HotelHomepage from './components/HotelHomepage';
 function App() {
   return (
     <Provider store={store}>
-      <HotelHomepage />
+      <div className="min-h-screen bg-gray-50">
+        <HotelHomepage />
+      </div>
     </Provider>
   );
 }

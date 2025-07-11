@@ -88,8 +88,10 @@ const HotelHomepage: React.FC = () => {
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
+  const [showRoomAvailabilityModal, setShowRoomAvailabilityModal] = useState(false);
   const [aiPanelWidth, setAiPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
+  const [modalData, setModalData] = useState<any>({});
 
   const accommodations = [
     {
@@ -198,6 +200,7 @@ const HotelHomepage: React.FC = () => {
   }, [isResizing]);
 
   const handleOpenModal = (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: any) => {
+    setModalData(data || {});
     switch (modalType) {
       case 'reservation':
         setShowReservationModal(true);
@@ -209,7 +212,10 @@ const HotelHomepage: React.FC = () => {
         setShowCheckOutModal(true);
         break;
       case 'availability':
-        // Handle availability modal
+        setShowRoomAvailabilityModal(true);
+        break;
+      default:
+        console.warn('Unknown modal type:', modalType);
         break;
     }
   };
@@ -550,20 +556,34 @@ const HotelHomepage: React.FC = () => {
 
       {/* Modals */}
       {showReservationModal && (
-        <ReservationModal onClose={() => setShowReservationModal(false)} />
+        <ReservationModal 
+          isOpen={showReservationModal}
+          onClose={() => setShowReservationModal(false)}
+          initialData={modalData}
+        />
       )}
       
       {showCheckInModal && (
         <CheckInModal 
           isOpen={showCheckInModal}
-          onClose={() => setShowCheckInModal(false)} 
+          onClose={() => setShowCheckInModal(false)}
+          guestData={modalData}
         />
       )}
       
       {showCheckOutModal && (
         <CheckOutModal 
           isOpen={showCheckOutModal}
-          onClose={() => setShowCheckOutModal(false)} 
+          onClose={() => setShowCheckOutModal(false)}
+          guestData={modalData}
+        />
+      )}
+      
+      {showRoomAvailabilityModal && (
+        <RoomAvailabilityModal 
+          isOpen={showRoomAvailabilityModal}
+          onClose={() => setShowRoomAvailabilityModal(false)}
+          availabilityData={modalData}
         />
       )}
     </Box>
