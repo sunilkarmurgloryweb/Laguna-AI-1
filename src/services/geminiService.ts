@@ -14,7 +14,7 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: string; // Changed to string for serialization
+  timestamp: Date | string;
   extractedData?: Record<string, any>;
   formFilled?: boolean;
 }

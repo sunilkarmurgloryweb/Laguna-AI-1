@@ -34,6 +34,7 @@ import AIChatbot from './AIChatbot';
 import ReservationModal from './ReservationModal';
 import CheckInModal from './CheckInModal';
 import CheckOutModal from './CheckOutModal';
+import RoomAvailabilityModal from './RoomAvailabilityModal';
 
 const ResizeHandle = styled(Box)(({ theme }) => ({
   width: 4,
@@ -201,6 +202,8 @@ const HotelHomepage: React.FC = () => {
 
   const handleOpenModal = (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: any) => {
     setModalData(data || {});
+    console.log(modalType, "modalType");
+    
     switch (modalType) {
       case 'reservation':
         setShowReservationModal(true);
@@ -580,7 +583,7 @@ const HotelHomepage: React.FC = () => {
       )}
       
       {showRoomAvailabilityModal && (
-        <RoomAvailabilityModal 
+        <RoomAvailabilityModal
           isOpen={showRoomAvailabilityModal}
           onClose={() => setShowRoomAvailabilityModal(false)}
           availabilityData={modalData}
