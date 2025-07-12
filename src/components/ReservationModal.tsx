@@ -41,6 +41,7 @@ import VoiceInput from './VoiceInput';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { updateReservationData } from '../store/slices/reservationSlice';
 import { ProcessedVoiceResponse, VoiceProcessedData } from '../types/reservation';
+import { FormDataWithDayjs, ConvertDayjsToString } from '../types/reservation';
 
 interface ReservationModalProps {
   isOpen?: boolean;
@@ -59,7 +60,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   
   const dispatch = useAppDispatch();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataWithDayjs>({
     checkIn: initialData.checkIn ? dayjs(initialData.checkIn) : null,
     checkOut: initialData.checkOut ? dayjs(initialData.checkOut) : null,
     adults: initialData.adults || 1,
@@ -71,6 +72,19 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     paymentMethod: initialData.paymentMethod || ''
   });
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
+
+  // Convert formData to VoiceProcessedData format for voice input
+  const getVoiceCompatibleData = (): VoiceProcessedData => ({
+    checkIn: formData.checkIn?.format('YYYY-MM-DD'),
+    checkOut: formData.checkOut?.format('YYYY-MM-DD'),
+    adults: formData.adults,
+    children: formData.children,
+    roomType: formData.roomType,
+    guestName: formData.guestName,
+    phone: formData.phone,
+    email: formData.email,
+    paymentMethod: formData.paymentMethod
+  });
 
   const steps = ['Dates & Guests', 'Room Selection', 'Guest Information', 'Payment Method'];
 
@@ -169,7 +183,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     const voiceResult = result as ProcessedVoiceResponse;
     
     if (voiceResult.extractedData) {
-      const updates: Partial<typeof formData> = {};
+      const updates: Partial<FormDataWithDayjs> = {};
       const newVoiceFields = new Set(voiceFilledFields);
       
       // Map extracted data to form fields
@@ -258,7 +272,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               <VoiceInput
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="dates-guests"
-                reservationData={formData}
+                reservationData={getVoiceCompatibleData()}
                 size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
@@ -357,7 +371,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               <VoiceInput
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="room-selection"
-                reservationData={formData}
+                reservationData={getVoiceCompatibleData()}
                 size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
@@ -443,7 +457,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               <VoiceInput
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="guest-info"
-                reservationData={formData}
+                reservationData={getVoiceCompatibleData()}
                 size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
@@ -504,7 +518,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               <VoiceInput
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="payment"
-                reservationData={formData}
+                reservationData={getVoiceCompatibleData()}
                 size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
