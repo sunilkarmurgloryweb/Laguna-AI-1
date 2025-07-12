@@ -398,6 +398,9 @@ class MultilingualAIService {
         return;
       }
 
+      // Stop any currently speaking utterance
+      speechSynthesis.cancel();
+
       const lang = languageCode || this.currentLanguage;
       const utterance = new SpeechSynthesisUtterance(text);
       
@@ -413,7 +416,10 @@ class MultilingualAIService {
       utterance.onend = () => resolve();
       utterance.onerror = (event) => reject(event.error);
 
-      speechSynthesis.speak(utterance);
+      // Small delay to ensure previous speech is cancelled
+      setTimeout(() => {
+        speechSynthesis.speak(utterance);
+      }, 100);
     });
   }
 

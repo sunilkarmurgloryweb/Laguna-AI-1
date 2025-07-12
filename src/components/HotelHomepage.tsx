@@ -384,7 +384,6 @@ const HotelHomepage: React.FC = () => {
             onOpenModal={handleOpenModal}
             context={`hotel_general_${currentLanguage}`}
             onReceiveMessage={setAiMessageHandler}
-            onReceiveMessage={setAiMessageHandler}
           />
         </Box>
       </Box>

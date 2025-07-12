@@ -184,6 +184,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
       // Send success message to AI chatbot (will handle both display and speech)
       if (onAIMessage) {
         const fullMessage = `🎉 ${successMessage}\n\n✅ Reservation Details:\n• Guest: ${formData.guestName}\n• Room: ${formData.roomType}\n• Check-in: ${formData.checkIn?.format('MMM DD, YYYY')}\n• Check-out: ${formData.checkOut?.format('MMM DD, YYYY')}\n• Guests: ${formData.adults} adults, ${formData.children} children\n• Payment: ${formData.paymentMethod}\n\n📧 You will receive a confirmation email shortly.\n📱 SMS confirmation will follow.`;
+        // Ensure speech is enabled by passing true for shouldSpeak
         onAIMessage(fullMessage, true);
       }
       
