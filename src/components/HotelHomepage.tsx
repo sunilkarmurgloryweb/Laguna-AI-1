@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from "react";
 import {
   Box,
   AppBar,
@@ -23,9 +23,9 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Fab
-} from '@mui/material';
-import { Grid } from '@mui/material';
+  Fab,
+} from "@mui/material";
+import { Grid } from "@mui/material";
 import {
   Search,
   Notifications,
@@ -38,50 +38,50 @@ import {
   Menu as MenuIcon,
   Chat,
   Language,
-  Close
-} from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
-import AIChatbot from './AIChatbot';
-import ReservationModal from './ReservationModal';
-import CheckInModal from './CheckInModal';
-import CheckOutModal from './CheckOutModal';
-import RoomAvailabilityModal from './RoomAvailabilityModal';
-import LanguageSelector from './LanguageSelector';
-import { multilingualAI } from '../services/multilingualAIService';
-import { ModalType, VoiceProcessedData } from '../types/reservation';
+  Close,
+} from "@mui/icons-material";
+import { styled } from "@mui/material/styles";
+import AIChatbot from "./AIChatbot";
+import ReservationModal from "./ReservationModal";
+import CheckInModal from "./CheckInModal";
+import CheckOutModal from "./CheckOutModal";
+import RoomAvailabilityModal from "./RoomAvailabilityModal";
+import LanguageSelector from "./LanguageSelector";
+import { multilingualAI } from "../services/multilingualAIService";
+import { ModalType, VoiceProcessedData } from "../types/reservation";
 
 const ResizeHandle = styled(Box)(({ theme }) => ({
   width: 4,
   backgroundColor: theme.palette.divider,
-  cursor: 'col-resize',
-  position: 'relative',
-  display: 'none',
-  [theme.breakpoints.up('lg')]: {
-    display: 'block',
+  cursor: "col-resize",
+  position: "relative",
+  display: "none",
+  [theme.breakpoints.up("lg")]: {
+    display: "block",
   },
-  '&:hover': {
+  "&:hover": {
     backgroundColor: theme.palette.primary.main,
-    '& .resize-indicator': {
+    "& .resize-indicator": {
       opacity: 1,
     },
   },
-  '& .resize-indicator': {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
+  "& .resize-indicator": {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
     opacity: 0,
-    transition: 'opacity 0.2s',
-    display: 'flex',
+    transition: "opacity 0.2s",
+    display: "flex",
     gap: 1,
   },
 }));
 
 const StatsCard = styled(Card)(({ theme }) => ({
-  height: '100%',
-  transition: 'transform 0.2s, box-shadow 0.2s',
-  '&:hover': {
-    transform: 'translateY(-2px)',
+  height: "100%",
+  transition: "transform 0.2s, box-shadow 0.2s",
+  "&:hover": {
+    transform: "translateY(-2px)",
     boxShadow: theme.shadows[4],
   },
 }));
@@ -89,52 +89,59 @@ const StatsCard = styled(Card)(({ theme }) => ({
 const ActionButton = styled(Button)(({ theme }) => ({
   height: 56,
   borderRadius: theme.spacing(1.5),
-  textTransform: 'none',
-  fontSize: '0.9rem',
+  textTransform: "none",
+  fontSize: "0.9rem",
   fontWeight: 600,
-  [theme.breakpoints.up('md')]: {
+  [theme.breakpoints.up("md")]: {
     height: 64,
-    fontSize: '1rem',
+    fontSize: "1rem",
   },
 }));
 
 const RoomCard = styled(Card)(({ theme }) => ({
-  height: '100%',
-  transition: 'transform 0.2s, box-shadow 0.2s',
-  '&:hover': {
-    transform: 'translateY(-2px)',
+  height: "100%",
+  transition: "transform 0.2s, box-shadow 0.2s",
+  "&:hover": {
+    transform: "translateY(-2px)",
     boxShadow: theme.shadows[4],
   },
 }));
 
 const ChatFab = styled(Fab)(({ theme }) => ({
-  position: 'fixed',
+  position: "fixed",
   bottom: theme.spacing(2),
   right: theme.spacing(2),
   zIndex: 1000,
-  [theme.breakpoints.up('lg')]: {
-    display: 'none',
+  [theme.breakpoints.up("lg")]: {
+    display: "none",
   },
 }));
 
 const HotelHomepage: React.FC = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("md", "lg"));
+  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
-  const [showRoomAvailabilityModal, setShowRoomAvailabilityModal] = useState(false);
+  const [showRoomAvailabilityModal, setShowRoomAvailabilityModal] =
+    useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [aiPanelWidth, setAiPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const [modalData, setModalData] = useState<VoiceProcessedData>({});
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [aiMessageHandler, setAiMessageHandler] = useState<((message: string, shouldSpeak?: boolean) => void) | null>(null);
+  const [currentLanguage, setCurrentLanguage] = useState("en");
+  const [processCompleteData, setProcessCompleteData] = useState<{
+    modelType: string;
+    condfirmationData: unknown;
+  } | null>(null);
+  const [aiMessageHandler, setAiMessageHandler] = useState<
+    ((message: string, shouldSpeak?: boolean) => void) | null
+  >(null);
 
   const accommodations = [
     {
@@ -145,7 +152,7 @@ const HotelHomepage: React.FC = () => {
       amenities: ["Ocean View", "Balcony", "Kitchenette", "Mini Bar", "WiFi"],
       available: true,
       status: "Available",
-      roomNumber: "205"
+      roomNumber: "205",
     },
     {
       name: "Deluxe Garden Room",
@@ -155,27 +162,39 @@ const HotelHomepage: React.FC = () => {
       amenities: ["Garden View", "Work Desk", "Coffee Maker", "WiFi"],
       available: true,
       status: "Occupied",
-      roomNumber: "102"
+      roomNumber: "102",
     },
     {
       name: "Family Oceanfront Suite",
       price: 399,
       period: "per night",
       capacity: "Up to 4 adults, 2 children",
-      amenities: ["Ocean View", "Separate Living Area", "Kitchenette", "Mini Bar", "WiFi"],
+      amenities: [
+        "Ocean View",
+        "Separate Living Area",
+        "Kitchenette",
+        "Mini Bar",
+        "WiFi",
+      ],
       available: true,
       status: "Maintenance",
-      roomNumber: "301"
+      roomNumber: "301",
     },
     {
       name: "Presidential Suite",
       price: 599,
       period: "per night",
       capacity: "Up to 4 adults, 2 children",
-      amenities: ["Panoramic Ocean View", "Private Terrace", "Jacuzzi", "Butler Service", "WiFi"],
+      amenities: [
+        "Panoramic Ocean View",
+        "Private Terrace",
+        "Jacuzzi",
+        "Butler Service",
+        "WiFi",
+      ],
       available: true,
       status: "Available",
-      roomNumber: "401"
+      roomNumber: "401",
     },
     {
       name: "Standard Double Room",
@@ -185,27 +204,38 @@ const HotelHomepage: React.FC = () => {
       amenities: ["City View", "Double Bed", "Work Desk", "WiFi"],
       available: true,
       status: "Cleaning",
-      roomNumber: "103"
+      roomNumber: "103",
     },
     {
       name: "Luxury Spa Suite",
       price: 449,
       period: "per night",
       capacity: "Up to 2 adults, 1 children",
-      amenities: ["Ocean View", "Private Spa", "Balcony", "Kitchenette", "WiFi"],
+      amenities: [
+        "Ocean View",
+        "Private Spa",
+        "Balcony",
+        "Kitchenette",
+        "WiFi",
+      ],
       available: true,
       status: "Available",
-      roomNumber: "302"
-    }
+      roomNumber: "302",
+    },
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Available': return 'success';
-      case 'Occupied': return 'error';
-      case 'Maintenance': return 'warning';
-      case 'Cleaning': return 'info';
-      default: return 'default';
+      case "Available":
+        return "success";
+      case "Occupied":
+        return "error";
+      case "Maintenance":
+        return "warning";
+      case "Cleaning":
+        return "info";
+      default:
+        return "default";
     }
   };
 
@@ -217,11 +247,11 @@ const HotelHomepage: React.FC = () => {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing || !isDesktop) return;
-    
+
     const newWidth = window.innerWidth - e.clientX;
     const minWidth = 300;
     const maxWidth = window.innerWidth * 0.6;
-    
+
     if (newWidth >= minWidth && newWidth <= maxWidth) {
       setAiPanelWidth(newWidth);
     }
@@ -233,43 +263,54 @@ const HotelHomepage: React.FC = () => {
 
   React.useEffect(() => {
     if (isResizing && isDesktop) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
       };
     }
   }, [isResizing, isDesktop]);
 
   const handleOpenModal = (modalType: ModalType, data?: VoiceProcessedData) => {
-    console.log('📱 Opening modal:', modalType, 'with data:', data);
-    
+    console.log("📱 Opening modal:", modalType, "with data:", data);
+
     setModalData(data || {});
-    
+
     switch (modalType) {
-      case 'reservation':
-        console.log('✅ Opening Reservation Modal');
+      case "reservation":
+        console.log("✅ Opening Reservation Modal");
         setShowReservationModal(true);
         break;
-      case 'checkin':
-        console.log('✅ Opening Check-in Modal');
+      case "checkin":
+        console.log("✅ Opening Check-in Modal");
         setShowCheckInModal(true);
         break;
-      case 'checkout':
-        console.log('✅ Opening Check-out Modal');
+      case "checkout":
+        console.log("✅ Opening Check-out Modal");
         setShowCheckOutModal(true);
         break;
-      case 'availability':
-        console.log('✅ Opening Availability Modal');
+      case "availability":
+        console.log("✅ Opening Availability Modal");
         setShowRoomAvailabilityModal(true);
         break;
       default:
-        console.warn('Unknown modal type:', modalType);
+        console.warn("Unknown modal type:", modalType);
         break;
     }
   };
+
+  const handleProcessCompleted = useCallback(
+    (modelType: ModalType, condfirmationData: any) => {
+      console.log(modelType, condfirmationData);
+      setProcessCompleteData({
+        modelType,
+        condfirmationData,
+      });
+    },
+    []
+  );
 
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
@@ -287,41 +328,51 @@ const HotelHomepage: React.FC = () => {
       open={mobileDrawerOpen}
       onClose={() => setMobileDrawerOpen(false)}
       sx={{
-        '& .MuiDrawer-paper': {
+        "& .MuiDrawer-paper": {
           width: 280,
-          boxSizing: 'border-box',
+          boxSizing: "border-box",
         },
       }}
     >
       <Box sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+          <Avatar sx={{ bgcolor: "primary.main", mr: 2 }}>
             <Hotel />
           </Avatar>
           <Typography variant="h6" fontWeight="bold">
             Lagunacreek PMS
           </Typography>
         </Box>
-        
+
         <List>
           <ListItem onClick={() => setShowReservationModal(true)}>
-            <ListItemIcon><CalendarToday /></ListItemIcon>
+            <ListItemIcon>
+              <CalendarToday />
+            </ListItemIcon>
             <ListItemText primary="New Reservation" />
           </ListItem>
           <ListItem onClick={() => setShowCheckInModal(true)}>
-            <ListItemIcon><People /></ListItemIcon>
+            <ListItemIcon>
+              <People />
+            </ListItemIcon>
             <ListItemText primary="Check In" />
           </ListItem>
           <ListItem onClick={() => setShowCheckOutModal(true)}>
-            <ListItemIcon><CreditCard /></ListItemIcon>
+            <ListItemIcon>
+              <CreditCard />
+            </ListItemIcon>
             <ListItemText primary="Check Out" />
           </ListItem>
           <ListItem onClick={() => setShowRoomAvailabilityModal(true)}>
-            <ListItemIcon><Search /></ListItemIcon>
+            <ListItemIcon>
+              <Search />
+            </ListItemIcon>
             <ListItemText primary="Room Availability" />
           </ListItem>
           <ListItem onClick={() => setShowLanguageSelector(true)}>
-            <ListItemIcon><Language /></ListItemIcon>
+            <ListItemIcon>
+              <Language />
+            </ListItemIcon>
             <ListItemText primary="Language" />
           </ListItem>
         </List>
@@ -335,31 +386,35 @@ const HotelHomepage: React.FC = () => {
       open={chatDrawerOpen}
       onClose={() => setChatDrawerOpen(false)}
       sx={{
-        '& .MuiDrawer-paper': {
-          width: '100vw',
-          [theme.breakpoints.up('sm')]: {
+        "& .MuiDrawer-paper": {
+          width: "100vw",
+          [theme.breakpoints.up("sm")]: {
             width: 400,
           },
-          boxSizing: 'border-box',
-          height: '100vh',
-          maxHeight: '100vh',
-          overflow: 'hidden'
+          boxSizing: "border-box",
+          height: "100vh",
+          maxHeight: "100vh",
+          overflow: "hidden",
         },
       }}
     >
-      <Box sx={{ 
-        height: '100%',
-        maxHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
-      }}>
-        <Box sx={{ 
-          flex: 1, 
-          overflow: 'hidden',
-          maxHeight: 'calc(100vh - 80px)'
-        }}>
-          <AIChatbot 
+      <Box
+        sx={{
+          height: "100%",
+          maxHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "hidden",
+            maxHeight: "calc(100vh - 80px)",
+          }}
+        >
+          <AIChatbot
             onOpenModal={handleOpenModal}
             context={`hotel_general_${currentLanguage}`}
             onReceiveMessage={setAiMessageHandler}
@@ -368,10 +423,16 @@ const HotelHomepage: React.FC = () => {
       </Box>
     </Drawer>
   );
-  console.log(showReservationModal, "showReservationModal");
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.50' }}>
+    <Box
+      sx={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "grey.50",
+      }}
+    >
       {/* Full Width Header */}
       <AppBar position="static" color="default" elevation={1}>
         <Toolbar sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
@@ -384,21 +445,31 @@ const HotelHomepage: React.FC = () => {
               <MenuIcon />
             </IconButton>
           )}
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Avatar sx={{ bgcolor: 'primary.main', mr: 2, width: 40, height: 40 }}>
+
+          <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+            <Avatar
+              sx={{ bgcolor: "primary.main", mr: 2, width: 40, height: 40 }}
+            >
               <Hotel />
             </Avatar>
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
               <Typography variant="h6" component="h1" fontWeight="bold">
                 Lagunacreek PMS
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "flex", alignItems: "center" }}
+                >
                   <LocationOn sx={{ fontSize: 14, mr: 0.5 }} />
                   Resort & Spa Management
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: { xs: "none", md: "block" } }}
+                >
                   📞 +1 (555) 123-4567
                 </Typography>
               </Box>
@@ -406,7 +477,13 @@ const HotelHomepage: React.FC = () => {
           </Box>
 
           {/* Header Actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: { xs: 1, sm: 2 },
+            }}
+          >
             {!isMobile && (
               <TextField
                 size="small"
@@ -421,25 +498,29 @@ const HotelHomepage: React.FC = () => {
                 }}
               />
             )}
-            
+
             <IconButton onClick={() => setShowLanguageSelector(true)}>
               <Language />
             </IconButton>
-            
+
             <IconButton>
               <Badge badgeContent={4} color="error">
                 <Notifications />
               </Badge>
             </IconButton>
-            
+
             {!isMobile && (
               <>
                 <IconButton>
                   <Settings />
                 </IconButton>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Rating value={4.8} precision={0.1} size="small" readOnly />
-                  <Typography variant="body2" fontWeight="medium" sx={{ display: { xs: 'none', lg: 'block' } }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight="medium"
+                    sx={{ display: { xs: "none", lg: "block" } }}
+                  >
                     4.8 Rating
                   </Typography>
                 </Box>
@@ -450,91 +531,182 @@ const HotelHomepage: React.FC = () => {
       </AppBar>
 
       {/* Main Content Area */}
-      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Left Side - Main App */}
-        <Box 
-          sx={{ 
-            flex: 1, 
-            overflow: 'auto', 
-            width: isDesktop ? `calc(100% - ${aiPanelWidth}px)` : '100%',
-            p: { xs: 1, sm: 2, md: 3 }
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "auto",
+            width: isDesktop ? `calc(100% - ${aiPanelWidth}px)` : "100%",
+            p: { xs: 1, sm: 2, md: 3 },
           }}
         >
           {/* Dashboard Stats */}
-          <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
+          <Grid
+            container
+            spacing={{ xs: 2, md: 3 }}
+            sx={{ mb: { xs: 3, md: 4 } }}
+          >
             <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <Box>
-                      <Typography color="text.secondary" variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+                      <Typography
+                        color="text.secondary"
+                        variant="body2"
+                        sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}
+                      >
                         Total Rooms
                       </Typography>
-                      <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+                      <Typography
+                        variant="h4"
+                        fontWeight="bold"
+                        sx={{ fontSize: { xs: "1.5rem", md: "2.125rem" } }}
+                      >
                         156
                       </Typography>
                     </Box>
-                    <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', width: { xs: 32, md: 40 }, height: { xs: 32, md: 40 } }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: "primary.light",
+                        color: "primary.main",
+                        width: { xs: 32, md: 40 },
+                        height: { xs: 32, md: 40 },
+                      }}
+                    >
                       <People sx={{ fontSize: { xs: 16, md: 20 } }} />
                     </Avatar>
                   </Box>
                 </CardContent>
               </StatsCard>
             </Grid>
-            
+
             <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <Box>
-                      <Typography color="text.secondary" variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+                      <Typography
+                        color="text.secondary"
+                        variant="body2"
+                        sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}
+                      >
                         Occupied
                       </Typography>
-                      <Typography variant="h4" fontWeight="bold" color="success.main" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+                      <Typography
+                        variant="h4"
+                        fontWeight="bold"
+                        color="success.main"
+                        sx={{ fontSize: { xs: "1.5rem", md: "2.125rem" } }}
+                      >
                         124
                       </Typography>
                     </Box>
-                    <Avatar sx={{ bgcolor: 'success.light', color: 'success.main', width: { xs: 32, md: 40 }, height: { xs: 32, md: 40 } }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: "success.light",
+                        color: "success.main",
+                        width: { xs: 32, md: 40 },
+                        height: { xs: 32, md: 40 },
+                      }}
+                    >
                       <CalendarToday sx={{ fontSize: { xs: 16, md: 20 } }} />
                     </Avatar>
                   </Box>
                 </CardContent>
               </StatsCard>
             </Grid>
-            
+
             <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <Box>
-                      <Typography color="text.secondary" variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+                      <Typography
+                        color="text.secondary"
+                        variant="body2"
+                        sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}
+                      >
                         Available
                       </Typography>
-                      <Typography variant="h4" fontWeight="bold" color="primary.main" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+                      <Typography
+                        variant="h4"
+                        fontWeight="bold"
+                        color="primary.main"
+                        sx={{ fontSize: { xs: "1.5rem", md: "2.125rem" } }}
+                      >
                         28
                       </Typography>
                     </Box>
-                    <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', width: { xs: 32, md: 40 }, height: { xs: 32, md: 40 } }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: "primary.light",
+                        color: "primary.main",
+                        width: { xs: 32, md: 40 },
+                        height: { xs: 32, md: 40 },
+                      }}
+                    >
                       <LocationOn sx={{ fontSize: { xs: 16, md: 20 } }} />
                     </Avatar>
                   </Box>
                 </CardContent>
               </StatsCard>
             </Grid>
-            
+
             <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <Box>
-                      <Typography color="text.secondary" variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+                      <Typography
+                        color="text.secondary"
+                        variant="body2"
+                        sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}
+                      >
                         Maintenance
                       </Typography>
-                      <Typography variant="h4" fontWeight="bold" color="warning.main" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+                      <Typography
+                        variant="h4"
+                        fontWeight="bold"
+                        color="warning.main"
+                        sx={{ fontSize: { xs: "1.5rem", md: "2.125rem" } }}
+                      >
                         4
                       </Typography>
                     </Box>
-                    <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.main', width: { xs: 32, md: 40 }, height: { xs: 32, md: 40 } }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: "warning.light",
+                        color: "warning.main",
+                        width: { xs: 32, md: 40 },
+                        height: { xs: 32, md: 40 },
+                      }}
+                    >
                       <Settings sx={{ fontSize: { xs: 16, md: 20 } }} />
                     </Avatar>
                   </Box>
@@ -555,9 +727,9 @@ const HotelHomepage: React.FC = () => {
                   fullWidth
                   startIcon={<CalendarToday />}
                   onClick={() => setShowReservationModal(true)}
-                  sx={{ fontSize: { xs: '0.75rem', md: '1rem' } }}
+                  sx={{ fontSize: { xs: "0.75rem", md: "1rem" } }}
                 >
-                  {isMobile ? 'Reserve' : 'New Reservation'}
+                  {isMobile ? "Reserve" : "New Reservation"}
                 </ActionButton>
               </Grid>
               <Grid size={{ xs: 6, sm: 6, md: 3 }}>
@@ -567,7 +739,7 @@ const HotelHomepage: React.FC = () => {
                   fullWidth
                   startIcon={<People />}
                   onClick={() => setShowCheckInModal(true)}
-                  sx={{ fontSize: { xs: '0.75rem', md: '1rem' } }}
+                  sx={{ fontSize: { xs: "0.75rem", md: "1rem" } }}
                 >
                   Check In
                 </ActionButton>
@@ -579,7 +751,7 @@ const HotelHomepage: React.FC = () => {
                   fullWidth
                   startIcon={<CreditCard />}
                   onClick={() => setShowCheckOutModal(true)}
-                  sx={{ fontSize: { xs: '0.75rem', md: '1rem' } }}
+                  sx={{ fontSize: { xs: "0.75rem", md: "1rem" } }}
                 >
                   Check Out
                 </ActionButton>
@@ -591,9 +763,9 @@ const HotelHomepage: React.FC = () => {
                   fullWidth
                   startIcon={<Search />}
                   onClick={() => setShowRoomAvailabilityModal(true)}
-                  sx={{ fontSize: { xs: '0.75rem', md: '1rem' } }}
+                  sx={{ fontSize: { xs: "0.75rem", md: "1rem" } }}
                 >
-                  {isMobile ? 'Rooms' : 'Room Status'}
+                  {isMobile ? "Rooms" : "Room Status"}
                 </ActionButton>
               </Grid>
             </Grid>
@@ -601,23 +773,41 @@ const HotelHomepage: React.FC = () => {
 
           {/* Room Management */}
           <Paper sx={{ p: { xs: 2, md: 3 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 3,
+              }}
+            >
               <Typography variant="h6" fontWeight="bold">
                 Room Management
               </Typography>
-              <Button color="primary" size={isMobile ? 'small' : 'medium'}>
+              <Button color="primary" size={isMobile ? "small" : "medium"}>
                 View All Rooms
               </Button>
             </Box>
-            
+
             <Grid container spacing={{ xs: 2, md: 3 }}>
               {accommodations.map((room, index) => (
                 <Grid size={{ xs: 12, sm: 6, lg: 6, xl: 4 }} key={index}>
                   <RoomCard>
                     <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          mb: 2,
+                        }}
+                      >
                         <Box sx={{ flex: 1, mr: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}
+                          >
                             {room.name}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
@@ -630,55 +820,71 @@ const HotelHomepage: React.FC = () => {
                           size="small"
                         />
                       </Box>
-                      
-                      <Typography variant="h4" color="primary.main" fontWeight="bold" sx={{ mb: 1, fontSize: { xs: '1.5rem', md: '2rem' } }}>
+
+                      <Typography
+                        variant="h4"
+                        color="primary.main"
+                        fontWeight="bold"
+                        sx={{ mb: 1, fontSize: { xs: "1.5rem", md: "2rem" } }}
+                      >
                         ${room.price}
-                        <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ ml: 1 }}
+                        >
                           {room.period}
                         </Typography>
                       </Typography>
-                      
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
                         {room.capacity}
                       </Typography>
-                      
+
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" fontWeight="medium" sx={{ mb: 1 }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight="medium"
+                          sx={{ mb: 1 }}
+                        >
                           Amenities:
                         </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {room.amenities.slice(0, isMobile ? 2 : 3).map((amenity, i) => (
-                            <Chip
-                              key={i}
-                              label={amenity}
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                            />
-                          ))}
+                        <Box
+                          sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
+                        >
+                          {room.amenities
+                            .slice(0, isMobile ? 2 : 3)
+                            .map((amenity, i) => (
+                              <Chip
+                                key={i}
+                                label={amenity}
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                              />
+                            ))}
                           {room.amenities.length > (isMobile ? 2 : 3) && (
                             <Chip
-                              label={`+${room.amenities.length - (isMobile ? 2 : 3)}`}
+                              label={`+${
+                                room.amenities.length - (isMobile ? 2 : 3)
+                              }`}
                               size="small"
                               variant="outlined"
                             />
                           )}
                         </Box>
                       </Box>
-                      
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          fullWidth
-                        >
+
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <Button variant="outlined" size="small" fullWidth>
                           Details
                         </Button>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          fullWidth
-                        >
+                        <Button variant="contained" size="small" fullWidth>
                           Manage
                         </Button>
                       </Box>
@@ -694,36 +900,39 @@ const HotelHomepage: React.FC = () => {
         {isDesktop && (
           <ResizeHandle onMouseDown={handleMouseDown}>
             <Box className="resize-indicator">
-              <Box sx={{ width: 2, height: 20, bgcolor: 'grey.400' }} />
-              <Box sx={{ width: 2, height: 20, bgcolor: 'grey.400' }} />
+              <Box sx={{ width: 2, height: 20, bgcolor: "grey.400" }} />
+              <Box sx={{ width: 2, height: 20, bgcolor: "grey.400" }} />
             </Box>
           </ResizeHandle>
         )}
 
         {/* Right Side - AI Assistant - Desktop Only */}
         {isDesktop && (
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               width: `${aiPanelWidth}px`,
               minWidth: 300,
-              maxHeight: '100vh',
-              bgcolor: 'background.paper',
+              maxHeight: "100vh",
+              bgcolor: "background.paper",
               borderLeft: 1,
-              borderColor: 'divider',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
+              borderColor: "divider",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
             }}
           >
-            <Box sx={{ 
-              flex: 1, 
-              overflow: 'hidden',
-              maxHeight: 'calc(100vh - 80px)'
-            }}>
-              <AIChatbot 
+            <Box
+              sx={{
+                flex: 1,
+                overflow: "hidden",
+                maxHeight: "calc(100vh - 80px)",
+              }}
+            >
+              <AIChatbot
                 onOpenModal={handleOpenModal}
                 context={`hotel_general_${currentLanguage}`}
                 onReceiveMessage={setAiMessageHandler}
+                processCompleteData={processCompleteData}
               />
             </Box>
           </Box>
@@ -732,10 +941,7 @@ const HotelHomepage: React.FC = () => {
 
       {/* Mobile Chat FAB */}
       {!isDesktop && (
-        <ChatFab
-          color="primary"
-          onClick={() => setChatDrawerOpen(true)}
-        >
+        <ChatFab color="primary" onClick={() => setChatDrawerOpen(true)}>
           <Chat />
         </ChatFab>
       )}
@@ -757,35 +963,42 @@ const HotelHomepage: React.FC = () => {
 
       {/* Modals */}
       {showReservationModal && (
-        <ReservationModal 
+        <ReservationModal
           isOpen={showReservationModal}
+          currentLanguage={currentLanguage}
           onClose={() => setShowReservationModal(false)}
           initialData={modalData}
           onAIMessage={aiMessageHandler || undefined}
-          onProcessCompleted={(confirmationData) => handleProcessCompleted('reservation', confirmationData)}
+          onProcessCompleted={(confirmationData) =>
+            handleProcessCompleted("reservation", confirmationData)
+          }
         />
       )}
-      
+
       {showCheckInModal && (
-        <CheckInModal 
+        <CheckInModal
           isOpen={showCheckInModal}
           onClose={() => setShowCheckInModal(false)}
           guestData={modalData}
           onAIMessage={aiMessageHandler || undefined}
-          onProcessCompleted={(confirmationData) => handleProcessCompleted('checkin', confirmationData)}
+          onProcessCompleted={(confirmationData) =>
+            handleProcessCompleted("checkin", confirmationData)
+          }
         />
       )}
-      
+
       {showCheckOutModal && (
-        <CheckOutModal 
+        <CheckOutModal
           isOpen={showCheckOutModal}
           onClose={() => setShowCheckOutModal(false)}
           guestData={modalData}
           onAIMessage={aiMessageHandler || undefined}
-          onProcessCompleted={(confirmationData) => handleProcessCompleted('checkout', confirmationData)}
+          onProcessCompleted={(confirmationData) =>
+            handleProcessCompleted("checkout", confirmationData)
+          }
         />
       )}
-      
+
       {showRoomAvailabilityModal && (
         <RoomAvailabilityModal
           isOpen={showRoomAvailabilityModal}

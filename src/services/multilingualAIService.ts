@@ -28,6 +28,7 @@ export interface LanguageConfig {
     error: string;
     help: string;
   };
+  processCompletion: Record<string, string | unknown>,
 }
 
 export const languageConfigs: Record<string, LanguageConfig> = {
@@ -128,7 +129,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: '¡Tu reserva está confirmada! Número de confirmación: {confirmationId}',
       error: 'No entendí eso. ¿Podrías repetir por favor?',
       help: 'Puedo ayudarte con reservas, check-in, check-out y disponibilidad de habitaciones. Solo dime qué necesitas.'
-    }
+    },
     processCompletion: {
       reservation: {
         title: '¡Reserva Creada Exitosamente! 🎉',
@@ -196,7 +197,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'आपकी बुकिंग कन्फर्म हो गई! कन्फर्मेशन नंबर: {confirmationId}',
       error: 'मैं समझ नहीं पाया। कृपया दोबारा कहें?',
       help: 'मैं बुकिंग, चेक-इन, चेक-आउट और कमरों की उपलब्धता में मदद कर सकता हूं। बस बताएं कि आपको क्या चाहिए।'
-    }
+    },
     processCompletion: {
       reservation: {
         title: 'आरक्षण सफलतापूर्वक बनाया गया! 🎉',
@@ -264,7 +265,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'Votre réservation est confirmée! Numéro de confirmation: {confirmationId}',
       error: 'Je n\'ai pas compris. Pourriez-vous répéter s\'il vous plaît?',
       help: 'Je peux vous aider avec les réservations, l\'enregistrement, le départ et la disponibilité des chambres. Dites-moi simplement ce dont vous avez besoin.'
-    }
+    },
     processCompletion: {
       reservation: {
         title: 'Réservation Créée avec Succès! 🎉',
@@ -332,7 +333,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'Ihre Buchung ist bestätigt! Bestätigungsnummer: {confirmationId}',
       error: 'Das habe ich nicht verstanden. Könnten Sie das bitte wiederholen?',
       help: 'Ich kann Ihnen bei Reservierungen, Check-in, Check-out und Zimmerverfügbarkeit helfen. Sagen Sie mir einfach, was Sie brauchen.'
-    }
+    },
     processCompletion: {
       reservation: {
         title: 'Reservierung Erfolgreich Erstellt! 🎉',
@@ -400,7 +401,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'La vostra prenotazione è confermata! Numero di conferma: {confirmationId}',
       error: 'Non ho capito. Potreste ripetere per favore?',
       help: 'Posso aiutarvi con prenotazioni, check-in, check-out e disponibilità camere. Ditemi semplicemente di cosa avete bisogno.'
-    }
+    },
     processCompletion: {
       reservation: {
         title: 'Prenotazione Creata con Successo! 🎉',
@@ -468,7 +469,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'A vossa reserva está confirmada! Número de confirmação: {confirmationId}',
       error: 'Não entendi isso. Poderiam repetir por favor?',
       help: 'Posso ajudá-los com reservas, check-in, check-out e disponibilidade de quartos. Digam-me simplesmente o que precisam.'
-    }
+    },
     processCompletion: {
       reservation: {
         title: 'Reserva Criada com Sucesso! 🎉',
@@ -536,7 +537,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'ご予約が確定いたしました！確認番号：{confirmationId}',
       error: '申し訳ございませんが、理解できませんでした。もう一度おっしゃっていただけますか？',
       help: '予約、チェックイン、チェックアウト、お部屋の空室状況についてお手伝いできます。ご用件をお聞かせください。'
-    }
+    },
     processCompletion: {
       reservation: {
         title: 'ご予約が正常に作成されました！🎉',
@@ -604,7 +605,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: '예약이 확정되었습니다! 확인 번호: {confirmationId}',
       error: '죄송합니다. 이해하지 못했습니다. 다시 말씀해 주시겠어요?',
       help: '예약, 체크인, 체크아웃, 객실 이용 가능 여부에 대해 도움을 드릴 수 있습니다. 무엇이 필요한지 말씀해 주세요.'
-    }
+    },
     processCompletion: {
       reservation: {
         title: '예약이 성공적으로 생성되었습니다! 🎉',
@@ -672,7 +673,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: '您的预订已确认！确认号码：{confirmationId}',
       error: '抱歉，我没有理解。您能再说一遍吗？',
       help: '我可以帮助您预订、办理入住、退房和查询客房可用性。请告诉我您需要什么。'
-    }
+    },
     processCompletion: {
       reservation: {
         title: '预订创建成功！🎉',

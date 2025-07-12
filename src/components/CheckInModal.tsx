@@ -44,6 +44,7 @@ interface CheckInModalProps {
   onClose: () => void;
   guestData?: VoiceProcessedData;
   onAIMessage?: (message: string, shouldSpeak?: boolean) => void;
+  onProcessCompleted?: (confirmationData: any) => void;
 }
 
 
@@ -267,6 +268,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 
   const completeCheckIn = () => {
     setFormData(prev => ({ ...prev, isProcessing: true }));
+    onProcessCompleted(formData)
     
     setTimeout(() => {
       setFormData(prev => ({ 

@@ -39,6 +39,7 @@ interface CheckOutModalProps {
   onClose: () => void;
   guestData?: VoiceProcessedData;
   onAIMessage?: (message: string, shouldSpeak?: boolean) => void;
+  onProcessCompleted?: (confirmationData: any) => void;
 }
 
 const CheckOutModal: React.FC<CheckOutModalProps> = ({ 
@@ -91,7 +92,7 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
   };
 
   const handleSettleBalance = () => {
-    alert('Checkout completed successfully!');
+        onProcessCompleted?.(guestData)
     onClose();
   };
 

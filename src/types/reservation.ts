@@ -122,6 +122,7 @@ export interface VoiceProcessedData {
   searchQuery?: string;
   room?: string;
   name?: string;
+  language?: string;
 }
 
 export interface FormDataWithDayjs {

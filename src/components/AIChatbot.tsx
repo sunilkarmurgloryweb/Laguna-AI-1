@@ -50,6 +50,10 @@ type Message = ChatMessage & {
 interface AIChatbotProps {
   onOpenModal?: (modalType: ModalType, data?: VoiceProcessedData) => void;
   context?: string;
+  processCompleteData?: {
+    modelType: string;
+    condfirmationData: unknown;
+  } | null;
   onReceiveMessage?: (handler: (message: string, shouldSpeak?: boolean) => void) => void;
   onProcessCompleted?: (processType: 'reservation' | 'checkin' | 'checkout', confirmationData: any) => void;
 }
@@ -58,7 +62,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   onOpenModal,
   context = 'hotel_general',
   onReceiveMessage,
-  onProcessCompleted
+  processCompleteData
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -184,13 +188,36 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     }
   }, [isSpeechEnabled, currentLanguage]);
 
+  useEffect(() => {
+  if (processCompleteData) {
+    const completionMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: 'Process completed successfully',
+      text: multilingualAI.getResponse('processCompleted', {}, currentLanguage),
+      timestamp: new Date(),
+      language: currentLanguage,
+      isProcessCompletion: true,
+      processType: processCompleteData.modelType as 'reservation' | 'checkin' | 'checkout',
+      confirmationData: processCompleteData.condfirmationData
+    } as any;
+
+    setMessages((prev) => [...prev, completionMessage]);
+
+    if (isSpeechEnabled) {
+      setTimeout(() => {
+        speakMessage(completionMessage.text, currentLanguage);
+      }, 300);
+    }
+  }
+}, [processCompleteData, currentLanguage, isSpeechEnabled, speakMessage]);
+
   // Handle language change
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
     multilingualAI.setLanguage(language);
     
     // Add language change notification
-    const langInfo = multilingualAI.getLanguageInfo(language);
     const changeMessage: Message = {
       id: Date.now().toString(),
       role: 'assistant' as const,
@@ -275,7 +302,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       content: messageText,
       text: messageText,
       timestamp: new Date(),
-      language: messageLang
+      language: messageLang,
+      isUser: true,
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -288,14 +316,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         context: `${context}_${messageLang}`,
         currentFormData: { language: messageLang }
       }).unwrap();
-      
-      console.log('🎯 AI Response:', {
-        intent: result.response.intent,
-        extractedData: result.response.extractedData,
-        text: result.response.text,
-        userInput: messageText
-      });
-
       const { response } = result;
 
       // Generate response in detected/current language  
@@ -317,7 +337,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         timestamp: new Date(),
         extractedData: response.extractedData,
         intent: response.intent,
-        language: messageLang
+        language: messageLang,
+        isUser: false,
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -330,7 +351,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       }
 
       // Handle modal opening based on intent
-      console.log(response.intent, "response.intent");
       switch (response.intent) {
         case 'reservation':
           detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
@@ -347,13 +367,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         case 'search_reservation':
           detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
           break;
-      
         default:
           break;
       }
       
       if (response.intent && response.intent !== 'inquiry' && response.intent !== 'help' && response.intent !== 'unknown') {
-        console.log('🚀 Opening modal for intent:', response.intent, 'with data:', response.extractedData);
         detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
       }
 
@@ -367,7 +385,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         content: errorText,
         text: errorText,
         timestamp: new Date(),
-        language: messageLang
+        language: messageLang,
+        isUser: false,
       };
       
       setMessages(prev => [...prev, errorMessage]);
