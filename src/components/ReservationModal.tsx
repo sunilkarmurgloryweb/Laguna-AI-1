@@ -50,12 +50,14 @@ interface ReservationModalProps {
   isOpen?: boolean;
   onClose: () => void;
   initialData?: VoiceProcessedData;
+  onAIMessage?: (message: string, shouldSpeak?: boolean) => void;
 }
 
 const ReservationModal: React.FC<ReservationModalProps> = ({ 
   isOpen = true, 
   onClose,
-  initialData = {}
+  initialData = {},
+  onAIMessage
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -171,19 +173,18 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
       setIsSubmitting(false);
       setIsCompleted(true);
       
-      // Get success message in current language
+      // Generate confirmation ID
+      const confirmationId = `LG${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+      
+      // Get success message in current language with confirmation ID
       const successMessage = multilingualAI.getResponse('bookingConfirmed', {
-        confirmationId: `LG${Math.random().toString(36).substr(2, 8).toUpperCase()}`
+        confirmationId
       });
       
-      // Speak the success message
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(successMessage);
-        utterance.lang = multilingualAI.getSpeechRecognitionLanguage();
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        speechSynthesis.speak(utterance);
+      // Send success message to AI chatbot (will handle both display and speech)
+      if (onAIMessage) {
+        const fullMessage = `🎉 ${successMessage}\n\n✅ Reservation Details:\n• Guest: ${formData.guestName}\n• Room: ${formData.roomType}\n• Check-in: ${formData.checkIn?.format('MMM DD, YYYY')}\n• Check-out: ${formData.checkOut?.format('MMM DD, YYYY')}\n• Guests: ${formData.adults} adults, ${formData.children} children\n• Payment: ${formData.paymentMethod}\n\n📧 You will receive a confirmation email shortly.\n📱 SMS confirmation will follow.`;
+        onAIMessage(fullMessage, true);
       }
       
       // Auto-close after 5 seconds

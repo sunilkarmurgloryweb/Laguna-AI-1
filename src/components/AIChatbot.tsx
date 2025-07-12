@@ -57,6 +57,7 @@ interface AIChatbotProps {
   onFormDataUpdate?: (data: Record<string, unknown>) => void;
   currentFormData?: Record<string, any>;
   context?: string;
+  onReceiveMessage?: (message: string, shouldSpeak?: boolean) => void;
 }
 
 interface RoomType {
@@ -72,7 +73,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   onOpenModal,
   onFormDataUpdate,
   currentFormData = {},
-  context = 'hotel_general'
+  context = 'hotel_general',
+  onReceiveMessage
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -185,6 +187,37 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     }
   }, [currentLanguage]);
 
+  // Function to add external messages to chat
+  const addExternalMessage = React.useCallback((message: string, shouldSpeak: boolean = false) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: message,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, newMessage]);
+    
+    // Speak the message if requested
+    if (shouldSpeak && isSpeechEnabled) {
+      try {
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = multilingualAI.getSpeechRecognitionLanguage();
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        speechSynthesis.speak(utterance);
+      } catch (speechError) {
+        console.warn('Text-to-speech failed:', speechError);
+      }
+    }
+  }, [isSpeechEnabled]);
+
+  // Expose the function to parent component
+  React.useEffect(() => {
+    if (onReceiveMessage) {
+      onReceiveMessage(addExternalMessage);
+    }
+  }, [onReceiveMessage, addExternalMessage]);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };

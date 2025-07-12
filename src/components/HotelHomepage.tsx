@@ -133,6 +133,7 @@ const HotelHomepage: React.FC = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [aiMessageHandler, setAiMessageHandler] = useState<((message: string, shouldSpeak?: boolean) => void) | null>(null);
 
   const accommodations = [
     {
@@ -382,6 +383,8 @@ const HotelHomepage: React.FC = () => {
           <AIChatbot 
             onOpenModal={handleOpenModal}
             context={`hotel_general_${currentLanguage}`}
+            onReceiveMessage={setAiMessageHandler}
+            onReceiveMessage={setAiMessageHandler}
           />
         </Box>
       </Box>
@@ -800,6 +803,7 @@ const HotelHomepage: React.FC = () => {
           isOpen={showReservationModal}
           onClose={() => setShowReservationModal(false)}
           initialData={modalData}
+          onAIMessage={aiMessageHandler || undefined}
         />
       )}
       
