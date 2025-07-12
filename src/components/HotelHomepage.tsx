@@ -333,13 +333,18 @@ const HotelHomepage: React.FC = () => {
             width: 400,
           },
           boxSizing: 'border-box',
+          height: '100vh',
+          maxHeight: '100vh',
+          overflow: 'hidden'
         },
       }}
     >
       <Box sx={{ 
         height: '100%',
+        maxHeight: '100vh',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}>
         <Box sx={{ 
           p: 2, 
@@ -369,7 +374,11 @@ const HotelHomepage: React.FC = () => {
           </IconButton>
         </Box>
         
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ 
+          flex: 1, 
+          overflow: 'hidden',
+          maxHeight: 'calc(100vh - 80px)'
+        }}>
           <AIChatbot 
             onOpenModal={handleOpenModal}
             context={`hotel_general_${currentLanguage}`}
@@ -715,11 +724,13 @@ const HotelHomepage: React.FC = () => {
             sx={{ 
               width: `${aiPanelWidth}px`,
               minWidth: 300,
+              maxHeight: '100vh',
               bgcolor: 'background.paper',
               borderLeft: 1,
               borderColor: 'divider',
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              overflow: 'hidden'
             }}
           >
             <Box sx={{ 
@@ -744,7 +755,11 @@ const HotelHomepage: React.FC = () => {
               </Box>
             </Box>
             
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ 
+              flex: 1, 
+              overflow: 'hidden',
+              maxHeight: 'calc(100vh - 120px)'
+            }}>
               <AIChatbot 
                 onOpenModal={handleOpenModal}
                 context={`hotel_general_${currentLanguage}`}

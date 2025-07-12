@@ -509,7 +509,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const currentLanguageInfo = multilingualAI.getLanguageInfo(currentLanguage);
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ 
+      height: '100%', 
+      maxHeight: '100vh',
+      display: 'flex', 
+      flexDirection: 'column',
+      overflow: 'hidden'
+    }}>
       {/* Language Selector */}
       <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -562,7 +568,26 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       </Box>
 
       {/* Message Area */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 } }}>
+      <Box sx={{ 
+        flex: 1, 
+        overflow: 'auto', 
+        p: { xs: 1, md: 2 },
+        maxHeight: 'calc(100vh - 200px)',
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: '#f1f1f1',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: '#c1c1c1',
+          borderRadius: '3px',
+          '&:hover': {
+            background: '#a8a8a8',
+          },
+        },
+      }}>
         {messages.map((message) => (
           <Box
             key={message.id}
