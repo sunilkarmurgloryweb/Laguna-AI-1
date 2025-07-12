@@ -25,7 +25,7 @@ import {
   ListItemText,
   Fab
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import { Grid } from '@mui/material';
 import {
   Search,
   Notifications,
@@ -480,7 +480,7 @@ const HotelHomepage: React.FC = () => {
         >
           {/* Dashboard Stats */}
           <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
-            <Grid item xs={6} sm={6} md={3}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -500,7 +500,7 @@ const HotelHomepage: React.FC = () => {
               </StatsCard>
             </Grid>
             
-            <Grid item xs={6} sm={6} md={3}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -520,7 +520,7 @@ const HotelHomepage: React.FC = () => {
               </StatsCard>
             </Grid>
             
-            <Grid item xs={6} sm={6} md={3}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -540,7 +540,7 @@ const HotelHomepage: React.FC = () => {
               </StatsCard>
             </Grid>
             
-            <Grid item xs={6} sm={6} md={3}>
+            <Grid size={{ xs: 6, sm: 6, md: 3 }}>
               <StatsCard>
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -567,7 +567,7 @@ const HotelHomepage: React.FC = () => {
               Quick Actions
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                 <ActionButton
                   variant="contained"
                   fullWidth
@@ -578,7 +578,7 @@ const HotelHomepage: React.FC = () => {
                   {isMobile ? 'Reserve' : 'New Reservation'}
                 </ActionButton>
               </Grid>
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                 <ActionButton
                   variant="contained"
                   color="success"
@@ -590,7 +590,7 @@ const HotelHomepage: React.FC = () => {
                   Check In
                 </ActionButton>
               </Grid>
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                 <ActionButton
                   variant="contained"
                   color="warning"
@@ -602,7 +602,7 @@ const HotelHomepage: React.FC = () => {
                   Check Out
                 </ActionButton>
               </Grid>
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                 <ActionButton
                   variant="contained"
                   color="secondary"
@@ -630,7 +630,7 @@ const HotelHomepage: React.FC = () => {
             
             <Grid container spacing={{ xs: 2, md: 3 }}>
               {accommodations.map((room, index) => (
-                <Grid item xs={12} sm={6} lg={6} xl={4} key={index}>
+                <Grid size={{ xs: 12, sm: 6, lg: 6, xl: 4 }} key={index}>
                   <RoomCard>
                     <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>

@@ -22,7 +22,7 @@ import {
   CardContent,
   Divider
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import { Grid } from '@mui/material';
 import {
   Mic,
   MicOff,
@@ -670,21 +670,21 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                       Guest Information
                     </Typography>
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Guest Name:</Typography>
                         <Typography variant="body1" fontWeight="medium">{foundReservation.guestName}</Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Confirmation Number:</Typography>
                         <Typography variant="body1" fontWeight="medium" color="primary.main">
                           {foundReservation.confirmationNumber}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Phone:</Typography>
                         <Typography variant="body1" fontWeight="medium">{foundReservation.phone}</Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Email:</Typography>
                         <Typography variant="body1" fontWeight="medium">{foundReservation.email}</Typography>
                       </Grid>
@@ -698,17 +698,17 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                       Reservation Details
                     </Typography>
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Room Type:</Typography>
                         <Typography variant="body1" fontWeight="medium">{foundReservation.roomType}</Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Guests:</Typography>
                         <Typography variant="body1" fontWeight="medium">
                           {foundReservation.adults} Adults, {foundReservation.children} Children
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Check-in Date:</Typography>
                         <Typography variant="body1" fontWeight="medium" color="success.main">
                           {new Date(foundReservation.checkInDate).toLocaleDateString('en-US', {
@@ -719,7 +719,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                           })}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Check-out Date:</Typography>
                         <Typography variant="body1" fontWeight="medium" color="error.main">
                           {new Date(foundReservation.checkOutDate).toLocaleDateString('en-US', {
@@ -730,13 +730,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                           })}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Duration:</Typography>
                         <Typography variant="body1" fontWeight="medium">
                           {foundReservation.nights} {foundReservation.nights === 1 ? 'Night' : 'Nights'}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Typography variant="body2" color="text.secondary">Total Amount:</Typography>
                         <Typography variant="h6" fontWeight="bold" color="primary.main">
                           ${foundReservation.totalAmount}
@@ -832,7 +832,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                 </Typography>
                 <Grid container spacing={2}>
                   {roomTypes.map((room) => (
-                    <Grid item xs={12} sm={6} key={room.id}>
+                    <Grid size={{ xs: 12, sm: 6 }} key={room.id}>
                       <Card 
                         sx={{ 
                           cursor: 'pointer',

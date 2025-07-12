@@ -13,7 +13,7 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import { Grid } from '@mui/material';
 import {
   Close,
   Language as LanguageIcon
@@ -87,7 +87,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         {/* Language Options */}
         <Grid container spacing={{ xs: 2, sm: 3 }}>
           {languages.map((language) => (
-            <Grid item xs={6} sm={4} md={3} key={language.code}>
+            <Grid size={{ xs: 6, sm: 4, md: 3 }} key={language.code}>
               <Card
                 sx={{
                   cursor: 'pointer',
