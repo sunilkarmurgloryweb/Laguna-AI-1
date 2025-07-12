@@ -15,10 +15,6 @@ import {
   Paper,
   LinearProgress,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Fade,
   CircularProgress,
@@ -32,17 +28,12 @@ import {
 import {
   Close,
   Person,
-  CalendarToday,
-  CreditCard,
-  CameraAlt,
-  Upload,
+  Scanner,
   CheckCircle,
-  Verified,
   Hotel,
   Key,
-  Scanner,
-  Refresh,
-  Stop
+  Stop,
+  CameraAlt
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
 import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
@@ -78,6 +69,17 @@ interface RoomAssignment {
   checkOutTime: string;
 }
 
+interface ReservationData {
+  found: boolean;
+  guestName?: string;
+  confirmationNumber?: string;
+  roomType?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  phone?: string;
+  email?: string;
+}
+
 const CheckInModal: React.FC<CheckInModalProps> = ({ 
   isOpen, 
   onClose,
@@ -85,7 +87,6 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -94,97 +95,79 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     searchQuery: guestData.confirmationNumber || guestData.name || '',
-    name: guestData.name || '',
-    confirmationNumber: guestData.confirmationNumber || '',
-    checkInDate: guestData.checkInDate || '',
-    roomType: guestData.roomType || '',
-    phone: guestData.phone || '',
+    cameraActive: false,
+    scanningPassport: false,
     passportScanned: false,
     passportVerified: false,
-    roomAssigned: false,
-    isProcessing: false,
     checkInComplete: false,
-    cameraActive: false,
-    scanningPassport: false
+    isProcessing: false
   });
   
+  const [reservationData, setReservationData] = useState<ReservationData>({ found: false });
   const [passportData, setPassportData] = useState<PassportData | null>(null);
   const [roomAssignment, setRoomAssignment] = useState<RoomAssignment | null>(null);
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
-  const steps = ['Guest Lookup', 'Passport Scan', 'Room Assignment', 'Check-in Complete'];
-
-  // Available rooms by type
-  const availableRooms = {
-    'Ocean View King Suite': [
-      { number: '501', floor: 5, keyCards: 2 },
-      { number: '502', floor: 5, keyCards: 2 },
-      { number: '601', floor: 6, keyCards: 2 }
-    ],
-    'Deluxe Garden Room': [
-      { number: '201', floor: 2, keyCards: 2 },
-      { number: '202', floor: 2, keyCards: 2 },
-      { number: '301', floor: 3, keyCards: 2 }
-    ],
-    'Family Oceanfront Suite': [
-      { number: '701', floor: 7, keyCards: 3 },
-      { number: '702', floor: 7, keyCards: 3 }
-    ],
-    'Presidential Suite': [
-      { number: '801', floor: 8, keyCards: 4 }
-    ],
-    'Standard Double Room': [
-      { number: '101', floor: 1, keyCards: 2 },
-      { number: '102', floor: 1, keyCards: 2 },
-      { number: '103', floor: 1, keyCards: 2 }
-    ],
-    'Luxury Spa Suite': [
-      { number: '401', floor: 4, keyCards: 2 },
-      { number: '402', floor: 4, keyCards: 2 }
-    ]
-  };
-
-  const roomAmenities = {
-    'Ocean View King Suite': ['Ocean View', 'King Bed', 'Balcony', 'Mini Bar', 'WiFi', 'Room Service'],
-    'Deluxe Garden Room': ['Garden View', 'Queen Bed', 'Work Desk', 'Coffee Maker', 'WiFi'],
-    'Family Oceanfront Suite': ['Ocean View', '2 Queen Beds', 'Living Area', 'Kitchenette', 'WiFi', 'Balcony'],
-    'Presidential Suite': ['Panoramic View', 'King Bed', 'Private Terrace', 'Butler Service', 'WiFi', 'Jacuzzi'],
-    'Standard Double Room': ['City View', 'Double Bed', 'Work Desk', 'WiFi'],
-    'Luxury Spa Suite': ['Ocean View', 'Private Spa', 'Balcony', 'Kitchenette', 'WiFi', 'Massage Chair']
-  };
-
-  useEffect(() => {
-    // Auto-start camera if we have guest data
-    if (formData.searchQuery && currentStep === 0) {
-      handleGuestFound();
-    }
-  }, []);
+  const steps = ['Document Verification', 'Check-in Summary'];
 
   useEffect(() => {
     return () => {
-      // Cleanup camera stream
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
   }, [stream]);
 
-  const handleGuestFound = () => {
-    // Simulate guest lookup
-    setFormData(prev => ({ 
-      ...prev, 
-      name: 'John Smith',
-      confirmationNumber: '8128273972',
-      checkInDate: new Date().toISOString().split('T')[0],
-      roomType: 'Ocean View King Suite',
-      phone: '+1-555-0123'
-    }));
-    
-    // Move to passport scan step and start camera
-    setCurrentStep(1);
-    setTimeout(() => {
-      startCamera();
-    }, 500);
+  const searchReservation = (query: string): ReservationData => {
+    // Simulate reservation lookup
+    const mockReservations = [
+      {
+        guestName: 'Sunil Karmur',
+        confirmationNumber: '8128273972',
+        phone: '+91-9876543210',
+        email: 'sunil.karmur@email.com',
+        roomType: 'Ocean View King Suite',
+        checkInDate: '2024-01-15',
+        checkOutDate: '2024-01-18'
+      },
+      {
+        guestName: 'John Smith',
+        confirmationNumber: '8128273973',
+        phone: '+1-555-0123',
+        email: 'john.smith@email.com',
+        roomType: 'Deluxe Garden Room',
+        checkInDate: '2024-01-15',
+        checkOutDate: '2024-01-17'
+      }
+    ];
+
+    const lowerQuery = query.toLowerCase();
+    const found = mockReservations.find(res => 
+      res.guestName.toLowerCase().includes(lowerQuery) ||
+      res.confirmationNumber.includes(query) ||
+      res.phone.includes(query)
+    );
+
+    if (found) {
+      return {
+        found: true,
+        ...found
+      };
+    }
+
+    return { found: false };
+  };
+
+  const handleGuestLookup = () => {
+    const reservation = searchReservation(formData.searchQuery);
+    setReservationData(reservation);
+
+    if (reservation.found) {
+      // Start camera for passport verification
+      setTimeout(() => {
+        startCamera();
+      }, 500);
+    }
   };
 
   const startCamera = async () => {
@@ -195,7 +178,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          facingMode: 'environment' // Use back camera on mobile
+          facingMode: 'environment'
         }
       });
       
@@ -233,12 +216,12 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0);
       
-      // Simulate passport scanning and OCR
+      // Simulate passport scanning
       setTimeout(() => {
         const mockPassportData: PassportData = {
-          name: 'JOHN SMITH',
+          name: reservationData.guestName || 'SUNIL KARMUR',
           passportNumber: 'P123456789',
-          nationality: 'USA',
+          nationality: 'IND',
           dateOfBirth: '1985-03-15',
           expiryDate: '2030-03-15',
           photo: canvas.toDataURL()
@@ -251,46 +234,34 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           scanningPassport: false
         }));
         
-        // Verify passport data
+        // Verify passport
         setTimeout(() => {
           setFormData(prev => ({ ...prev, passportVerified: true }));
           stopCamera();
           
-          // Auto-proceed to room assignment
+          // Assign room and move to summary
           setTimeout(() => {
-            assignRoom();
+            assignRoomAndProceed();
           }, 1500);
         }, 2000);
       }, 3000);
     }
   };
 
-  const assignRoom = () => {
-    const roomType = formData.roomType as keyof typeof availableRooms;
-    const availableRoomsForType = availableRooms[roomType];
+  const assignRoomAndProceed = () => {
+    // Assign room based on reservation
+    const assignment: RoomAssignment = {
+      roomNumber: '501',
+      floor: 5,
+      roomType: reservationData.roomType || 'Ocean View King Suite',
+      keyCards: 2,
+      amenities: ['Ocean View', 'King Bed', 'Balcony', 'Mini Bar', 'WiFi', 'Room Service'],
+      checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      checkOutTime: 'Flexible'
+    };
     
-    if (availableRoomsForType && availableRoomsForType.length > 0) {
-      const selectedRoom = availableRoomsForType[0]; // Assign first available room
-      
-      const assignment: RoomAssignment = {
-        roomNumber: selectedRoom.number,
-        floor: selectedRoom.floor,
-        roomType: formData.roomType,
-        keyCards: selectedRoom.keyCards,
-        amenities: roomAmenities[roomType] || [],
-        checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        checkOutTime: 'Flexible'
-      };
-      
-      setRoomAssignment(assignment);
-      setFormData(prev => ({ ...prev, roomAssigned: true }));
-      setCurrentStep(2);
-      
-      // Auto-complete check-in
-      setTimeout(() => {
-        completeCheckIn();
-      }, 3000);
-    }
+    setRoomAssignment(assignment);
+    setCurrentStep(1);
   };
 
   const completeCheckIn = () => {
@@ -302,12 +273,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         isProcessing: false, 
         checkInComplete: true 
       }));
-      setCurrentStep(3);
       
-      // Auto-close after showing success
       setTimeout(() => {
         onClose();
-      }, 5000);
+      }, 3000);
     }, 2000);
   };
 
@@ -326,14 +295,17 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         updates.searchQuery = voiceResult.extractedData.confirmationNumber;
         newVoiceFields.add('searchQuery');
       }
+      if (voiceResult.extractedData.phone) {
+        updates.searchQuery = voiceResult.extractedData.phone;
+        newVoiceFields.add('searchQuery');
+      }
       
       if (Object.keys(updates).length > 0) {
         setFormData(prev => ({ ...prev, ...updates }));
         setVoiceFilledFields(newVoiceFields);
         
-        // Auto-trigger guest lookup
         setTimeout(() => {
-          handleGuestFound();
+          handleGuestLookup();
         }, 1000);
       }
     }
@@ -356,45 +328,201 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         return (
           <Box sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Person color="primary" />
-              Guest Lookup
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Enter confirmation number or guest name to begin check-in process.
+              <Scanner color="primary" />
+              Document Verification
             </Typography>
             
-            {/* Voice Input */}
-            <Box sx={{ mb: 3, textAlign: 'center' }}>
-              <VoiceInput
-                onVoiceProcessed={handleVoiceProcessed}
-                currentStep="check-in"
-                reservationData={formData}
-                size={isMobile ? "small" : "medium"}
-                showTranscript={true}
-              />
-            </Box>
+            {!reservationData.found ? (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Enter guest name, confirmation number, or mobile number to find reservation.
+                </Typography>
+                
+                <Box sx={{ mb: 3, textAlign: 'center' }}>
+                  <VoiceInput
+                    onVoiceProcessed={handleVoiceProcessed}
+                    currentStep="check-in"
+                    reservationData={formData}
+                    size={isMobile ? "small" : "medium"}
+                    showTranscript={true}
+                  />
+                </Box>
+                
+                <TextField
+                  fullWidth
+                  size={isMobile ? 'small' : 'medium'}
+                  label="Guest Name / Confirmation Number / Mobile"
+                  value={formData.searchQuery}
+                  onChange={(e) => setFormData({...formData, searchQuery: e.target.value})}
+                  placeholder="Sunil Karmur or 8128273972 or +91-9876543210"
+                  sx={getFieldSx('searchQuery')}
+                  helperText={isVoiceFilled('searchQuery') ? '✓ Filled by voice' : 'Example: Sunil Karmur or 8128273972'}
+                />
+                
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleGuestLookup}
+                  disabled={!formData.searchQuery}
+                  sx={{ mt: 3, py: { xs: 1.5, md: 2 } }}
+                  size={isMobile ? 'medium' : 'large'}
+                >
+                  Find Reservation
+                </Button>
+              </Box>
+            ) : (
+              <Box>
+                <Alert severity="success" sx={{ mb: 3 }}>
+                  <Typography variant="body2">
+                    <strong>Reservation Found!</strong> Guest: {reservationData.guestName}
+                  </Typography>
+                </Alert>
+
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Please scan your passport for identity verification.
+                </Typography>
+
+                {/* Camera View */}
+                <Paper sx={{ 
+                  position: 'relative', 
+                  mb: 3, 
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  bgcolor: 'black',
+                  aspectRatio: isMobile ? '4/3' : '16/9'
+                }}>
+                  <video
+                    ref={videoRef}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                  />
+                  
+                  {/* Passport Frame Overlay */}
+                  <Box sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: { xs: '80%', md: '60%' },
+                    height: { xs: '60%', md: '40%' },
+                    border: '3px solid',
+                    borderColor: formData.scanningPassport ? 'warning.main' : 'primary.main',
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    animation: formData.scanningPassport ? 'pulse 1s infinite' : 'none',
+                    '@keyframes pulse': {
+                      '0%': { borderColor: 'warning.main' },
+                      '50%': { borderColor: 'success.main' },
+                      '100%': { borderColor: 'warning.main' }
+                    }
+                  }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'white', 
+                        textAlign: 'center',
+                        bgcolor: 'rgba(0,0,0,0.7)',
+                        p: 1,
+                        borderRadius: 1
+                      }}
+                    >
+                      {formData.scanningPassport ? 'Scanning...' : 'Position passport here'}
+                    </Typography>
+                  </Box>
+                  
+                  {/* Scanning Progress */}
+                  {formData.scanningPassport && (
+                    <Box sx={{
+                      position: 'absolute',
+                      bottom: 16,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      bgcolor: 'rgba(0,0,0,0.8)',
+                      color: 'white',
+                      p: 2,
+                      borderRadius: 2
+                    }}>
+                      <CircularProgress size={20} color="inherit" />
+                      <Typography variant="body2">
+                        Scanning passport...
+                      </Typography>
+                    </Box>
+                  )}
+                </Paper>
+                
+                {/* Camera Controls */}
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      onClick={capturePassport}
+                      disabled={!formData.cameraActive || formData.scanningPassport || formData.passportScanned}
+                      startIcon={<Scanner />}
+                      sx={{ py: { xs: 1.5, md: 2 } }}
+                    >
+                      {formData.scanningPassport ? 'Scanning...' : 'Scan Passport'}
+                    </Button>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={formData.cameraActive ? stopCamera : startCamera}
+                      startIcon={formData.cameraActive ? <Stop /> : <CameraAlt />}
+                      sx={{ py: { xs: 1.5, md: 2 } }}
+                    >
+                      {formData.cameraActive ? 'Stop Camera' : 'Start Camera'}
+                    </Button>
+                  </Grid>
+                </Grid>
+
+                {/* Passport Verification Result */}
+                {passportData && formData.passportVerified && (
+                  <Fade in={true}>
+                    <Paper sx={{ p: 3, mt: 3, bgcolor: 'success.light' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                        <CheckCircle sx={{ color: 'success.main', fontSize: 32 }} />
+                        <Typography variant="h6" color="success.main">
+                          Identity Verified Successfully!
+                        </Typography>
+                      </Box>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" fontWeight="bold">Name:</Typography>
+                          <Typography variant="body2">{passportData.name}</Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" fontWeight="bold">Passport Number:</Typography>
+                          <Typography variant="body2">{passportData.passportNumber}</Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" fontWeight="bold">Nationality:</Typography>
+                          <Typography variant="body2">{passportData.nationality}</Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" fontWeight="bold">Expiry Date:</Typography>
+                          <Typography variant="body2">{passportData.expiryDate}</Typography>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  </Fade>
+                )}
+              </Box>
+            )}
             
-            <TextField
-              fullWidth
-              size={isMobile ? 'small' : 'medium'}
-              label="Confirmation Number or Guest Name"
-              value={formData.searchQuery}
-              onChange={(e) => setFormData({...formData, searchQuery: e.target.value})}
-              placeholder="Enter 8128273972 or John Smith"
-              sx={getFieldSx('searchQuery')}
-              helperText={isVoiceFilled('searchQuery') ? '✓ Filled by voice' : 'Example: 8128273972 or John Smith'}
-            />
-            
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleGuestFound}
-              disabled={!formData.searchQuery}
-              sx={{ mt: 3, py: { xs: 1.5, md: 2 } }}
-              size={isMobile ? 'medium' : 'large'}
-            >
-              Find Guest & Start Check-in
-            </Button>
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
           </Box>
         );
 
@@ -402,261 +530,21 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         return (
           <Box sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Scanner color="primary" />
-              Passport Verification
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Please position your passport in front of the camera for scanning.
-            </Typography>
-            
-            {/* Camera View */}
-            <Paper sx={{ 
-              position: 'relative', 
-              mb: 3, 
-              borderRadius: 2,
-              overflow: 'hidden',
-              bgcolor: 'black',
-              aspectRatio: isMobile ? '4/3' : '16/9'
-            }}>
-              <video
-                ref={videoRef}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
-                autoPlay
-                playsInline
-                muted
-              />
-              
-              {/* Passport Frame Overlay */}
-              <Box sx={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: { xs: '80%', md: '60%' },
-                height: { xs: '60%', md: '40%' },
-                border: '3px solid',
-                borderColor: formData.scanningPassport ? 'warning.main' : 'primary.main',
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                animation: formData.scanningPassport ? 'pulse 1s infinite' : 'none',
-                '@keyframes pulse': {
-                  '0%': { borderColor: 'warning.main' },
-                  '50%': { borderColor: 'success.main' },
-                  '100%': { borderColor: 'warning.main' }
-                }
-              }}>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: 'white', 
-                    textAlign: 'center',
-                    bgcolor: 'rgba(0,0,0,0.7)',
-                    p: 1,
-                    borderRadius: 1
-                  }}
-                >
-                  {formData.scanningPassport ? 'Scanning...' : 'Position passport here'}
-                </Typography>
-              </Box>
-              
-              {/* Scanning Progress */}
-              {formData.scanningPassport && (
-                <Box sx={{
-                  position: 'absolute',
-                  bottom: 16,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  bgcolor: 'rgba(0,0,0,0.8)',
-                  color: 'white',
-                  p: 2,
-                  borderRadius: 2
-                }}>
-                  <CircularProgress size={20} color="inherit" />
-                  <Typography variant="body2">
-                    Scanning passport...
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
-            
-            {/* Camera Controls */}
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={capturePassport}
-                  disabled={!formData.cameraActive || formData.scanningPassport || formData.passportScanned}
-                  startIcon={<Scanner />}
-                  sx={{ py: { xs: 1.5, md: 2 } }}
-                >
-                  {formData.scanningPassport ? 'Scanning...' : 'Scan Passport'}
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={formData.cameraActive ? stopCamera : startCamera}
-                  startIcon={formData.cameraActive ? <Stop /> : <CameraAlt />}
-                  sx={{ py: { xs: 1.5, md: 2 } }}
-                >
-                  {formData.cameraActive ? 'Stop Camera' : 'Start Camera'}
-                </Button>
-              </Grid>
-            </Grid>
-            
-            {/* Passport Data Display */}
-            {passportData && formData.passportVerified && (
-              <Fade in={true}>
-                <Paper sx={{ p: 3, mt: 3, bgcolor: 'success.light' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <CheckCircle sx={{ color: 'success.main', fontSize: 32 }} />
-                    <Typography variant="h6" color="success.main">
-                      Passport Verified Successfully!
-                    </Typography>
-                  </Box>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" fontWeight="bold">Name:</Typography>
-                      <Typography variant="body2">{passportData.name}</Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" fontWeight="bold">Passport Number:</Typography>
-                      <Typography variant="body2">{passportData.passportNumber}</Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" fontWeight="bold">Nationality:</Typography>
-                      <Typography variant="body2">{passportData.nationality}</Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" fontWeight="bold">Expiry Date:</Typography>
-                      <Typography variant="body2">{passportData.expiryDate}</Typography>
-                    </Grid>
-                  </Grid>
-                </Paper>
-              </Fade>
-            )}
-            
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-          </Box>
-        );
-
-      case 2:
-        return (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Hotel color="primary" />
-              Room Assignment
+              Check-in Summary
             </Typography>
             
-            {roomAssignment ? (
-              <Fade in={true}>
-                <Card sx={{ mb: 3, border: 2, borderColor: 'success.main' }}>
-                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="h4" fontWeight="bold" color="primary.main">
-                        Room {roomAssignment.roomNumber}
-                      </Typography>
-                      <Chip 
-                        label={`Floor ${roomAssignment.floor}`} 
-                        color="primary" 
-                        size={isMobile ? 'small' : 'medium'}
-                      />
-                    </Box>
-                    
-                    <Typography variant="h6" gutterBottom>
-                      {roomAssignment.roomType}
-                    </Typography>
-                    
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
-                      <Grid item xs={6}>
-                        <Typography variant="body2" fontWeight="bold">Check-in Time:</Typography>
-                        <Typography variant="body2">{roomAssignment.checkInTime}</Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="body2" fontWeight="bold">Key Cards:</Typography>
-                        <Typography variant="body2">{roomAssignment.keyCards} cards</Typography>
-                      </Grid>
-                    </Grid>
-                    
-                    <Typography variant="body2" fontWeight="bold" sx={{ mb: 1 }}>
-                      Room Amenities:
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {roomAssignment.amenities.map((amenity, index) => (
-                        <Chip
-                          key={index}
-                          label={amenity}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                      ))}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Fade>
-            ) : (
+            {formData.isProcessing ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <CircularProgress size={60} sx={{ mb: 2 }} />
-                <Typography variant="h6">Assigning Room...</Typography>
+                <Typography variant="h6">Completing Check-in...</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Finding the perfect room for your stay
-                </Typography>
-              </Box>
-            )}
-            
-            {/* Guest Summary */}
-            <Paper sx={{ p: { xs: 2, md: 3 }, bgcolor: 'grey.50' }}>
-              <Typography variant="h6" gutterBottom>Guest Information</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Guest Name:</Typography>
-                  <Typography variant="body2">{formData.name}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Confirmation:</Typography>
-                  <Typography variant="body2">{formData.confirmationNumber}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Check-in Date:</Typography>
-                  <Typography variant="body2">{formData.checkInDate}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Phone:</Typography>
-                  <Typography variant="body2">{formData.phone}</Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
-        );
-
-      case 3:
-        return (
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            {formData.isProcessing ? (
-              <Box>
-                <CircularProgress size={80} sx={{ mb: 3 }} />
-                <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
-                  Completing Check-in...
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
                   Preparing your room and key cards
                 </Typography>
               </Box>
-            ) : (
+            ) : formData.checkInComplete ? (
               <Fade in={true}>
-                <Box>
+                <Box sx={{ textAlign: 'center' }}>
                   <Avatar sx={{ 
                     bgcolor: 'success.main', 
                     width: { xs: 80, md: 100 }, 
@@ -683,36 +571,97 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       <Typography variant="body1" color="primary.contrastText">
                         Floor {roomAssignment.floor} • {roomAssignment.keyCards} Key Cards
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 2 }}>
-                        Your key cards are ready at the front desk
-                      </Typography>
                     </Paper>
                   )}
                   
                   <Typography variant="body1" color="text.secondary" sx={{ mt: 3 }}>
-                    Enjoy your stay, {formData.name}!
+                    Enjoy your stay, {reservationData.guestName}!
                   </Typography>
                 </Box>
               </Fade>
+            ) : (
+              <Box>
+                {/* Guest Information */}
+                <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, bgcolor: 'grey.50' }}>
+                  <Typography variant="h6" gutterBottom>Guest Information</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" fontWeight="bold">Guest Name:</Typography>
+                      <Typography variant="body2">{reservationData.guestName}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" fontWeight="bold">Confirmation:</Typography>
+                      <Typography variant="body2">{reservationData.confirmationNumber}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" fontWeight="bold">Check-in Date:</Typography>
+                      <Typography variant="body2">{reservationData.checkInDate}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" fontWeight="bold">Check-out Date:</Typography>
+                      <Typography variant="body2">{reservationData.checkOutDate}</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="body2" fontWeight="bold">Phone:</Typography>
+                      <Typography variant="body2">{reservationData.phone}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Room Assignment */}
+                {roomAssignment && (
+                  <Card sx={{ mb: 3, border: 2, borderColor: 'success.main' }}>
+                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h4" fontWeight="bold" color="primary.main">
+                          Room {roomAssignment.roomNumber}
+                        </Typography>
+                        <Chip 
+                          label={`Floor ${roomAssignment.floor}`} 
+                          color="primary" 
+                          size={isMobile ? 'small' : 'medium'}
+                        />
+                      </Box>
+                      
+                      <Typography variant="h6" gutterBottom>
+                        {roomAssignment.roomType}
+                      </Typography>
+                      
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" fontWeight="bold">Check-in Time:</Typography>
+                          <Typography variant="body2">{roomAssignment.checkInTime}</Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" fontWeight="bold">Key Cards:</Typography>
+                          <Typography variant="body2">{roomAssignment.keyCards} cards</Typography>
+                        </Grid>
+                      </Grid>
+                      
+                      <Typography variant="body2" fontWeight="bold" sx={{ mb: 1 }}>
+                        Room Amenities:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {roomAssignment.amenities.map((amenity, index) => (
+                          <Chip
+                            key={index}
+                            label={amenity}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
+              </Box>
             )}
           </Box>
         );
 
       default:
         return null;
-    }
-  };
-
-  const canProceedToNext = () => {
-    switch (currentStep) {
-      case 0:
-        return formData.searchQuery.length > 0;
-      case 1:
-        return formData.passportVerified;
-      case 2:
-        return formData.roomAssigned;
-      default:
-        return false;
     }
   };
 
@@ -753,7 +702,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           >
             {steps.map((label) => (
               <Step key={label}>
-                <StepLabel>{isMobile ? label.split(' ')[0] : label}</StepLabel>
+                <StepLabel>{label}</StepLabel>
               </Step>
             ))}
           </Stepper>
@@ -769,7 +718,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         {renderStepContent()}
       </DialogContent>
 
-      {currentStep < 3 && (
+      {!formData.checkInComplete && (
         <DialogActions sx={{ 
           p: { xs: 2, md: 3 }, 
           bgcolor: 'grey.50',
@@ -785,21 +734,18 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             Previous
           </Button>
           <Box sx={{ flex: 1 }} />
-          <Button
-            variant="contained"
-            onClick={() => {
-              if (currentStep === 0) handleGuestFound();
-              else if (currentStep === 1 && formData.passportVerified) setCurrentStep(2);
-              else if (currentStep === 2 && formData.roomAssigned) completeCheckIn();
-            }}
-            disabled={!canProceedToNext()}
-            fullWidth={isMobile}
-            size={isMobile ? 'large' : 'medium'}
-          >
-            {currentStep === 0 ? 'Start Check-in' : 
-             currentStep === 1 ? 'Continue' : 
-             currentStep === 2 ? 'Complete Check-in' : 'Next'}
-          </Button>
+          {currentStep === 1 && roomAssignment && !formData.isProcessing && (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={completeCheckIn}
+              fullWidth={isMobile}
+              size={isMobile ? 'large' : 'medium'}
+              startIcon={<CheckCircle />}
+            >
+              Complete Check-in
+            </Button>
+          )}
         </DialogActions>
       )}
     </Dialog>

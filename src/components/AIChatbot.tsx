@@ -17,7 +17,11 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Card,
+  CardContent,
+  Grid,
+  Divider
 } from '@mui/material';
 import {
   Mic,
@@ -30,7 +34,10 @@ import {
   Refresh,
   CheckCircle,
   Language,
-  Translate
+  Hotel,
+  CalendarToday,
+  People,
+  CreditCard
 } from '@mui/icons-material';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import {
@@ -51,6 +58,15 @@ interface AIChatbotProps {
   context?: string;
 }
 
+interface RoomType {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  amenities: string[];
+  available: number;
+}
+
 const AIChatbot: React.FC<AIChatbotProps> = ({
   onOpenModal,
   onFormDataUpdate,
@@ -65,6 +81,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState<null | HTMLElement>(null);
+  const [showRoomTypes, setShowRoomTypes] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -82,6 +99,58 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const [sendMessage, { isLoading: isProcessing, error: apiError }] = useSendMessageMutation();
   const [resetChat] = useResetChatMutation();
   const [setContext] = useSetContextMutation();
+
+  // Available room types
+  const roomTypes: RoomType[] = [
+    {
+      id: 'ocean-view-king',
+      name: 'Ocean View King Suite',
+      price: 299,
+      description: 'Luxurious suite with panoramic ocean views',
+      amenities: ['Ocean View', 'King Bed', 'Balcony', 'Mini Bar', 'WiFi'],
+      available: 3
+    },
+    {
+      id: 'deluxe-garden',
+      name: 'Deluxe Garden Room',
+      price: 199,
+      description: 'Comfortable room overlooking beautiful gardens',
+      amenities: ['Garden View', 'Queen Bed', 'Work Desk', 'Coffee Maker', 'WiFi'],
+      available: 5
+    },
+    {
+      id: 'family-oceanfront',
+      name: 'Family Oceanfront Suite',
+      price: 399,
+      description: 'Spacious suite perfect for families',
+      amenities: ['Ocean View', '2 Queen Beds', 'Living Area', 'Kitchenette', 'WiFi'],
+      available: 2
+    },
+    {
+      id: 'presidential',
+      name: 'Presidential Suite',
+      price: 599,
+      description: 'Ultimate luxury with premium amenities',
+      amenities: ['Panoramic View', 'King Bed', 'Private Terrace', 'Butler Service', 'WiFi'],
+      available: 1
+    },
+    {
+      id: 'standard-double',
+      name: 'Standard Double Room',
+      price: 149,
+      description: 'Comfortable standard accommodation',
+      amenities: ['City View', 'Double Bed', 'Work Desk', 'WiFi'],
+      available: 4
+    },
+    {
+      id: 'luxury-spa',
+      name: 'Luxury Spa Suite',
+      price: 449,
+      description: 'Relaxation suite with spa amenities',
+      amenities: ['Ocean View', 'Private Spa', 'Balcony', 'Kitchenette', 'WiFi'],
+      available: 1
+    }
+  ];
 
   useEffect(() => {
     scrollToBottom();
@@ -116,6 +185,36 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const searchReservation = (query: string): any => {
+    const mockReservations = [
+      {
+        guestName: 'Sunil Karmur',
+        confirmationNumber: '8128273972',
+        phone: '+91-9876543210',
+        email: 'sunil.karmur@email.com',
+        roomType: 'Ocean View King Suite',
+        checkInDate: '2024-01-15',
+        checkOutDate: '2024-01-18'
+      },
+      {
+        guestName: 'John Smith',
+        confirmationNumber: '8128273973',
+        phone: '+1-555-0123',
+        email: 'john.smith@email.com',
+        roomType: 'Deluxe Garden Room',
+        checkInDate: '2024-01-15',
+        checkOutDate: '2024-01-17'
+      }
+    ];
+
+    const lowerQuery = query.toLowerCase();
+    return mockReservations.find(res => 
+      res.guestName.toLowerCase().includes(lowerQuery) ||
+      res.confirmationNumber.includes(query) ||
+      res.phone.includes(query)
+    );
+  };
+
   const handleSendMessage = async (messageText?: string): Promise<void> => {
     const textToSend = messageText || inputText.trim();
     if (!textToSend) return;
@@ -128,6 +227,37 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     };
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
+
+    // Check for reservation lookup
+    const lowerText = textToSend.toLowerCase();
+    if (lowerText.includes('check in') || lowerText.includes('checkin')) {
+      const reservation = searchReservation(textToSend);
+      
+      if (reservation) {
+        const successMessage: ChatMessage = {
+          id: Date.now().toString() + '_success',
+          role: 'assistant',
+          content: `Great! I found your reservation. Guest: ${reservation.guestName}, Confirmation: ${reservation.confirmationNumber}. Opening check-in process...`,
+          timestamp: new Date()
+        };
+        setMessages((prev) => [...prev, successMessage]);
+        
+        setTimeout(() => {
+          onOpenModal('checkin', reservation);
+        }, 1000);
+        return;
+      } else {
+        const notFoundMessage: ChatMessage = {
+          id: Date.now().toString() + '_notfound',
+          role: 'assistant',
+          content: `I'm unable to find your reservation. Would you like to book a room? Here are our available room types:`,
+          timestamp: new Date()
+        };
+        setMessages((prev) => [...prev, notFoundMessage]);
+        setShowRoomTypes(true);
+        return;
+      }
+    }
 
     try {
       const result = await sendMessage({
@@ -172,6 +302,21 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     }
   };
 
+  const handleRoomSelection = (room: RoomType) => {
+    const selectionMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `Excellent choice! You've selected the ${room.name} at $${room.price}/night. Opening reservation form...`,
+      timestamp: new Date()
+    };
+    setMessages((prev) => [...prev, selectionMessage]);
+    setShowRoomTypes(false);
+    
+    setTimeout(() => {
+      onOpenModal('reservation', { roomType: room.name, roomPrice: room.price });
+    }, 1000);
+  };
+
   const handleVoiceToggle = () => {
     isListening ? stopListening() : startListening();
   };
@@ -186,6 +331,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
+      setShowRoomTypes(false);
     } catch (error) {
       console.error('Reset failed:', error);
     }
@@ -196,7 +342,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     multilingualAI.setLanguage(languageCode);
     setLanguageMenuAnchor(null);
     
-    // Add language change message
     const languageInfo = multilingualAI.getLanguageInfo(languageCode);
     const changeMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -334,6 +479,97 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
             </Box>
           </Box>
         ))}
+
+        {/* Room Types Display */}
+        {showRoomTypes && (
+          <Fade in={true}>
+            <Box sx={{ mb: 2 }}>
+              <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Hotel color="primary" />
+                  Available Room Types
+                </Typography>
+                <Grid container spacing={2}>
+                  {roomTypes.map((room) => (
+                    <Grid item xs={12} sm={6} key={room.id}>
+                      <Card 
+                        sx={{ 
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: 4
+                          }
+                        }}
+                        onClick={() => handleRoomSelection(room)}
+                      >
+                        <CardContent sx={{ p: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                            <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1rem' }}>
+                              {room.name}
+                            </Typography>
+                            <Chip 
+                              label={`${room.available} available`} 
+                              size="small" 
+                              color="success" 
+                            />
+                          </Box>
+                          <Typography variant="h5" color="primary.main" fontWeight="bold" sx={{ mb: 1 }}>
+                            ${room.price}
+                            <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                              /night
+                            </Typography>
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {room.description}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {room.amenities.slice(0, 3).map((amenity, index) => (
+                              <Chip
+                                key={index}
+                                label={amenity}
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                              />
+                            ))}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<CalendarToday />}
+                    onClick={() => onOpenModal('reservation')}
+                  >
+                    Make Reservation
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<People />}
+                    onClick={() => onOpenModal('checkin')}
+                  >
+                    Check In
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Hotel />}
+                    onClick={() => onOpenModal('availability')}
+                  >
+                    Room Availability
+                  </Button>
+                </Box>
+              </Paper>
+            </Box>
+          </Fade>
+        )}
 
         {/* AI Typing Indicator */}
         {isProcessing && (
