@@ -280,7 +280,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       }
 
       // Speak response in current language
-      if (result?.response?.text && isSpeechEnabled) {
+      if (result?.response?.text && isSpeechEnabled && result.response.intent !== 'error') {
         try {
           await multilingualAI.speak(result.response.text, currentLanguage);
         } catch (speechError) {

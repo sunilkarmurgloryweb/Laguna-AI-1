@@ -37,13 +37,6 @@ export const geminiApi = createApi({
           };
 
           // Speak the response if it's not an error
-          if (response.intent !== 'error' && response.text) {
-            try {
-              await geminiService.speak(response.text);
-            } catch (speechError) {
-              console.warn('Text-to-speech failed:', speechError);
-            }
-          }
 
           return {
             data: {
