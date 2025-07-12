@@ -421,6 +421,9 @@ Format your response as JSON:
     if (lowerMessage.includes('find reservation') || lowerMessage.includes('search reservation') || lowerMessage.includes('find booking') || lowerMessage.includes('check reservation') || lowerMessage.includes('reservation status')) {
       return 'search_reservation';
     }
+    if (lowerMessage.includes('show reservation list') || lowerMessage.includes('reservation list') || lowerMessage.includes('all reservations') || lowerMessage.includes('list reservations')) {
+      return 'reservation_list';
+    }
     if (lowerMessage.includes('help') || lowerMessage.includes('assist')) {
       return 'help';
     }

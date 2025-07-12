@@ -262,7 +262,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     // Check for reservation search
     const lowerText = textToSend.toLowerCase();
     if (lowerText.includes('find reservation') || lowerText.includes('search reservation') || 
-        lowerText.includes('check reservation') || lowerText.includes('reservation status')) {
+        lowerText.includes('check reservation') || lowerText.includes('reservation status') ||
+        lowerText.includes('find the reservation')) {
       const reservation = searchReservation(textToSend);
       
       if (reservation) {
@@ -270,7 +271,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         const successMessage: ChatMessage = {
           id: Date.now().toString() + '_found',
           role: 'assistant',
-          content: `Great! I found your reservation. Here are the details:`,
+          content: `Great! I found the reservation for ${reservation.guestName}. Here are the details:`,
           timestamp: new Date()
         };
         setMessages((prev) => [...prev, successMessage]);
@@ -279,7 +280,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         const notFoundMessage: ChatMessage = {
           id: Date.now().toString() + '_notfound',
           role: 'assistant',
-          content: `I'm unable to find a reservation with that information. Please check the guest name, confirmation number, or phone number and try again. Would you like to make a new reservation?`,
+          content: `We unable to find your reservation. Would you like to book a room? Here are our available room types:`,
           timestamp: new Date()
         };
         setMessages((prev) => [...prev, notFoundMessage]);
@@ -309,7 +310,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         const notFoundMessage: ChatMessage = {
           id: Date.now().toString() + '_notfound',
           role: 'assistant',
-          content: `I'm unable to find your reservation. Would you like to book a room? Here are our available room types:`,
+          content: `We unable to find your reservation. Would you like to book a room? Here are our available room types:`,
           timestamp: new Date()
         };
         setMessages((prev) => [...prev, notFoundMessage]);
@@ -414,6 +415,21 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+    
+    // Extract search terms from the query
+    const searchTerms = [
+      // Direct matches
+      lowerQuery,
+      // Extract names after "find reservation", "search reservation", etc.
+      ...lowerQuery.match(/(?:find|search|check).*?reservation.*?([a-zA-Z\s]+)/g)?.map(match => 
+        match.replace(/(?:find|search|check).*?reservation.*?/i, '').trim()
+      ) || [],
+      // Extract confirmation numbers
+      ...lowerQuery.match(/\d{10}/g) || [],
+      // Extract phone numbers
+      ...lowerQuery.match(/\+?[\d\-\s\(\)]{10,}/g) || []
+    ];
+    
       handleSendMessage();
     }
   };
@@ -424,9 +440,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         <SmartToy sx={{ fontSize: 16 }} />
       </Avatar>
     ) : (
-      <Avatar sx={{ bgcolor: 'grey.300', width: 32, height: 32 }}>
-        <Person sx={{ fontSize: 16 }} />
-      </Avatar>
+      searchTerms.some(term => 
+        res.guestName.toLowerCase().includes(term.toLowerCase()) ||
+        res.confirmationNumber.includes(term) ||
+        res.phone.includes(term)
+      )
     );
 
   const getMessageColor = (message: ChatMessage) =>
