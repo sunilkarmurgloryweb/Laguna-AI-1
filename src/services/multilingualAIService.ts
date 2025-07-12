@@ -521,12 +521,32 @@ class MultilingualAIService {
     if (/[\uac00-\ud7af]/.test(text)) return 'ko'; // Korean hangul
     
     // Word-based detection
-    if (/\b(hola|gracias|por favor|habitación|reserva|español)\b/.test(lowerText)) return 'es';
-    if (/\b(bonjour|merci|chambre|réservation|français)\b/.test(lowerText)) return 'fr';
-    if (/\b(hallo|danke|zimmer|reservierung|deutsch)\b/.test(lowerText)) return 'de';
-    if (/\b(ciao|grazie|camera|prenotazione|italiano)\b/.test(lowerText)) return 'it';
-    if (/\b(olá|obrigado|quarto|reserva|português)\b/.test(lowerText)) return 'pt';
-    if (/\b(नमस्ते|धन्यवाद|कमरा|बुकिंग|होटल|आरक्षण)\b/.test(lowerText)) return 'hi';
+    // Spanish detection
+    if (/\b(hola|gracias|por favor|habitación|reserva|español|quiero|necesito|hotel|cuarto)\b/.test(lowerText)) return 'es';
+    
+    // French detection  
+    if (/\b(bonjour|merci|chambre|réservation|français|voudrais|besoin|hôtel)\b/.test(lowerText)) return 'fr';
+    
+    // German detection
+    if (/\b(hallo|danke|zimmer|reservierung|deutsch|möchte|brauche|hotel)\b/.test(lowerText)) return 'de';
+    
+    // Italian detection
+    if (/\b(ciao|grazie|camera|prenotazione|italiano|vorrei|bisogno|albergo)\b/.test(lowerText)) return 'it';
+    
+    // Portuguese detection
+    if (/\b(olá|obrigado|quarto|reserva|português|quero|preciso|hotel)\b/.test(lowerText)) return 'pt';
+    
+    // Hindi detection
+    if (/\b(नमस्ते|धन्यवाद|कमरा|बुकिंग|होटल|आरक्षण|चाहिए|करना)\b/.test(lowerText)) return 'hi';
+    
+    // Japanese detection
+    if (/\b(こんにちは|ありがとう|部屋|予約|ホテル|したい)\b/.test(lowerText)) return 'ja';
+    
+    // Korean detection
+    if (/\b(안녕하세요|감사합니다|방|예약|호텔|하고싶어요)\b/.test(lowerText)) return 'ko';
+    
+    // Chinese detection
+    if (/\b(你好|谢谢|房间|预订|酒店|想要)\b/.test(lowerText)) return 'zh';
     
     return 'en'; // Default to English
   }

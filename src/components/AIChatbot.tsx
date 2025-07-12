@@ -11,7 +11,11 @@ import {
   Fade,
   Tooltip,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -22,10 +26,11 @@ import {
   Chat as ChatIcon,
   Close as CloseIcon,
   SmartToy as AIIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  Language as LanguageIcon
 } from '@mui/icons-material';
 import { useSendMessageMutation } from '../store/api/geminiApi';
-import { multilingualAI } from '../services/multilingualAIService';
+import { multilingualAI, languageConfigs } from '../services/multilingualAIService';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 interface Message {
@@ -35,6 +40,7 @@ interface Message {
   timestamp: Date;
   extractedData?: Record<string, unknown>;
   intent?: string;
+  language?: string;
 }
 
 interface AIChatbotProps {
@@ -51,24 +57,17 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hello! I\'m your AI assistant for Lagunacreek Hotels. I can help you with reservations, check-in, check-out, and room availability. How can I assist you today?',
-      isUser: false,
-      timestamp: new Date()
-    }
-  ]);
-  
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('en-US');
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [detectedLanguage, setDetectedLanguage] = useState('en');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [sendMessage, { isLoading: isProcessing }] = useSendMessageMutation();
   
-  // Speech recognition hook
+  // Speech recognition hook with dynamic language
   const {
     isListening,
     transcript,
@@ -78,7 +77,30 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     startListening,
     stopListening,
     resetTranscript
-  } = useSpeechRecognition(currentLanguage, false, true);
+  } = useSpeechRecognition(
+    languageConfigs[currentLanguage]?.speechCode || 'en-US', 
+    false, 
+    true
+  );
+
+  // Initialize with welcome message in current language
+  useEffect(() => {
+    const welcomeMessage: Message = {
+      id: '1',
+      text: multilingualAI.getGreeting('welcome'),
+      isUser: false,
+      timestamp: new Date(),
+      language: currentLanguage
+    };
+    setMessages([welcomeMessage]);
+    
+    // Speak welcome message
+    if (isSpeechEnabled) {
+      setTimeout(() => {
+        speakMessage(welcomeMessage.text, currentLanguage);
+      }, 1000);
+    }
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -92,11 +114,20 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   // Process final transcript from speech recognition
   useEffect(() => {
     if (finalTranscript && finalTranscript.trim()) {
+      // Detect language from speech
+      const detectedLang = multilingualAI.detectLanguageFromText(finalTranscript);
+      setDetectedLanguage(detectedLang);
+      
+      // Auto-switch language if different from current
+      if (detectedLang !== currentLanguage) {
+        handleLanguageChange(detectedLang);
+      }
+      
       setInputText(finalTranscript);
-      handleSendMessage(finalTranscript);
+      handleSendMessage(finalTranscript, detectedLang);
       resetTranscript();
     }
-  }, [finalTranscript]);
+  }, [finalTranscript, currentLanguage]);
 
   // Provide message handler to parent component
   useEffect(() => {
@@ -106,19 +137,20 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           id: Date.now().toString(),
           text: message,
           isUser: false,
-          timestamp: new Date()
+          timestamp: new Date(),
+          language: currentLanguage
         };
         setMessages(prev => [...prev, aiMessage]);
         
         if (shouldSpeak && isSpeechEnabled) {
-          speakMessage(message);
+          speakMessage(message, currentLanguage);
         }
       });
     }
-  }, [onReceiveMessage, isSpeechEnabled]);
+  }, [onReceiveMessage, isSpeechEnabled, currentLanguage]);
 
-  // Speech synthesis function
-  const speakMessage = useCallback(async (text: string) => {
+  // Speech synthesis function with language support
+  const speakMessage = useCallback(async (text: string, language: string = currentLanguage) => {
     if (!isSpeechEnabled || !text) return;
 
     try {
@@ -126,14 +158,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       speechSynthesis.cancel();
       
       // Use multilingual AI service
-      await multilingualAI.speak(text, currentLanguage);
+      await multilingualAI.speak(text, language);
     } catch (error) {
       console.error('Speech synthesis error:', error);
       
       // Fallback to browser speech synthesis
       try {
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = currentLanguage;
+        utterance.lang = languageConfigs[language]?.speechCode || 'en-US';
         utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 0.8;
@@ -144,8 +176,32 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     }
   }, [isSpeechEnabled, currentLanguage]);
 
+  // Handle language change
+  const handleLanguageChange = (language: string) => {
+    setCurrentLanguage(language);
+    multilingualAI.setLanguage(language);
+    
+    // Add language change notification
+    const langInfo = multilingualAI.getLanguageInfo(language);
+    const changeMessage: Message = {
+      id: Date.now().toString(),
+      text: multilingualAI.getResponse('help', {}, language),
+      isUser: false,
+      timestamp: new Date(),
+      language: language
+    };
+    setMessages(prev => [...prev, changeMessage]);
+    
+    // Speak in new language
+    if (isSpeechEnabled) {
+      setTimeout(() => {
+        speakMessage(changeMessage.text, language);
+      }, 500);
+    }
+  };
+
   // Detect intent and open appropriate modal
-  const detectIntentAndOpenModal = useCallback((intent: string, extractedData: any) => {
+  const detectIntentAndOpenModal = useCallback((intent: string, extractedData: any, language: string) => {
     if (!onOpenModal) return;
 
     const modalMappings: Record<string, string> = {
@@ -157,76 +213,98 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
     const modalType = modalMappings[intent];
     if (modalType) {
+      // Add language context to extracted data
+      const dataWithLanguage = {
+        ...extractedData,
+        preferredLanguage: language
+      };
+      
       // Delay modal opening to allow AI response to be spoken first
       setTimeout(() => {
-        onOpenModal(modalType, extractedData);
+        onOpenModal(modalType, dataWithLanguage);
       }, 2000);
     }
   }, [onOpenModal]);
 
-  // Handle sending messages
-  const handleSendMessage = async (text?: string) => {
+  // Enhanced message processing with language detection
+  const handleSendMessage = async (text?: string, detectedLang?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText || isProcessing) return;
+
+    const messageLang = detectedLang || currentLanguage;
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: messageText,
       isUser: true,
-      timestamp: new Date()
+      timestamp: new Date(),
+      language: messageLang
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
 
     try {
-      // Send to Gemini AI
+      // Send to Gemini AI with language context
       const result = await sendMessage({
         message: messageText,
-        context: context
+        context: `${context}_${messageLang}`,
+        currentFormData: { language: messageLang }
       }).unwrap();
 
-      const { response, chatMessage } = result;
+      const { response } = result;
+
+      // Generate response in detected/current language
+      let responseText = response.text;
+      
+      // If language was auto-detected and different, acknowledge it
+      if (detectedLang && detectedLang !== currentLanguage) {
+        const langInfo = multilingualAI.getLanguageInfo(detectedLang);
+        responseText = `${langInfo.flag} ${responseText}`;
+      }
 
       // Add AI response message
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: response.text,
+        text: responseText,
         isUser: false,
         timestamp: new Date(),
         extractedData: response.extractedData,
-        intent: response.intent
+        intent: response.intent,
+        language: messageLang
       };
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Speak AI response
+      // Speak AI response in appropriate language
       if (isSpeechEnabled) {
         setTimeout(() => {
-          speakMessage(response.text);
+          speakMessage(responseText, messageLang);
         }, 500);
       }
 
       // Handle modal opening based on intent
       if (response.intent && response.extractedData) {
-        detectIntentAndOpenModal(response.intent, response.extractedData);
+        detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
       }
 
     } catch (error) {
       console.error('Error processing message:', error);
       
+      const errorText = multilingualAI.getResponse('error', {}, messageLang);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'I apologize, but I encountered an error. Please try again or speak more clearly.',
+        text: errorText,
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        language: messageLang
       };
       
       setMessages(prev => [...prev, errorMessage]);
       
       if (isSpeechEnabled) {
-        speakMessage(errorMessage.text);
+        speakMessage(errorText, messageLang);
       }
     }
   };
@@ -239,7 +317,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     }
   };
 
-  // Toggle voice input
+  // Toggle voice input with language detection
   const toggleVoiceInput = () => {
     if (isListening) {
       stopListening();
@@ -255,6 +333,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       handleSendMessage();
     }
   };
+
+  // Get available languages
+  const availableLanguages = multilingualAI.getAvailableLanguages();
 
   // Minimized view
   if (isMinimized) {
@@ -329,12 +410,38 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
               AI Assistant
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.8 }}>
-              Powered by Gemini AI • Voice Enabled
+              {languageConfigs[currentLanguage]?.flag} {languageConfigs[currentLanguage]?.name} • Powered by Gemini AI
             </Typography>
           </Box>
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Language Selector */}
+          <FormControl size="small" sx={{ minWidth: 80 }}>
+            <Select
+              value={currentLanguage}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              sx={{
+                color: 'white',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.3)'
+                },
+                '& .MuiSvgIcon-root': {
+                  color: 'white'
+                }
+              }}
+            >
+              {availableLanguages.map((lang) => (
+                <MenuItem key={lang.code} value={lang.code}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography>{lang.flag}</Typography>
+                    <Typography variant="caption">{lang.code.toUpperCase()}</Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           {/* Speech Status */}
           {isListening && (
             <Chip
@@ -406,6 +513,16 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                   borderTopRightRadius: message.isUser ? 0.5 : 2
                 }}
               >
+                {/* Language indicator for messages */}
+                {message.language && message.language !== 'en' && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                    <LanguageIcon sx={{ fontSize: 14 }} />
+                    <Typography variant="caption">
+                      {languageConfigs[message.language]?.flag} {languageConfigs[message.language]?.name}
+                    </Typography>
+                  </Box>
+                )}
+
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                   {message.text}
                 </Typography>
@@ -480,7 +597,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                 {transcript}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Speaking...
+                {languageConfigs[detectedLanguage]?.flag} Speaking...
               </Typography>
             </Paper>
           </Box>
@@ -508,7 +625,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Type your message or use voice..."
+          placeholder={`Type your message in any language or use voice...`}
           disabled={isProcessing || isListening}
           variant="outlined"
           size="small"

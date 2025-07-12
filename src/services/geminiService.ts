@@ -98,8 +98,16 @@ You are an AI assistant for Lagunacreek Hotels. You help guests with:
 6. Guest services
 7. Find reservations by guest name or phone
 
+MULTILINGUAL SUPPORT:
+- Detect the language of user input automatically
+- Respond in the same language as the user
+- Support: English, Spanish, French, German, Italian, Portuguese, Hindi, Japanese, Korean, Chinese
+- Use appropriate cultural context and politeness levels
+- For non-English languages, include English translation in parentheses when needed
+
 IMPORTANT INSTRUCTIONS:
 - Always respond in a friendly, professional manner
+- Match the user's language and cultural context
 - Extract relevant data from user messages when possible
 - Provide helpful suggestions and next steps
 - If user input relates to form filling, indicate this clearly
@@ -109,6 +117,17 @@ IMPORTANT INSTRUCTIONS:
 - For check-out requests, always open check-out modal
 - For room availability requests, open availability modal
 - For reservation searches, display reservation details in chat
+
+LANGUAGE-SPECIFIC RESPONSES:
+- Spanish: Use formal "usted" for politeness, include "por favor" and "gracias"
+- French: Use polite forms, "s'il vous plaît" and "merci"
+- German: Use formal "Sie", include "bitte" and "danke"
+- Italian: Use polite forms, "per favore" and "grazie"
+- Portuguese: Use formal address, "por favor" and "obrigado/a"
+- Hindi: Use respectful forms, "कृपया" and "धन्यवाद"
+- Japanese: Use polite forms (です/ます), "お願いします" and "ありがとうございます"
+- Korean: Use formal speech levels, "주세요" and "감사합니다"
+- Chinese: Use polite forms, "请" and "谢谢"
 
 Available Room Types:
 - Ocean View King Suite ($299/night)
@@ -123,12 +142,17 @@ Payment Methods:
 - Pay at Hotel
 - UPI or Digital Wallet
 
-Voice Command Examples:
-- "Make a reservation" / "Book a room" / "I want to book" → Open reservation modal
-- "Check in" / "I'm checking in" / "Guest check in" / "Arrival" → Open check-in modal  
-- "Check out" / "I'm checking out" / "Guest check out" / "Departure" → Open check-out modal
-- "Show room availability" / "Room availability" / "Check availability" → Open availability modal
-- "Find reservation [name/phone]" → Search and display reservation details
+Voice Command Examples (Multilingual):
+English: "Make a reservation" / "Book a room" / "Check in" / "Check out" / "Room availability"
+Spanish: "Hacer una reserva" / "Reservar una habitación" / "Registrarse" / "Salir" / "Disponibilidad"
+French: "Faire une réservation" / "Réserver une chambre" / "Enregistrement" / "Départ" / "Disponibilité"
+German: "Reservierung machen" / "Zimmer buchen" / "Einchecken" / "Auschecken" / "Verfügbarkeit"
+Italian: "Fare una prenotazione" / "Prenotare una camera" / "Check-in" / "Check-out" / "Disponibilità"
+Portuguese: "Fazer uma reserva" / "Reservar um quarto" / "Check-in" / "Check-out" / "Disponibilidade"
+Hindi: "आरक्षण करना" / "कमरा बुक करना" / "चेक इन" / "चेक आउट" / "उपलब्धता"
+Japanese: "予約する" / "部屋を予約" / "チェックイン" / "チェックアウト" / "空室状況"
+Korean: "예약하기" / "방 예약" / "체크인" / "체크아웃" / "객실 현황"
+Chinese: "预订" / "订房间" / "入住" / "退房" / "房间状况"
 
 IMPORTANT: When user expresses intent to book, check-in, check-out, or check availability, 
 ALWAYS set the correct intent in your response and provide a helpful message about opening the modal.
@@ -409,33 +433,38 @@ Format your response as JSON:
   private detectIntent(message: string): string {
     const lowerMessage = message.toLowerCase();
     
-    // Enhanced reservation detection
-    if (lowerMessage.match(/\b(book|reserve|reservation|make.*booking|want.*book|book.*room|new.*reservation|make.*reservation)\b/)) {
+    // Enhanced reservation detection (multilingual)
+    if (lowerMessage.match(/\b(book|reserve|reservation|make.*booking|want.*book|book.*room|new.*reservation|make.*reservation|hacer.*reserva|reservar|réserver|buchen|prenotare|reservar|आरक्षण|बुकिंग|予約|예약|预订)\b/)) {
       return 'reservation';
     }
     
-    // Enhanced check-in detection
-    if (lowerMessage.match(/\b(check.?in|checking.?in|want.*check.?in|guest.*check.?in|arrival|arrive)\b/)) {
+    // Enhanced check-in detection (multilingual)
+    if (lowerMessage.match(/\b(check.?in|checking.?in|want.*check.?in|guest.*check.?in|arrival|arrive|registrarse|enregistrement|einchecken|check.?in|चेक.*इन|チェックイン|체크인|入住)\b/)) {
       return 'checkin';
     }
     
-    // Enhanced check-out detection
-    if (lowerMessage.match(/\b(check.?out|checking.?out|want.*check.?out|guest.*check.?out|departure|leave)\b/)) {
+    // Enhanced check-out detection (multilingual)
+    if (lowerMessage.match(/\b(check.?out|checking.?out|want.*check.?out|guest.*check.?out|departure|leave|salir|départ|auschecken|check.?out|चेक.*आउट|チェックアウト|체크아웃|退房)\b/)) {
       return 'checkout';
     }
     
-    // Enhanced availability detection
-    if (lowerMessage.match(/\b(available|availability|rooms.*available|display.*room|show.*room|room.*availability|check.*availability|vacant.*rooms|free.*rooms|calendar)\b/)) {
+    // Enhanced availability detection (multilingual)
+    if (lowerMessage.match(/\b(available|availability|rooms.*available|display.*room|show.*room|room.*availability|check.*availability|vacant.*rooms|free.*rooms|calendar|disponibilidad|disponible|disponibilité|verfügbarkeit|disponibilità|उपलब्धता|空室|객실.*현황|房间.*状况)\b/)) {
       return 'availability';
     }
     
-    if (lowerMessage.match(/\b(find.*reservation|search.*reservation|find.*booking|check.*reservation|reservation.*status)\b/)) {
+    // Search reservation (multilingual)
+    if (lowerMessage.match(/\b(find.*reservation|search.*reservation|find.*booking|check.*reservation|reservation.*status|buscar.*reserva|chercher.*réservation|reservierung.*suchen|cercare.*prenotazione|procurar.*reserva|आरक्षण.*खोजना|予約.*検索|예약.*찾기|查找.*预订)\b/)) {
       return 'search_reservation';
     }
-    if (lowerMessage.match(/\b(show.*reservation.*list|reservation.*list|all.*reservations|list.*reservations)\b/)) {
+    
+    // Reservation list (multilingual)
+    if (lowerMessage.match(/\b(show.*reservation.*list|reservation.*list|all.*reservations|list.*reservations|lista.*reservas|liste.*réservations|reservierungsliste|elenco.*prenotazioni|lista.*reservas|आरक्षण.*सूची|予約.*リスト|예약.*목록|预订.*列表)\b/)) {
       return 'reservation_list';
     }
-    if (lowerMessage.match(/\b(help|assist)\b/)) {
+    
+    // Help (multilingual)
+    if (lowerMessage.match(/\b(help|assist|ayuda|aide|hilfe|aiuto|ajuda|मदद|ヘルプ|도움|帮助)\b/)) {
       return 'help';
     }
     
