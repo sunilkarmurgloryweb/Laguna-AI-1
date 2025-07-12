@@ -185,6 +185,161 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       error: 'Das habe ich nicht verstanden. Könnten Sie das bitte wiederholen?',
       help: 'Ich kann Ihnen bei Reservierungen, Check-in, Check-out und Zimmerverfügbarkeit helfen. Sagen Sie mir einfach, was Sie brauchen.'
     }
+  },
+  it: {
+    code: 'it',
+    name: 'Italiano',
+    flag: '🇮🇹',
+    speechCode: 'it-IT',
+    voiceNames: ['Google italiano', 'Microsoft Cosimo', 'Alice'],
+    greetings: {
+      welcome: 'Benvenuti al Lagunacreek Resort & Spa! Posso aiutarvi con prenotazioni, check-in, check-out e disponibilità camere. Come posso assistervi oggi?',
+      reservation: 'Vi aiuterò a fare una prenotazione. Per favore ditemi la vostra data di arrivo, partenza e numero di ospiti.',
+      checkin: 'Vi aiuterò con il check-in. Per favore fornite il vostro numero di conferma o nome.',
+      checkout: 'Vi aiuterò con il check-out. Lasciatemi rivedere il vostro conto e le spese.',
+      roomAvailability: 'Controllerò la disponibilità delle camere per voi. Quali date state cercando?'
+    },
+    prompts: {
+      dates: 'Per favore ditemi le vostre date di arrivo e partenza.',
+      guests: 'Quanti adulti e bambini soggiorneranno?',
+      roomType: 'Che tipo di camera preferite? Abbiamo Suite King Vista Mare, Camera Deluxe Garden, o Suite Familiare Fronte Mare.',
+      guestInfo: 'Per favore fornite il vostro nome completo, numero di telefono e indirizzo email.',
+      payment: 'Come vorreste pagare? Carta di credito, pagare in hotel, o portafoglio digitale?',
+      confirmation: 'Per favore rivedete i dettagli della vostra prenotazione e dite "conferma" per completare la vostra prenotazione.'
+    },
+    responses: {
+      dateConfirm: 'Capito. Arrivo: {checkin}, Partenza: {checkout}.',
+      roomSelected: '{roomType} selezionata a ${price} per notte.',
+      infoReceived: 'Grazie. Ho le vostre informazioni.',
+      paymentSet: '{paymentMethod} selezionato.',
+      bookingConfirmed: 'La vostra prenotazione è confermata! Numero di conferma: {confirmationId}',
+      error: 'Non ho capito. Potreste ripetere per favore?',
+      help: 'Posso aiutarvi con prenotazioni, check-in, check-out e disponibilità camere. Ditemi semplicemente di cosa avete bisogno.'
+    }
+  },
+  pt: {
+    code: 'pt',
+    name: 'Português',
+    flag: '🇵🇹',
+    speechCode: 'pt-PT',
+    voiceNames: ['Google português', 'Microsoft Helia', 'Joana'],
+    greetings: {
+      welcome: 'Bem-vindos ao Lagunacreek Resort & Spa! Posso ajudá-los com reservas, check-in, check-out e disponibilidade de quartos. Como posso assistir hoje?',
+      reservation: 'Vou ajudá-los a fazer uma reserva. Por favor digam-me a vossa data de chegada, partida e número de hóspedes.',
+      checkin: 'Vou ajudá-los com o check-in. Por favor forneçam o vosso número de confirmação ou nome.',
+      checkout: 'Vou ajudá-los com o check-out. Deixem-me rever a vossa conta e despesas.',
+      roomAvailability: 'Vou verificar a disponibilidade de quartos para vocês. Que datas procuram?'
+    },
+    prompts: {
+      dates: 'Por favor digam-me as vossas datas de chegada e partida.',
+      guests: 'Quantos adultos e crianças ficarão?',
+      roomType: 'Que tipo de quarto preferem? Temos Suite King Vista Mar, Quarto Deluxe Garden, ou Suite Familiar Frente Mar.',
+      guestInfo: 'Por favor forneçam o vosso nome completo, número de telefone e endereço de email.',
+      payment: 'Como gostariam de pagar? Cartão de crédito, pagar no hotel, ou carteira digital?',
+      confirmation: 'Por favor revejam os detalhes da vossa reserva e digam "confirmar" para completar a vossa reserva.'
+    },
+    responses: {
+      dateConfirm: 'Entendido. Chegada: {checkin}, Partida: {checkout}.',
+      roomSelected: '{roomType} selecionado a ${price} por noite.',
+      infoReceived: 'Obrigado. Tenho as vossas informações.',
+      paymentSet: '{paymentMethod} selecionado.',
+      bookingConfirmed: 'A vossa reserva está confirmada! Número de confirmação: {confirmationId}',
+      error: 'Não entendi isso. Poderiam repetir por favor?',
+      help: 'Posso ajudá-los com reservas, check-in, check-out e disponibilidade de quartos. Digam-me simplesmente o que precisam.'
+    }
+  },
+  ja: {
+    code: 'ja',
+    name: '日本語',
+    flag: '🇯🇵',
+    speechCode: 'ja-JP',
+    voiceNames: ['Google 日本語', 'Microsoft Ayumi', 'Kyoko'],
+    greetings: {
+      welcome: 'ラグナクリークリゾート＆スパへようこそ！予約、チェックイン、チェックアウト、お部屋の空室状況についてお手伝いできます。本日はいかがお手伝いしましょうか？',
+      reservation: 'ご予約のお手伝いをいたします。チェックイン日、チェックアウト日、ゲスト数をお教えください。',
+      checkin: 'チェックインのお手伝いをいたします。確認番号またはお名前をお教えください。',
+      checkout: 'チェックアウトのお手伝いをいたします。お会計と料金を確認させていただきます。',
+      roomAvailability: 'お部屋の空室状況を確認いたします。どちらの日程をお探しですか？'
+    },
+    prompts: {
+      dates: 'チェックイン日とチェックアウト日をお教えください。',
+      guests: '大人と子供は何名様でしょうか？',
+      roomType: 'どちらのお部屋タイプをご希望ですか？オーシャンビューキングスイート、デラックスガーデンルーム、ファミリーオーシャンフロントスイートがございます。',
+      guestInfo: 'お名前、電話番号、メールアドレスをお教えください。',
+      payment: 'お支払い方法はいかがいたしますか？クレジットカード、ホテルでのお支払い、デジタルウォレット？',
+      confirmation: 'ご予約内容をご確認いただき、「確認」とおっしゃってご予約を完了してください。'
+    },
+    responses: {
+      dateConfirm: '承知いたしました。チェックイン：{checkin}、チェックアウト：{checkout}。',
+      roomSelected: '{roomType}を1泊${price}で選択されました。',
+      infoReceived: 'ありがとうございます。お客様の情報を承りました。',
+      paymentSet: '{paymentMethod}を選択されました。',
+      bookingConfirmed: 'ご予約が確定いたしました！確認番号：{confirmationId}',
+      error: '申し訳ございませんが、理解できませんでした。もう一度おっしゃっていただけますか？',
+      help: '予約、チェックイン、チェックアウト、お部屋の空室状況についてお手伝いできます。ご用件をお聞かせください。'
+    }
+  },
+  ko: {
+    code: 'ko',
+    name: '한국어',
+    flag: '🇰🇷',
+    speechCode: 'ko-KR',
+    voiceNames: ['Google 한국어', 'Microsoft Heami', 'Seoyeon'],
+    greetings: {
+      welcome: '라구나크릭 리조트 앤 스파에 오신 것을 환영합니다! 예약, 체크인, 체크아웃, 객실 이용 가능 여부에 대해 도움을 드릴 수 있습니다. 오늘 어떻게 도와드릴까요?',
+      reservation: '예약을 도와드리겠습니다. 체크인 날짜, 체크아웃 날짜, 투숙객 수를 알려주세요.',
+      checkin: '체크인을 도와드리겠습니다. 확인 번호나 성함을 알려주세요.',
+      checkout: '체크아웃을 도와드리겠습니다. 계산서와 요금을 확인해보겠습니다.',
+      roomAvailability: '객실 이용 가능 여부를 확인해드리겠습니다. 어떤 날짜를 찾고 계신가요?'
+    },
+    prompts: {
+      dates: '체크인 날짜와 체크아웃 날짜를 알려주세요.',
+      guests: '성인과 어린이는 몇 명인가요?',
+      roomType: '어떤 객실 유형을 원하시나요? 오션뷰 킹 스위트, 디럭스 가든 룸, 패밀리 오션프론트 스위트가 있습니다.',
+      guestInfo: '성함, 전화번호, 이메일 주소를 알려주세요.',
+      payment: '어떻게 결제하시겠습니까? 신용카드, 호텔에서 결제, 디지털 지갑?',
+      confirmation: '예약 내용을 확인하시고 "확인"이라고 말씀해주시면 예약이 완료됩니다.'
+    },
+    responses: {
+      dateConfirm: '알겠습니다. 체크인: {checkin}, 체크아웃: {checkout}.',
+      roomSelected: '{roomType}이 1박당 ${price}로 선택되었습니다.',
+      infoReceived: '감사합니다. 고객님의 정보를 받았습니다.',
+      paymentSet: '{paymentMethod}이 선택되었습니다.',
+      bookingConfirmed: '예약이 확정되었습니다! 확인 번호: {confirmationId}',
+      error: '죄송합니다. 이해하지 못했습니다. 다시 말씀해 주시겠어요?',
+      help: '예약, 체크인, 체크아웃, 객실 이용 가능 여부에 대해 도움을 드릴 수 있습니다. 무엇이 필요한지 말씀해 주세요.'
+    }
+  },
+  zh: {
+    code: 'zh',
+    name: '中文',
+    flag: '🇨🇳',
+    speechCode: 'zh-CN',
+    voiceNames: ['Google 中文', 'Microsoft Xiaoxiao', 'Xiaoyu'],
+    greetings: {
+      welcome: '欢迎来到拉古纳克里克度假村及水疗中心！我可以帮助您预订、办理入住、退房和查询客房可用性。今天我可以为您做些什么？',
+      reservation: '我来帮您预订。请告诉我您的入住日期、退房日期和客人数量。',
+      checkin: '我来帮您办理入住。请提供您的确认号码或姓名。',
+      checkout: '我来帮您办理退房。让我查看您的账单和费用。',
+      roomAvailability: '我来为您查询客房可用性。您在寻找哪些日期？'
+    },
+    prompts: {
+      dates: '请告诉我您的入住和退房日期。',
+      guests: '有多少成人和儿童入住？',
+      roomType: '您希望哪种房型？我们有海景大床套房、豪华花园房或家庭海景套房。',
+      guestInfo: '请提供您的全名、电话号码和电子邮件地址。',
+      payment: '您希望如何付款？信用卡、到店付款还是数字钱包？',
+      confirmation: '请查看您的预订详情并说"确认"来完成您的预订。'
+    },
+    responses: {
+      dateConfirm: '明白了。入住：{checkin}，退房：{checkout}。',
+      roomSelected: '已选择{roomType}，每晚${price}。',
+      infoReceived: '谢谢。我已收到您的信息。',
+      paymentSet: '已选择{paymentMethod}。',
+      bookingConfirmed: '您的预订已确认！确认号码：{confirmationId}',
+      error: '抱歉，我没有理解。您能再说一遍吗？',
+      help: '我可以帮助您预订、办理入住、退房和查询客房可用性。请告诉我您需要什么。'
+    }
   }
 };
 
@@ -310,7 +465,12 @@ class MultilingualAIService {
       'es': 'Español', 
       'hi': 'हिंदी',
       'fr': 'Français',
-      'de': 'Deutsch'
+      'de': 'Deutsch',
+      'it': 'Italiano',
+      'pt': 'Português',
+      'ja': '日本語',
+      'ko': '한국어',
+      'zh': '中文'
     };
     
     return {
@@ -325,16 +485,59 @@ class MultilingualAIService {
     // Simple language detection based on common words/patterns
     const lowerText = text.toLowerCase();
     
-    // Enhanced Hindi detection with more patterns
-    if (/[\u0900-\u097F]/.test(text)) return 'hi'; // Devanagari script detection
-    if (/\b(नमस्ते|धन्यवाद|कमरा|बुकिंग|होटल|आरक्षण|चेक|इन|आउट)\b/.test(lowerText)) return 'hi';
-    if (/\b(मुझे|चाहिए|करना|है|के|लिए|में|से|का|की|को)\b/.test(lowerText)) return 'hi';
+    // Enhanced detection with more patterns
+    if (/[\u0900-\u097F]/.test(text)) return 'hi'; // Devanagari script
+    if (/[\u4e00-\u9fff]/.test(text)) return 'zh'; // Chinese characters
+    if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja'; // Japanese hiragana/katakana
+    if (/[\uac00-\ud7af]/.test(text)) return 'ko'; // Korean hangul
     
-    if (/\b(hola|gracias|por favor|habitación|reserva)\b/.test(lowerText)) return 'es';
-    if (/\b(bonjour|merci|chambre|réservation)\b/.test(lowerText)) return 'fr';
-    if (/\b(hallo|danke|zimmer|reservierung)\b/.test(lowerText)) return 'de';
+    // Word-based detection
+    if (/\b(hola|gracias|por favor|habitación|reserva|español)\b/.test(lowerText)) return 'es';
+    if (/\b(bonjour|merci|chambre|réservation|français)\b/.test(lowerText)) return 'fr';
+    if (/\b(hallo|danke|zimmer|reservierung|deutsch)\b/.test(lowerText)) return 'de';
+    if (/\b(ciao|grazie|camera|prenotazione|italiano)\b/.test(lowerText)) return 'it';
+    if (/\b(olá|obrigado|quarto|reserva|português)\b/.test(lowerText)) return 'pt';
+    if (/\b(नमस्ते|धन्यवाद|कमरा|बुकिंग|होटल|आरक्षण)\b/.test(lowerText)) return 'hi';
     
     return 'en'; // Default to English
+  }
+
+  public translateText(text: string, targetLanguage: string): string {
+    // This is a simplified translation service
+    // In production, you would integrate with Google Translate API or similar
+    const translations: Record<string, Record<string, string>> = {
+      'hello': {
+        'es': 'hola',
+        'hi': 'नमस्ते',
+        'fr': 'bonjour',
+        'de': 'hallo',
+        'it': 'ciao',
+        'pt': 'olá',
+        'ja': 'こんにちは',
+        'ko': '안녕하세요',
+        'zh': '你好'
+      },
+      'thank you': {
+        'es': 'gracias',
+        'hi': 'धन्यवाद',
+        'fr': 'merci',
+        'de': 'danke',
+        'it': 'grazie',
+        'pt': 'obrigado',
+        'ja': 'ありがとう',
+        'ko': '감사합니다',
+        'zh': '谢谢'
+      }
+    };
+
+    const lowerText = text.toLowerCase();
+    for (const [english, translations_map] of Object.entries(translations)) {
+      if (lowerText.includes(english)) {
+        return translations_map[targetLanguage] || text;
+      }
+    }
+
+    return text; // Return original if no translation found
   }
 }
 

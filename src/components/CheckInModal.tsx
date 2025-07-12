@@ -21,7 +21,9 @@ import {
   MenuItem,
   Alert,
   Fade,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
   Close,
@@ -52,6 +54,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   onClose,
   guestData = {}
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: guestData.name || '',
@@ -150,6 +155,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
       },
     },
   });
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -166,15 +172,16 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="check-in"
                 reservationData={formData}
-                size="medium"
+                size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
             </Box>
             
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 2, md: 3 }}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Full Name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -186,6 +193,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Confirmation Number"
                   value={formData.confirmationNumber}
                   onChange={(e) => setFormData({...formData, confirmationNumber: e.target.value})}
@@ -197,6 +205,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Check-in Date"
                   type="date"
                   value={formData.checkInDate}
@@ -207,7 +216,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+                <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
                   <InputLabel>Room Type</InputLabel>
                   <Select
                     value={formData.roomType}
@@ -252,7 +261,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                     variant="contained"
                     startIcon={<CameraAlt />}
                     onClick={handleCameraCapture}
-                    sx={{ py: 2 }}
+                    sx={{ py: { xs: 1.5, md: 2 } }}
+                    size={isMobile ? 'medium' : 'large'}
                   >
                     Start Camera
                   </Button>
@@ -263,7 +273,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                     variant="outlined"
                     startIcon={<Upload />}
                     onClick={() => setFormData({...formData, documentUploaded: true})}
-                    sx={{ py: 2 }}
+                    sx={{ py: { xs: 1.5, md: 2 } }}
+                    size={isMobile ? 'medium' : 'large'}
                   >
                     Upload Document
                   </Button>
@@ -307,10 +318,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               <Fade in={true}>
                 <Box>
                   <Verified sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
-                  <Typography variant="h4" color="success.main" gutterBottom>
+                  <Typography variant="h4" color="success.main" gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
                     Welcome to Lagunacreek!
                   </Typography>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                     Check-in Complete
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
@@ -342,7 +353,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               <CalendarToday color="primary" />
               Check-in Summary
             </Typography>
-            <Paper sx={{ p: 3, bgcolor: 'grey.50', mb: 3 }}>
+            <Paper sx={{ p: { xs: 2, md: 3 }, bgcolor: 'grey.50', mb: 3 }}>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <Typography variant="body2" fontWeight="bold">Guest Name:</Typography>
@@ -395,191 +406,24 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     }
   };
 
-  const renderStepContent_old = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Person color="primary" />
-              Guest Information
-            </Typography>
-            
-            {/* Voice Input */}
-            <Box sx={{ mb: 3, textAlign: 'center' }}>
-              <VoiceInput
-                onVoiceProcessed={handleVoiceProcessed}
-                currentStep="check-in"
-                reservationData={formData}
-                size="medium"
-                showTranscript={true}
-              />
-            </Box>
-            
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Enter full name"
-                  sx={getFieldSx('name')}
-                  helperText={isVoiceFilled('name') ? '✓ Filled by voice' : ''}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Confirmation Number"
-                  value={formData.confirmationNumber}
-                  onChange={(e) => setFormData({...formData, confirmationNumber: e.target.value})}
-                  placeholder="LG123456"
-                  sx={getFieldSx('confirmationNumber')}
-                  helperText={isVoiceFilled('confirmationNumber') ? '✓ Filled by voice' : ''}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Check-in Date"
-                  type="date"
-                  value={formData.checkInDate}
-                  onChange={(e) => setFormData({...formData, checkInDate: e.target.value})}
-                  InputLabelProps={{ shrink: true }}
-                  sx={getFieldSx('checkInDate')}
-                  helperText={isVoiceFilled('checkInDate') ? '✓ Filled by voice' : ''}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Room Type</InputLabel>
-                  <Select
-                    value={formData.roomType}
-                    label="Room Type"
-                    onChange={(e) => setFormData({...formData, roomType: e.target.value})}
-                    sx={getFieldSx('roomType')}
-                  >
-                    <MenuItem value="Ocean View King Suite">Ocean View King Suite</MenuItem>
-                    <MenuItem value="Deluxe Garden Room">Deluxe Garden Room</MenuItem>
-                    <MenuItem value="Family Oceanfront Suite">Family Oceanfront Suite</MenuItem>
-                    <MenuItem value="Presidential Suite">Presidential Suite</MenuItem>
-                    <MenuItem value="Standard Double Room">Standard Double Room</MenuItem>
-                    <MenuItem value="Luxury Spa Suite">Luxury Spa Suite</MenuItem>
-                  </Select>
-                  {isVoiceFilled('roomType') && (
-                    <Typography variant="caption" color="success.main">
-                      ✓ Filled by voice
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Box>
-        );
-
-      case 1:
-        return (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CreditCard color="primary" />
-              Document Verification
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Please capture or upload a photo of your identification document for verification.
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={<CameraAlt />}
-                  onClick={handleCameraCapture}
-                  sx={{ py: 2 }}
-                >
-                  Start Camera
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<Upload />}
-                  onClick={() => setFormData({...formData, documentUploaded: true})}
-                  sx={{ py: 2 }}
-                >
-                  Upload Document
-                </Button>
-              </Grid>
-            </Grid>
-            {formData.documentUploaded && (
-              <Paper sx={{ p: 2, mt: 3, bgcolor: 'success.light', color: 'success.contrastText' }}>
-                <Typography variant="body2">
-                  ✓ Document uploaded successfully
-                </Typography>
-              </Paper>
-            )}
-          </Box>
-        );
-
-      case 2:
-        return (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CalendarToday color="primary" />
-              Check-in Summary
-            </Typography>
-            <Paper sx={{ p: 3, bgcolor: 'grey.50', mb: 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Guest Name:</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">{formData.name}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Confirmation:</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">{formData.confirmationNumber}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Check-in Date:</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">{formData.checkInDate}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" fontWeight="bold">Room Type:</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">{formData.roomType}</Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <input
-                type="checkbox"
-                checked={formData.signatureCompleted}
-                onChange={(e) => setFormData({...formData, signatureCompleted: e.target.checked})}
-              />
-              <Typography variant="body2">
-                I confirm that all information is correct and agree to the terms and conditions
-              </Typography>
-            </Box>
-          </Box>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+    <Dialog 
+      open={isOpen} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          borderRadius: isMobile ? 0 : 2,
+          m: isMobile ? 0 : 1,
+          maxHeight: isMobile ? '100vh' : '90vh'
+        }
+      }}
+    >
+      <DialogTitle sx={{ p: { xs: 2, md: 3 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h5" fontWeight="bold">
+          <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
             Guest Check-In
           </Typography>
           <IconButton onClick={onClose}>
@@ -587,10 +431,19 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           </IconButton>
         </Box>
         <Box sx={{ mt: 2 }}>
-          <Stepper activeStep={currentStep} alternativeLabel>
+          <Stepper 
+            activeStep={currentStep} 
+            alternativeLabel={!isMobile}
+            orientation={isMobile ? 'vertical' : 'horizontal'}
+            sx={{
+              '& .MuiStepLabel-label': {
+                fontSize: { xs: '0.75rem', md: '0.875rem' }
+              }
+            }}
+          >
             {steps.map((label) => (
               <Step key={label}>
-                <StepLabel>{label}</StepLabel>
+                <StepLabel>{isMobile ? label.split(' ')[0] : label}</StepLabel>
               </Step>
             ))}
           </Stepper>
@@ -602,14 +455,21 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent sx={{ p: { xs: 2, md: 3 } }}>
         {renderStepContent()}
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, bgcolor: 'grey.50' }}>
+      <DialogActions sx={{ 
+        p: { xs: 2, md: 3 }, 
+        bgcolor: 'grey.50',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 1, sm: 0 }
+      }}>
         <Button
           onClick={handleBack}
           disabled={currentStep === 0}
+          fullWidth={isMobile}
+          size={isMobile ? 'large' : 'medium'}
         >
           Previous
         </Button>
@@ -622,6 +482,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               (currentStep === 0 && (!formData.name || !formData.confirmationNumber)) ||
               (currentStep === 1 && !formData.documentVerified)
             }
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
           >
             Next
           </Button>
@@ -631,6 +493,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             color="success"
             onClick={handleComplete}
             disabled={!formData.signatureCompleted && !formData.checkInComplete}
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
           >
             {formData.isProcessing ? 'Processing...' : 'Complete Check-in'}
           </Button>

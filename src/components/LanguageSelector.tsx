@@ -1,68 +1,180 @@
 import React from 'react';
-import { Languages } from 'lucide-react';
-import { Language } from '../types/reservation';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Grid,
+  Typography,
+  Box,
+  Card,
+  CardContent,
+  IconButton,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
+import {
+  Close,
+  Language as LanguageIcon
+} from '@mui/icons-material';
+import { multilingualAI } from '../services/multilingualAIService';
 
 interface LanguageSelectorProps {
-  onLanguageSelect: (language: Language) => void;
+  currentLanguage: string;
+  onLanguageSelect: (language: string) => void;
+  onClose: () => void;
 }
 
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({ onLanguageSelect }) => {
+const LanguageSelector: React.FC<LanguageSelectorProps> = ({ 
+  currentLanguage,
+  onLanguageSelect, 
+  onClose 
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const languages = [
-    { code: 'en' as Language, name: 'English', flag: '🇺🇸', subtitle: 'Press or say 1' },
-    { code: 'es' as Language, name: 'Español', flag: '🇪🇸', subtitle: 'Press or say 2' },
-    { code: 'hi' as Language, name: 'हिंदी', flag: '🇮🇳', subtitle: 'Press or say 3' },
-    { code: 'en-uk' as Language, name: 'English (UK)', flag: '🇬🇧', subtitle: 'Press or say 4' }
+    { code: 'en', name: 'English', flag: '🇺🇸', subtitle: 'Press or say 1' },
+    { code: 'es', name: 'Español', flag: '🇪🇸', subtitle: 'Press or say 2' },
+    { code: 'hi', name: 'हिंदी', flag: '🇮🇳', subtitle: 'Press or say 3' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷', subtitle: 'Press or say 4' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪', subtitle: 'Press or say 5' },
+    { code: 'it', name: 'Italiano', flag: '🇮🇹', subtitle: 'Press or say 6' },
+    { code: 'pt', name: 'Português', flag: '🇵🇹', subtitle: 'Press or say 7' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵', subtitle: 'Press or say 8' },
+    { code: 'ko', name: '한국어', flag: '🇰🇷', subtitle: 'Press or say 9' },
+    { code: 'zh', name: '中文', flag: '🇨🇳', subtitle: 'Press or say 0' }
   ];
 
+  const handleLanguageSelect = (languageCode: string) => {
+    onLanguageSelect(languageCode);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex items-center">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="p-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Languages className="w-10 h-10 text-white" />
-              </div>
-              <h1 className="text-4xl font-bold text-blue-900 mb-2">
-                Welcome to Lagunacreek
-              </h1>
-              <p className="text-lg text-gray-600 max-w-md mx-auto">
-                Please select your preferred language to continue
-              </p>
-            </div>
-            
-            {/* Language Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-              {languages.map((language) => (
-                <div
-                  key={language.code}
-                  onClick={() => onLanguageSelect(language.code)}
-                  className="bg-white border-2 border-gray-200 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:border-blue-500 hover:shadow-lg hover:-translate-y-1 text-center"
-                >
-                  <div className="text-5xl mb-3">
+    <Dialog 
+      open={true} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          borderRadius: isMobile ? 0 : 2,
+          m: isMobile ? 0 : 2
+        }
+      }}
+    >
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LanguageIcon color="primary" />
+            <Typography variant="h6" fontWeight="bold">
+              Select Language
+            </Typography>
+          </Box>
+          <IconButton onClick={onClose}>
+            <Close />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
+          Choose your preferred language for the AI assistant
+        </Typography>
+        
+        {/* Language Options */}
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
+          {languages.map((language) => (
+            <Grid item xs={6} sm={4} md={3} key={language.code}>
+              <Card
+                sx={{
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  border: currentLanguage === language.code ? 2 : 1,
+                  borderColor: currentLanguage === language.code ? 'primary.main' : 'divider',
+                  bgcolor: currentLanguage === language.code ? 'primary.light' : 'background.paper',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    transform: 'translateY(-2px)',
+                    boxShadow: 2
+                  }
+                }}
+                onClick={() => handleLanguageSelect(language.code)}
+              >
+                <CardContent sx={{ 
+                  textAlign: 'center', 
+                  p: { xs: 2, sm: 3 },
+                  '&:last-child': { pb: { xs: 2, sm: 3 } }
+                }}>
+                  <Typography 
+                    variant="h3" 
+                    sx={{ 
+                      mb: 1,
+                      fontSize: { xs: '2rem', sm: '3rem' }
+                    }}
+                  >
                     {language.flag}
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                  </Typography>
+                  <Typography 
+                    variant="h6" 
+                    fontWeight="bold" 
+                    sx={{ 
+                      mb: 0.5,
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      color: currentLanguage === language.code ? 'primary.main' : 'text.primary'
+                    }}
+                  >
                     {language.name}
-                  </h3>
-                  <p className="text-sm text-gray-500">
+                  </Typography>
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                  >
                     {language.subtitle}
-                  </p>
-                </div>
-              ))}
-            </div>
-            
-            {/* Footer */}
-            <div className="text-center">
-              <p className="text-sm text-gray-500">
-                You can also use voice commands: "1 for English", "2 for Spanish", "3 for Hindi", or "4 for UK English"
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                  </Typography>
+                  {currentLanguage === language.code && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography 
+                        variant="caption" 
+                        color="primary.main" 
+                        fontWeight="bold"
+                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                      >
+                        ✓ Selected
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+        
+        {/* Footer */}
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            You can also use voice commands: "1 for English", "2 for Spanish", etc.
+          </Typography>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ p: { xs: 2, sm: 3 }, justifyContent: 'center' }}>
+        <Button onClick={onClose} size="large">
+          Cancel
+        </Button>
+        <Button 
+          variant="contained" 
+          onClick={onClose} 
+          size="large"
+          disabled={!currentLanguage}
+        >
+          Confirm Selection
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

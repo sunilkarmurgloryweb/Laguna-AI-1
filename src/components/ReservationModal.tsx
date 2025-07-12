@@ -21,7 +21,9 @@ import {
   Paper,
   LinearProgress,
   IconButton,
-  TextField
+  TextField,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -61,6 +63,10 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   onClose,
   initialData = {}
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+  
   const dispatch = useAppDispatch();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -169,9 +175,6 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     }
   };
 
-  const isAutoFilled = (field: string) => {
-    return initialData[field as keyof typeof initialData] !== undefined;
-  };
   const handleVoiceProcessed = (result: any) => {
     const voiceResult = result as ProcessedVoiceResponse;
     
@@ -239,20 +242,6 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     }
   };
 
-  // Auto-advance when form is complete
-  useEffect(() => {
-    if (canProceedToNext()) {
-      const timer = setTimeout(() => {
-        if (currentStep < steps.length - 1) {
-          setTimeout(() => {
-            handleNext();
-          }, 2000);
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [formData, currentStep]);
-
   const isVoiceFilled = (field: string) => voiceFilledFields.has(field);
 
   const getFieldSx = (field: string) => ({
@@ -280,12 +269,12 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="dates-guests"
                 reservationData={formData}
-                size="medium"
+                size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
             </Box>
             
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 2, md: 3 }}>
               <Grid item xs={12} sm={6}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
@@ -295,6 +284,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     slotProps={{
                       textField: {
                         fullWidth: true,
+                        size: isMobile ? 'small' : 'medium',
                         sx: getFieldSx('checkIn'),
                         helperText: isVoiceFilled('checkIn') ? '✓ Filled by voice' : '',
                       },
@@ -312,6 +302,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     slotProps={{
                       textField: {
                         fullWidth: true,
+                        size: isMobile ? 'small' : 'medium',
                         sx: getFieldSx('checkOut'),
                         helperText: isVoiceFilled('checkOut') ? '✓ Filled by voice' : '',
                       },
@@ -320,7 +311,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 </LocalizationProvider>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+                <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
                   <InputLabel>Adults</InputLabel>
                   <Select
                     value={formData.adults}
@@ -340,7 +331,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+                <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
                   <InputLabel>Children</InputLabel>
                   <Select
                     value={formData.children}
@@ -377,12 +368,12 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="room-selection"
                 reservationData={formData}
-                size="medium"
+                size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
             </Box>
             
-            <Grid container spacing={2}>
+            <Grid container spacing={{ xs: 2, md: 2 }}>
               {roomTypes.map((room) => (
                 <Grid item xs={12} key={room.id}>
                   <Card
@@ -399,13 +390,27 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     }}
                     onClick={() => setFormData({...formData, roomType: room.name})}
                   >
-                    <CardContent>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Typography variant="h6" fontWeight="bold">
-                          {room.name}
-                        </Typography>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="h5" color="primary.main" fontWeight="bold">
+                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'flex-start', 
+                        mb: 1,
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: { xs: 1, sm: 0 }
+                      }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight="bold" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                            {room.name}
+                          </Typography>
+                          {formData.roomType === room.name && isVoiceFilled('roomType') && (
+                            <Typography variant="caption" color="success.main">
+                              ✓ Selected by voice
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                          <Typography variant="h5" color="primary.main" fontWeight="bold" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
                             ${room.price}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -413,16 +418,11 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                           </Typography>
                         </Box>
                       </Box>
-                      {formData.roomType === room.name && isVoiceFilled('roomType') && (
-                        <Typography variant="caption" color="success.main">
-                          ✓ Selected by voice
-                        </Typography>
-                      )}
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                         {room.description}
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {room.amenities.map((amenity, index) => (
+                        {room.amenities.slice(0, isMobile ? 3 : 5).map((amenity, index) => (
                           <Chip
                             key={index}
                             label={amenity}
@@ -454,15 +454,16 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="guest-info"
                 reservationData={formData}
-                size="medium"
+                size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
             </Box>
             
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 2, md: 3 }}>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Full Name"
                   value={formData.guestName}
                   onChange={(e) => setFormData({...formData, guestName: e.target.value})}
@@ -474,6 +475,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Phone Number"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
@@ -485,6 +487,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size={isMobile ? 'small' : 'medium'}
                   label="Email Address"
                   type="email"
                   value={formData.email}
@@ -512,12 +515,12 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="payment"
                 reservationData={formData}
-                size="medium"
+                size={isMobile ? "small" : "medium"}
                 showTranscript={true}
               />
             </Box>
             
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid container spacing={{ xs: 2, md: 2 }} sx={{ mb: 3 }}>
               {paymentMethods.map((method) => (
                 <Grid item xs={12} key={method.id}>
                   <Card
@@ -534,8 +537,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                     }}
                     onClick={() => setFormData({...formData, paymentMethod: method.name})}
                   >
-                    <CardContent>
-                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                         {method.name}
                         {formData.paymentMethod === method.name && isVoiceFilled('paymentMethod') && (
                           <Chip 
@@ -556,7 +559,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             </Grid>
 
             {/* Booking Summary */}
-            <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+            <Paper sx={{ p: { xs: 2, md: 3 }, bgcolor: 'grey.50' }}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Booking Summary
               </Typography>
@@ -614,10 +617,23 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+    <Dialog 
+      open={isOpen} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          borderRadius: isMobile ? 0 : 2,
+          m: isMobile ? 0 : 1,
+          maxHeight: isMobile ? '100vh' : '90vh'
+        }
+      }}
+    >
+      <DialogTitle sx={{ p: { xs: 2, md: 3 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h5" fontWeight="bold">
+          <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
             Make Reservation
           </Typography>
           <IconButton onClick={onClose}>
@@ -625,10 +641,19 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
           </IconButton>
         </Box>
         <Box sx={{ mt: 2 }}>
-          <Stepper activeStep={currentStep} alternativeLabel>
+          <Stepper 
+            activeStep={currentStep} 
+            alternativeLabel={!isMobile}
+            orientation={isMobile ? 'vertical' : 'horizontal'}
+            sx={{
+              '& .MuiStepLabel-label': {
+                fontSize: { xs: '0.75rem', md: '0.875rem' }
+              }
+            }}
+          >
             {steps.map((label) => (
               <Step key={label}>
-                <StepLabel>{label}</StepLabel>
+                <StepLabel>{isMobile ? label.split(' ')[0] : label}</StepLabel>
               </Step>
             ))}
           </Stepper>
@@ -640,14 +665,21 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent sx={{ p: { xs: 2, md: 3 } }}>
         {renderStepContent()}
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, bgcolor: 'grey.50' }}>
+      <DialogActions sx={{ 
+        p: { xs: 2, md: 3 }, 
+        bgcolor: 'grey.50',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 1, sm: 0 }
+      }}>
         <Button
           onClick={handleBack}
           disabled={currentStep === 0}
+          fullWidth={isMobile}
+          size={isMobile ? 'large' : 'medium'}
         >
           Previous
         </Button>
@@ -657,6 +689,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             variant="contained"
             onClick={handleNext}
             disabled={!canProceedToNext()}
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
           >
             Next
           </Button>
@@ -667,6 +701,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             onClick={handleSubmit}
             disabled={!canProceedToNext()}
             startIcon={<CheckCircle />}
+            fullWidth={isMobile}
+            size={isMobile ? 'large' : 'medium'}
           >
             Confirm Reservation
           </Button>

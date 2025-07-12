@@ -10,7 +10,14 @@ import {
   CircularProgress,
   InputAdornment,
   Alert,
-  Fade
+  Fade,
+  useTheme,
+  useMediaQuery,
+  Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import {
   Mic,
@@ -21,7 +28,9 @@ import {
   VolumeUp,
   VolumeOff,
   Refresh,
-  CheckCircle
+  CheckCircle,
+  Language,
+  Translate
 } from '@mui/icons-material';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import {
@@ -30,6 +39,7 @@ import {
   useSetContextMutation
 } from '../store/api/geminiApi';
 import { ChatMessage } from '../services/geminiService';
+import { multilingualAI } from '../services/multilingualAIService';
 
 interface AIChatbotProps {
   onOpenModal: (
@@ -47,9 +57,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   currentFormData = {},
   context = 'hotel_general'
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [languageMenuAnchor, setLanguageMenuAnchor] = useState<null | HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -62,7 +77,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     startListening,
     stopListening,
     resetTranscript
-  } = useSpeechRecognition('en-US', false, true);
+  } = useSpeechRecognition(multilingualAI.getSpeechRecognitionLanguage(), false, true);
 
   const [sendMessage, { isLoading: isProcessing, error: apiError }] = useSendMessageMutation();
   const [resetChat] = useResetChatMutation();
@@ -74,9 +89,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
   useEffect(() => {
     if (context) {
-      setContext(context);
+      setContext(`${context}_${currentLanguage}`);
     }
-  }, [context, setContext]);
+  }, [context, currentLanguage, setContext]);
 
   useEffect(() => {
     if (finalTranscript && finalTranscript.trim()) {
@@ -90,13 +105,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         role: 'assistant',
-        content:
-          "Hello! I'm your AI assistant for Lagunacreek Hotels. I can help you with reservations, check-ins, check-outs, and answer any questions about our services. How can I assist you today?",
+        content: multilingualAI.getGreeting('welcome'),
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
-  }, []);
+  }, [currentLanguage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -119,7 +133,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       const result = await sendMessage({
         message: textToSend,
         currentFormData,
-        context
+        context: `${context}_${currentLanguage}`
       }).unwrap();
 
       if (result?.chatMessage) {
@@ -134,14 +148,24 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       if (result?.response?.shouldFillForm && result.response.extractedData) {
         onFormDataUpdate?.(result.response.extractedData);
       }
+
+      // Speak response in current language
+      if (result?.response?.text && isSpeechEnabled) {
+        try {
+          await multilingualAI.speak(result.response.text, currentLanguage);
+        } catch (speechError) {
+          console.warn('Text-to-speech failed:', speechError);
+        }
+      }
     } catch (error) {
       console.error('Send failed:', error);
+      const errorMessage = multilingualAI.getResponse('error', {}, currentLanguage);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString() + '_error',
           role: 'assistant',
-          content: "I'm sorry, I'm having trouble processing your request right now. Please try again.",
+          content: errorMessage,
           timestamp: new Date()
         }
       ]);
@@ -155,18 +179,32 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const handleResetChat = async () => {
     try {
       await resetChat().unwrap();
-      setMessages([
-        {
-          id: 'welcome',
-          role: 'assistant',
-          content:
-            "Hello! I'm your AI assistant for Lagunacreek Hotels. I can help you with reservations, check-ins, check-outs, and answer any questions about our services. How can I assist you today?",
-          timestamp: new Date()
-        }
-      ]);
+      const welcomeMessage: ChatMessage = {
+        id: 'welcome',
+        role: 'assistant',
+        content: multilingualAI.getGreeting('welcome'),
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
     } catch (error) {
       console.error('Reset failed:', error);
     }
+  };
+
+  const handleLanguageChange = (languageCode: string) => {
+    setCurrentLanguage(languageCode);
+    multilingualAI.setLanguage(languageCode);
+    setLanguageMenuAnchor(null);
+    
+    // Add language change message
+    const languageInfo = multilingualAI.getLanguageInfo(languageCode);
+    const changeMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `Language changed to ${languageInfo.name}. ${multilingualAI.getGreeting('welcome')}`,
+      timestamp: new Date()
+    };
+    setMessages((prev) => [...prev, changeMessage]);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -193,37 +231,106 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const getTextColor = (message: ChatMessage) =>
     message.role === 'user' ? 'primary.contrastText' : 'text.primary';
 
+  const availableLanguages = multilingualAI.getAvailableLanguages();
+  const currentLanguageInfo = multilingualAI.getLanguageInfo(currentLanguage);
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Language Selector */}
+      <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Button
+            size="small"
+            startIcon={<Language />}
+            onClick={(e) => setLanguageMenuAnchor(e.currentTarget)}
+            sx={{ fontSize: '0.75rem' }}
+          >
+            {currentLanguageInfo.flag} {currentLanguageInfo.name}
+          </Button>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton 
+              size="small" 
+              onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
+              color={isSpeechEnabled ? 'primary' : 'default'}
+            >
+              {isSpeechEnabled ? <VolumeUp /> : <VolumeOff />}
+            </IconButton>
+            <IconButton size="small" onClick={handleResetChat}>
+              <Refresh />
+            </IconButton>
+          </Box>
+        </Box>
+        
+        <Menu
+          anchorEl={languageMenuAnchor}
+          open={Boolean(languageMenuAnchor)}
+          onClose={() => setLanguageMenuAnchor(null)}
+          PaperProps={{
+            sx: { maxHeight: 300 }
+          }}
+        >
+          {availableLanguages.map((lang) => (
+            <MenuItem
+              key={lang.code}
+              onClick={() => handleLanguageChange(lang.code)}
+              selected={lang.code === currentLanguage}
+            >
+              <ListItemIcon>
+                <Typography variant="h6">{lang.flag}</Typography>
+              </ListItemIcon>
+              <ListItemText 
+                primary={lang.name}
+                secondary={lang.code.toUpperCase()}
+              />
+            </MenuItem>
+          ))}
+        </Menu>
+      </Box>
+
       {/* Message Area */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 } }}>
         {messages.map((message) => (
           <Box
             key={message.id}
             sx={{
               display: 'flex',
               justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-              mb: 2
+              mb: { xs: 1.5, md: 2 }
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, maxWidth: '80%' }}>
-              {message.role === 'assistant' && getMessageIcon(message)}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'flex-start', 
+              gap: 1, 
+              maxWidth: { xs: '90%', md: '80%' },
+              flexDirection: message.role === 'user' ? 'row-reverse' : 'row'
+            }}>
+              {getMessageIcon(message)}
               <Box>
                 <Paper
                   sx={{
-                    p: 1.5,
+                    p: { xs: 1, md: 1.5 },
                     bgcolor: getMessageColor(message),
                     color: getTextColor(message),
                     borderRadius: 2
                   }}
                 >
-                  <Typography variant="body2">{message.content}</Typography>
+                  <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
+                    {message.content}
+                  </Typography>
                 </Paper>
-                <Typography variant="caption" sx={{ opacity: 0.7, mt: 0.5, display: 'block' }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    opacity: 0.7, 
+                    mt: 0.5, 
+                    display: 'block',
+                    fontSize: { xs: '0.7rem', md: '0.75rem' }
+                  }}
+                >
                   {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Typography>
               </Box>
-              {message.role === 'user' && getMessageIcon(message)}
             </Box>
           </Box>
         ))}
@@ -254,7 +361,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                       }}
                     />
                   ))}
-                  <Typography variant="body2" sx={{ ml: 1 }}>
+                  <Typography variant="body2" sx={{ ml: 1, fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
                     AI is thinking...
                   </Typography>
                 </Box>
@@ -266,21 +373,21 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       </Box>
 
       {/* Input Section */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+      <Box sx={{ p: { xs: 1, md: 2 }, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
           <TextField
             fullWidth
-            size="small"
+            size={isMobile ? 'small' : 'medium'}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your message or use voice..."
+            placeholder={`Type your message in ${currentLanguageInfo.name}...`}
             disabled={isProcessing}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <Chip
-                    label={context.replace('_', ' ').toUpperCase()}
+                    label={currentLanguageInfo.flag}
                     size="small"
                     color="primary"
                     variant="outlined"
@@ -318,13 +425,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         </Box>
       </Box>
 
+      {/* Voice Transcript Display */}
       {(transcript || interimTranscript) && (
         <Fade in={true}>
-          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'action.hover' }}>
+          <Box sx={{ p: { xs: 1, md: 2 }, borderTop: 1, borderColor: 'divider', bgcolor: 'action.hover' }}>
             <Typography variant="caption" color="text.secondary" gutterBottom>
               {isListening ? 'Listening...' : 'Voice input:'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
               {transcript}
               {interimTranscript && (
                 <span style={{ opacity: 0.6, fontStyle: 'italic' }}>{interimTranscript}</span>
@@ -334,8 +442,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         </Fade>
       )}
 
+      {/* Error Display */}
       {(speechError || apiError) && (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" sx={{ m: { xs: 1, md: 2 } }}>
           {speechError || 'Failed to process message. Please try again.'}
         </Alert>
       )}
