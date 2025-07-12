@@ -313,7 +313,6 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               Document Verification
             </Typography>
             
-            {!reservationData.found ? (
             {!reservationData ? (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
