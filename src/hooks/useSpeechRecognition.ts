@@ -58,8 +58,11 @@ export const useSpeechRecognition = (
         }
         
         setInterimTranscript(interimTranscript);
-        setFinalTranscript(prev => prev + finalTranscript);
-        setTranscript(prev => prev + finalTranscript + interimTranscript);
+        setFinalTranscript(prev => {
+          const newFinalTranscript = prev + finalTranscript;
+          setTranscript(newFinalTranscript + interimTranscript);
+          return newFinalTranscript;
+        });
       };
       
       recognition.onend = () => {
