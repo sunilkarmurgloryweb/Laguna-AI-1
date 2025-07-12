@@ -224,16 +224,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           utterance.pitch = 1;
           utterance.volume = 1;
           
-          utterance.onend = () => {
-            console.log('Speech synthesis completed');
-          };
-          
-          utterance.onerror = (event) => {
-            console.error('Speech synthesis error:', event.error);
-          };
-          
-          speechSynthesis.speak(utterance);
-        });
+        speakMessage(result.response.text);
       } catch (error) {
         console.error('Speech synthesis completely failed:', error);
       }
@@ -538,6 +529,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       };
       setMessages([welcomeMessage]);
       setShowRoomTypes(false);
+      
+      // Speak welcome message
+      if (isSpeechEnabled) {
+        speakMessage(welcomeMessage.content);
+      }
     } catch (error) {
       console.error('Reset failed:', error);
     }

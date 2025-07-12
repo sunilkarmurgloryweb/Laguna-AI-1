@@ -398,28 +398,51 @@ class MultilingualAIService {
         return;
       }
 
-      // Stop any currently speaking utterance
-      speechSynthesis.cancel();
+      try {
+        // Stop any currently speaking utterance
+        speechSynthesis.cancel();
 
-      const lang = languageCode || this.currentLanguage;
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      if (this.currentVoice && this.currentVoice.lang.startsWith(lang)) {
-        utterance.voice = this.currentVoice;
+        const lang = languageCode || this.currentLanguage;
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        if (this.currentVoice && this.currentVoice.lang.startsWith(lang)) {
+          utterance.voice = this.currentVoice;
+        }
+        
+        utterance.lang = languageConfigs[lang]?.speechCode || 'en-US';
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        utterance.onend = () => {
+          console.log('Speech synthesis completed');
+          resolve();
+        };
+        
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error:', event);
+          reject(event.error);
+        };
+        
+        utterance.onstart = () => {
+          console.log('Speech synthesis started');
+        };
+
+        // Small delay to ensure previous speech is cancelled
+        setTimeout(() => {
+          if (speechSynthesis.speaking) {
+            speechSynthesis.cancel();
+            setTimeout(() => {
+              speechSynthesis.speak(utterance);
+            }, 50);
+          } else {
+            speechSynthesis.speak(utterance);
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Speech synthesis setup error:', error);
+        reject(error);
       }
-      
-      utterance.lang = languageConfigs[lang]?.speechCode || 'en-US';
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-
-      utterance.onend = () => resolve();
-      utterance.onerror = (event) => reject(event.error);
-
-      // Small delay to ensure previous speech is cancelled
-      setTimeout(() => {
-        speechSynthesis.speak(utterance);
-      }, 100);
     });
   }
 
