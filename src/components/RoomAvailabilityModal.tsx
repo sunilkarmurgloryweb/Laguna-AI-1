@@ -23,7 +23,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
   Tabs,
   Tab,
   Badge,
