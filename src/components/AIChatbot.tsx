@@ -582,6 +582,18 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                   borderTopRightRadius: message.role === 'user' ? 0.5 : 2
                 }}
               >
+                {/* Process Completion Message */}
+                {message.role === 'assistant' && (message as any).isProcessCompletion && (
+                  <ProcessCompletionMessage
+                    processType={(message as any).processType}
+                    confirmationData={(message as any).confirmationData}
+                    timestamp={message.timestamp}
+                  />
+                )}
+                
+                {/* Regular Message */}
+                {!(message as any).isProcessCompletion && (
+                  <>
                 {/* Language indicator for messages */}
                 {message.language && message.language !== 'en' && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
@@ -643,6 +655,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                   AI is thinking...
                 </Typography>
               </Box>
+                  </>
+                )}
             </Paper>
           </Box>
         )}

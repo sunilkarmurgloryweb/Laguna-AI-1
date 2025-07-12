@@ -251,6 +251,21 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     
     // Simulate API call
     setTimeout(() => {
+      // Generate confirmation data
+      const confirmationData = {
+        confirmationNumber: `LG${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+        guestName: formData.guestName,
+        roomType: formData.roomType,
+        checkInDate: formData.checkIn?.format('MMM DD, YYYY'),
+        checkOutDate: formData.checkOut?.format('MMM DD, YYYY'),
+        totalAmount: calculateTotal()
+      };
+      
+      // Notify parent about process completion
+      if (onProcessCompleted) {
+        onProcessCompleted(confirmationData);
+      }
+      
       setIsProcessing(false);
       onClose();
     }, 2000);

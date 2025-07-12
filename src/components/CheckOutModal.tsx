@@ -89,7 +89,18 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
   };
 
   const handleSettleBalance = () => {
-    alert('Checkout completed successfully!');
+    // Generate checkout confirmation data
+    const confirmationData = {
+      guestName: guestData.name || 'Guest',
+      roomNumber: guestData.room?.split(' - ')[1] || '205',
+      totalAmount: finalTotal
+    };
+    
+    // Notify parent about process completion
+    if (onProcessCompleted) {
+      onProcessCompleted(confirmationData);
+    }
+    
     onClose();
   };
 

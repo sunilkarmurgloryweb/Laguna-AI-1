@@ -762,6 +762,7 @@ const HotelHomepage: React.FC = () => {
           onClose={() => setShowReservationModal(false)}
           initialData={modalData}
           onAIMessage={aiMessageHandler || undefined}
+          onProcessCompleted={(confirmationData) => handleProcessCompleted('reservation', confirmationData)}
         />
       )}
       
@@ -771,6 +772,7 @@ const HotelHomepage: React.FC = () => {
           onClose={() => setShowCheckInModal(false)}
           guestData={modalData}
           onAIMessage={aiMessageHandler || undefined}
+          onProcessCompleted={(confirmationData) => handleProcessCompleted('checkin', confirmationData)}
         />
       )}
       
@@ -780,6 +782,7 @@ const HotelHomepage: React.FC = () => {
           onClose={() => setShowCheckOutModal(false)}
           guestData={modalData}
           onAIMessage={aiMessageHandler || undefined}
+          onProcessCompleted={(confirmationData) => handleProcessCompleted('checkout', confirmationData)}
         />
       )}
       
