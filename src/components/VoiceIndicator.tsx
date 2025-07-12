@@ -2,9 +2,16 @@ import React from 'react';
 import { 
   Mic, 
   MicOff, 
-  Volume2, 
-  AlertTriangle 
-} from 'lucide-react';
+  VolumeUp, 
+  Warning 
+} from '@mui/icons-material';
+import { 
+  Box, 
+  Button, 
+  Typography, 
+  Alert,
+  CircularProgress 
+} from '@mui/material';
 import { VoiceState } from '../types/reservation';
 import { useAppSelector } from '../hooks/useAppSelector';
 
@@ -26,15 +33,13 @@ const VoiceIndicator: React.FC<VoiceIndicatorProps> = ({
   const getIcon = () => {
     switch (voiceState) {
       case 'listening':
-        return <Mic className="w-8 h-8 text-red-500" />;
+        return <Mic sx={{ fontSize: 32, color: 'error.main' }} />;
       case 'processing':
-        return (
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        );
+        return <CircularProgress size={32} color="primary" />;
       case 'speaking':
-        return <Volume2 className="w-8 h-8 text-green-500" />;
+        return <VolumeUp sx={{ fontSize: 32, color: 'success.main' }} />;
       default:
-        return <MicOff className="w-8 h-8 text-gray-500" />;
+        return <MicOff sx={{ fontSize: 32, color: 'grey.500' }} />;
     }
   };
 
@@ -54,13 +59,13 @@ const VoiceIndicator: React.FC<VoiceIndicatorProps> = ({
   const getButtonColor = () => {
     switch (voiceState) {
       case 'listening':
-        return 'bg-red-500 hover:bg-red-600';
+        return 'error';
       case 'processing':
-        return 'bg-blue-500';
+        return 'primary';
       case 'speaking':
-        return 'bg-green-500';
+        return 'success';
       default:
-        return 'bg-gray-500 hover:bg-gray-600';
+        return 'inherit';
     }
   };
 
@@ -74,48 +79,105 @@ const VoiceIndicator: React.FC<VoiceIndicatorProps> = ({
 
   if (!isSupported) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-center justify-center">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
-          <span className="text-yellow-800 text-sm">
-            Voice recognition is not supported in your browser.
-          </span>
-        </div>
-      </div>
+      <Box 
+        sx={{ 
+          p: 2,
+          maxWidth: { xs: '100%', sm: 400 },
+          mx: 'auto'
+        }}
+      >
+        <Alert 
+          severity="warning" 
+          icon={<Warning />}
+          sx={{ 
+            borderRadius: 2,
+            '& .MuiAlert-message': {
+              fontSize: { xs: '0.875rem', sm: '1rem' }
+            }
+          }}
+        >
+          Voice recognition is not supported in your browser.
+        </Alert>
+      </Box>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <button
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        gap: 3,
+        p: 2,
+        maxWidth: { xs: '100%', sm: 400 },
+        mx: 'auto'
+      }}
+    >
+      <Button
         onClick={handleClick}
         disabled={voiceState === 'processing' || voiceState === 'speaking'}
-        className={`
-          w-20 h-20 rounded-full text-white transition-all duration-200
-          ${getButtonColor()}
-          ${voiceState === 'listening' ? 'animate-pulse' : ''}
-          disabled:opacity-50 disabled:cursor-not-allowed
-          focus:outline-none focus:ring-4 focus:ring-blue-300
-        `}
+        color={getButtonColor()}
+        variant="contained"
+        sx={{
+          width: { xs: 70, sm: 80 },
+          height: { xs: 70, sm: 80 },
+          borderRadius: '50%',
+          minWidth: 'unset',
+          animation: voiceState === 'listening' ? 'pulse 1.5s infinite' : 'none',
+          '@keyframes pulse': {
+            '0%': {
+              transform: 'scale(1)',
+              opacity: 1,
+            },
+            '50%': {
+              transform: 'scale(1.05)',
+              opacity: 0.8,
+            },
+            '100%': {
+              transform: 'scale(1)',
+              opacity: 1,
+            },
+          },
+          '&:disabled': {
+            opacity: 0.5,
+          },
+          transition: 'all 0.2s ease-in-out',
+        }}
       >
         {getIcon()}
-      </button>
+      </Button>
       
-      <span className="text-sm text-gray-600 font-medium">
+      <Typography 
+        variant="body2" 
+        color="text.secondary" 
+        fontWeight="medium"
+        sx={{ 
+          fontSize: { xs: '0.875rem', sm: '1rem' },
+          textAlign: 'center'
+        }}
+      >
         {getStatusText()}
-      </span>
+      </Typography>
       
       {lastError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-w-xs">
-          <div className="flex items-center justify-center">
-            <AlertTriangle className="w-4 h-4 text-red-600 mr-2" />
-            <span className="text-red-800 text-sm text-center">
-              {lastError}
-            </span>
-          </div>
-        </div>
+        <Box sx={{ maxWidth: { xs: '100%', sm: 300 } }}>
+          <Alert 
+            severity="error" 
+            icon={<Warning />}
+            sx={{ 
+              borderRadius: 2,
+              '& .MuiAlert-message': {
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                textAlign: 'center'
+              }
+            }}
+          >
+            {lastError}
+          </Alert>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
