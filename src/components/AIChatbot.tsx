@@ -415,21 +415,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-    
-    // Extract search terms from the query
-    const searchTerms = [
-      // Direct matches
-      lowerQuery,
-      // Extract names after "find reservation", "search reservation", etc.
-      ...lowerQuery.match(/(?:find|search|check).*?reservation.*?([a-zA-Z\s]+)/g)?.map(match => 
-        match.replace(/(?:find|search|check).*?reservation.*?/i, '').trim()
-      ) || [],
-      // Extract confirmation numbers
-      ...lowerQuery.match(/\d{10}/g) || [],
-      // Extract phone numbers
-      ...lowerQuery.match(/\+?[\d\-\s\(\)]{10,}/g) || []
-    ];
-    
       handleSendMessage();
     }
   };
@@ -440,11 +425,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         <SmartToy sx={{ fontSize: 16 }} />
       </Avatar>
     ) : (
-      searchTerms.some(term => 
-        res.guestName.toLowerCase().includes(term.toLowerCase()) ||
-        res.confirmationNumber.includes(term) ||
-        res.phone.includes(term)
-      )
+      <Avatar sx={{ bgcolor: 'grey.300', width: 32, height: 32 }}>
+        <Person sx={{ fontSize: 16 }} />
+      </Avatar>
     );
 
   const getMessageColor = (message: ChatMessage) =>
