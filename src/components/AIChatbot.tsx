@@ -82,6 +82,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState<null | HTMLElement>(null);
   const [showRoomTypes, setShowRoomTypes] = useState(false);
+  const [foundReservation, setFoundReservation] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -188,22 +189,52 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const searchReservation = (query: string): any => {
     const mockReservations = [
       {
+        id: 'RES001',
         guestName: 'Sunil Karmur',
         confirmationNumber: '8128273972',
         phone: '+91-9876543210',
         email: 'sunil.karmur@email.com',
         roomType: 'Ocean View King Suite',
         checkInDate: '2024-01-15',
-        checkOutDate: '2024-01-18'
+        checkOutDate: '2024-01-18',
+        status: 'Confirmed',
+        totalAmount: 897,
+        nights: 3,
+        adults: 2,
+        children: 1,
+        specialRequests: 'Late check-in, Ocean view preferred'
       },
       {
+        id: 'RES002',
         guestName: 'John Smith',
         confirmationNumber: '8128273973',
         phone: '+1-555-0123',
         email: 'john.smith@email.com',
         roomType: 'Deluxe Garden Room',
         checkInDate: '2024-01-15',
-        checkOutDate: '2024-01-17'
+        checkOutDate: '2024-01-17',
+        status: 'Confirmed',
+        totalAmount: 398,
+        nights: 2,
+        adults: 2,
+        children: 0,
+        specialRequests: 'None'
+      },
+      {
+        id: 'RES003',
+        guestName: 'Maria Garcia',
+        confirmationNumber: '8128273974',
+        phone: '+34-666-123-456',
+        email: 'maria.garcia@email.com',
+        roomType: 'Family Oceanfront Suite',
+        checkInDate: '2024-01-20',
+        checkOutDate: '2024-01-25',
+        status: 'Confirmed',
+        totalAmount: 1995,
+        nights: 5,
+        adults: 2,
+        children: 2,
+        specialRequests: 'Connecting rooms, High floor'
       }
     ];
 
@@ -228,8 +259,36 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
 
-    // Check for reservation lookup
+    // Check for reservation search
     const lowerText = textToSend.toLowerCase();
+    if (lowerText.includes('find reservation') || lowerText.includes('search reservation') || 
+        lowerText.includes('check reservation') || lowerText.includes('reservation status')) {
+      const reservation = searchReservation(textToSend);
+      
+      if (reservation) {
+        setFoundReservation(reservation);
+        const successMessage: ChatMessage = {
+          id: Date.now().toString() + '_found',
+          role: 'assistant',
+          content: `Great! I found your reservation. Here are the details:`,
+          timestamp: new Date()
+        };
+        setMessages((prev) => [...prev, successMessage]);
+        return;
+      } else {
+        const notFoundMessage: ChatMessage = {
+          id: Date.now().toString() + '_notfound',
+          role: 'assistant',
+          content: `I'm unable to find a reservation with that information. Please check the guest name, confirmation number, or phone number and try again. Would you like to make a new reservation?`,
+          timestamp: new Date()
+        };
+        setMessages((prev) => [...prev, notFoundMessage]);
+        setShowRoomTypes(true);
+        return;
+      }
+    }
+    
+    // Check for check-in requests
     if (lowerText.includes('check in') || lowerText.includes('checkin')) {
       const reservation = searchReservation(textToSend);
       
@@ -479,6 +538,191 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
             </Box>
           </Box>
         ))}
+
+        {/* Reservation Details Display */}
+        {foundReservation && (
+          <Fade in={true}>
+            <Box sx={{ mb: 2 }}>
+              <Card sx={{ 
+                border: 2, 
+                borderColor: 'success.main',
+                bgcolor: 'success.light',
+                boxShadow: 3
+              }}>
+                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  {/* Header */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CheckCircle sx={{ color: 'success.main', fontSize: 28 }} />
+                      <Typography variant="h6" fontWeight="bold" color="success.main">
+                        Reservation Found
+                      </Typography>
+                    </Box>
+                    <Chip 
+                      label={foundReservation.status} 
+                      color="success" 
+                      size="small"
+                      sx={{ fontWeight: 'bold' }}
+                    />
+                  </Box>
+
+                  {/* Guest Information */}
+                  <Paper sx={{ p: 2, mb: 2, bgcolor: 'background.paper' }}>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Person color="primary" />
+                      Guest Information
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Guest Name:</Typography>
+                        <Typography variant="body1" fontWeight="medium">{foundReservation.guestName}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Confirmation Number:</Typography>
+                        <Typography variant="body1" fontWeight="medium" color="primary.main">
+                          {foundReservation.confirmationNumber}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Phone:</Typography>
+                        <Typography variant="body1" fontWeight="medium">{foundReservation.phone}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Email:</Typography>
+                        <Typography variant="body1" fontWeight="medium">{foundReservation.email}</Typography>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  {/* Reservation Details */}
+                  <Paper sx={{ p: 2, mb: 2, bgcolor: 'background.paper' }}>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Hotel color="primary" />
+                      Reservation Details
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Room Type:</Typography>
+                        <Typography variant="body1" fontWeight="medium">{foundReservation.roomType}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Guests:</Typography>
+                        <Typography variant="body1" fontWeight="medium">
+                          {foundReservation.adults} Adults, {foundReservation.children} Children
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Check-in Date:</Typography>
+                        <Typography variant="body1" fontWeight="medium" color="success.main">
+                          {new Date(foundReservation.checkInDate).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Check-out Date:</Typography>
+                        <Typography variant="body1" fontWeight="medium" color="error.main">
+                          {new Date(foundReservation.checkOutDate).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Duration:</Typography>
+                        <Typography variant="body1" fontWeight="medium">
+                          {foundReservation.nights} {foundReservation.nights === 1 ? 'Night' : 'Nights'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Total Amount:</Typography>
+                        <Typography variant="h6" fontWeight="bold" color="primary.main">
+                          ${foundReservation.totalAmount}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  {/* Special Requests */}
+                  {foundReservation.specialRequests && foundReservation.specialRequests !== 'None' && (
+                    <Paper sx={{ p: 2, mb: 2, bgcolor: 'info.light' }}>
+                      <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                        Special Requests:
+                      </Typography>
+                      <Typography variant="body2" color="info.contrastText">
+                        {foundReservation.specialRequests}
+                      </Typography>
+                    </Paper>
+                  )}
+
+                  {/* Action Buttons */}
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      startIcon={<People />}
+                      onClick={() => {
+                        onOpenModal('checkin', foundReservation);
+                        setFoundReservation(null);
+                      }}
+                    >
+                      Check In
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      startIcon={<CalendarToday />}
+                      onClick={() => {
+                        const modifyMessage: ChatMessage = {
+                          id: Date.now().toString(),
+                          role: 'assistant',
+                          content: 'To modify your reservation, please contact our front desk at +1 (555) 123-4567 or email reservations@lagunacreek.com',
+                          timestamp: new Date()
+                        };
+                        setMessages((prev) => [...prev, modifyMessage]);
+                        setFoundReservation(null);
+                      }}
+                    >
+                      Modify
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      startIcon={<CreditCard />}
+                      onClick={() => {
+                        const cancelMessage: ChatMessage = {
+                          id: Date.now().toString(),
+                          role: 'assistant',
+                          content: 'To cancel your reservation, please contact our front desk at +1 (555) 123-4567. Cancellation policies may apply.',
+                          timestamp: new Date()
+                        };
+                        setMessages((prev) => [...prev, cancelMessage]);
+                        setFoundReservation(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => setFoundReservation(null)}
+                    >
+                      Close
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          </Fade>
+        )}
 
         {/* Room Types Display */}
         {showRoomTypes && (

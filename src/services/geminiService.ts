@@ -418,7 +418,7 @@ Format your response as JSON:
     if (lowerMessage.includes('available') || lowerMessage.includes('availability') || lowerMessage.includes('rooms available') || lowerMessage.includes('display room') || lowerMessage.includes('show room')) {
       return 'availability';
     }
-    if (lowerMessage.includes('find reservation') || lowerMessage.includes('search reservation') || lowerMessage.includes('find booking')) {
+    if (lowerMessage.includes('find reservation') || lowerMessage.includes('search reservation') || lowerMessage.includes('find booking') || lowerMessage.includes('check reservation') || lowerMessage.includes('reservation status')) {
       return 'search_reservation';
     }
     if (lowerMessage.includes('help') || lowerMessage.includes('assist')) {
