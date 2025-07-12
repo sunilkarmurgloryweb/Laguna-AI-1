@@ -6,7 +6,7 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Grid,
+  Grid2 as Grid,
   useTheme,
   useMediaQuery
 } from '@mui/material';

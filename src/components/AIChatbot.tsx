@@ -20,7 +20,7 @@ import {
   ListItemText,
   Card,
   CardContent,
-  Grid,
+  Grid2 as Grid,
   Divider
 } from '@mui/material';
 import {

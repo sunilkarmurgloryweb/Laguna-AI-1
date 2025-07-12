@@ -5,7 +5,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid,
+  Grid2 as Grid,
   Typography,
   Box,
   Card,

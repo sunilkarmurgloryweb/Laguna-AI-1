@@ -10,7 +10,7 @@ import {
   Stepper,
   Step,
   StepLabel,
-  Grid,
+  Grid2 as Grid,
   Paper,
   LinearProgress,
   IconButton,
