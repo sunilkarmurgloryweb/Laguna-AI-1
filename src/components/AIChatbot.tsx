@@ -12,7 +12,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setActiveModal } from '../store/slices/uiSlice';
 import { processVoiceCommand } from '../services/geminiService';
-import { speakText } from '../services/multilingualAIService';
+import { multilingualAI } from '../services/multilingualAIService';
 
 interface Message {
   id: string;
@@ -59,7 +59,7 @@ const AIChatbot: React.FC = () => {
       
       // Try advanced multilingual service first
       try {
-        await speakText(text, currentLanguage);
+        await multilingualAI.speak(text, currentLanguage);
         return;
       } catch (error) {
         console.log('Multilingual service failed, using browser speech:', error);
