@@ -1,17 +1,17 @@
 import React from 'react';
 import { 
-  Calendar,
-  Users,
+  CalendarToday as CalendarIcon,
+  People as PeopleIcon,
   Hotel as HotelIcon,
-  User,
-  CreditCard,
-  CheckCircle,
-  Wifi,
-  Coffee,
-  Car,
-  Utensils,
-  Bed
-} from 'lucide-react';
+  Person as PersonIcon,
+  CreditCard as CreditCardIcon,
+  CheckCircle as CheckCircleIcon,
+  Wifi as WifiIcon,
+  LocalCafe as CoffeeIcon,
+  DirectionsCar as CarIcon,
+  Restaurant as RestaurantIcon,
+  Bed as BedIcon
+} from '@mui/icons-material';
 import { ReservationData, ReservationStep } from '../types/reservation';
 import { roomTypes, paymentMethods } from '../data/hotels';
 import VoiceIndicator from './VoiceIndicator';
@@ -43,20 +43,20 @@ const ReservationFlow: React.FC<ReservationFlowProps> = ({
   transcript
 }) => {
   const stepIcons = {
-    'dates-guests': Calendar,
+    'dates-guests': CalendarIcon,
     'room-selection': HotelIcon,
-    'guest-info': User,
-    'payment': CreditCard,
-    'confirmation': CheckCircle
+    'guest-info': PersonIcon,
+    'payment': CreditCardIcon,
+    'confirmation': CheckCircleIcon
   };
 
   const getAmenityIcon = (amenity: string) => {
-    if (amenity.includes('WiFi')) return <Wifi className="w-4 h-4" />;
-    if (amenity.includes('Bar')) return <Coffee className="w-4 h-4" />;
-    if (amenity.includes('Balcony')) return <Car className="w-4 h-4" />;
-    if (amenity.includes('Kitchen')) return <Utensils className="w-4 h-4" />;
-    if (amenity.includes('Bed')) return <Bed className="w-4 h-4" />;
-    return <CheckCircle className="w-4 h-4" />;
+    if (amenity.includes('WiFi')) return <WifiIcon className="w-4 h-4" />;
+    if (amenity.includes('Bar')) return <CoffeeIcon className="w-4 h-4" />;
+    if (amenity.includes('Balcony')) return <CarIcon className="w-4 h-4" />;
+    if (amenity.includes('Kitchen')) return <RestaurantIcon className="w-4 h-4" />;
+    if (amenity.includes('Bed')) return <BedIcon className="w-4 h-4" />;
+    return <CheckCircleIcon className="w-4 h-4" />;
   };
 
   const canProceed = () => {

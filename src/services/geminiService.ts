@@ -486,3 +486,26 @@ Format your response as JSON:
 }
 
 export const geminiService = new GeminiService();
+
+// Export processVoiceCommand function for backward compatibility
+export const processVoiceCommand = async (message: string, language: string = 'en') => {
+  try {
+    const response = await geminiService.sendMessage(message);
+    return {
+      response: {
+        text: response.text
+      },
+      intent: response.intent,
+      extractedData: response.extractedData
+    };
+  } catch (error) {
+    console.error('Voice command processing error:', error);
+    return {
+      response: {
+        text: "I'm sorry, I couldn't process that request. Please try again."
+      },
+      intent: 'error',
+      extractedData: {}
+    };
+  }
+};

@@ -1,6 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, MessageCircle, X } from 'lucide-react';
-import { useAppSelector, useAppDispatch } from '../hooks/useAppSelector';
+import { 
+  Send as SendIcon, 
+  Mic as MicIcon, 
+  MicOff as MicOffIcon, 
+  VolumeUp as VolumeUpIcon, 
+  VolumeOff as VolumeOffIcon, 
+  Chat as ChatIcon, 
+  Close as CloseIcon 
+} from '@mui/icons-material';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setActiveModal } from '../store/slices/uiSlice';
 import { processVoiceCommand } from '../services/geminiService';
 import { speakText } from '../services/multilingualAIService';
@@ -246,7 +255,7 @@ const AIChatbot: React.FC = () => {
           onClick={() => setIsMinimized(false)}
           className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 flex items-center gap-2"
         >
-          <MessageCircle className="w-6 h-6" />
+          <ChatIcon className="w-6 h-6" />
           <span className="hidden sm:inline">AI Assistant</span>
         </button>
       </div>
@@ -258,7 +267,7 @@ const AIChatbot: React.FC = () => {
       {/* Header */}
       <div className="bg-blue-600 text-white p-3 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5" />
+          <ChatIcon className="w-5 h-5" />
           <span className="font-medium">AI Assistant</span>
         </div>
         <div className="flex items-center gap-2">
@@ -267,13 +276,13 @@ const AIChatbot: React.FC = () => {
             className="p-1 hover:bg-blue-700 rounded transition-colors"
             title={isSpeechEnabled ? 'Disable Speech' : 'Enable Speech'}
           >
-            {isSpeechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {isSpeechEnabled ? <VolumeUpIcon className="w-4 h-4" /> : <VolumeOffIcon className="w-4 h-4" />}
           </button>
           <button
             onClick={() => setIsMinimized(true)}
             className="p-1 hover:bg-blue-700 rounded transition-colors"
           >
-            <X className="w-4 h-4" />
+            <CloseIcon className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -331,14 +340,14 @@ const AIChatbot: React.FC = () => {
             }`}
             disabled={isProcessing}
           >
-            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            {isListening ? <MicOffIcon className="w-4 h-4" /> : <MicIcon className="w-4 h-4" />}
           </button>
           <button
             onClick={() => handleSendMessage()}
             className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors disabled:opacity-50"
             disabled={isProcessing || !inputText.trim()}
           >
-            <Send className="w-4 h-4" />
+            <SendIcon className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Hotel as HotelIcon, MapPin, Star } from 'lucide-react';
+import { Hotel as HotelIcon, LocationOn as LocationOnIcon, Star as StarIcon } from '@mui/icons-material';
 import { Hotel as HotelType } from '../types/reservation';
 import VoiceIndicator from './VoiceIndicator';
 import { VoiceState } from '../types/reservation';
@@ -63,7 +63,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   </p>
                   
                   <div className="flex items-center mb-3">
-                    <MapPin className="w-4 h-4 text-gray-500 mr-1" />
+                    <LocationOnIcon className="w-4 h-4 text-gray-500 mr-1" />
                     <span className="text-xs text-gray-500">
                       {hotel.address}
                     </span>
@@ -71,7 +71,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-500 mr-1" />
+                      <StarIcon className="w-4 h-4 text-yellow-500 mr-1" />
                       <span className="text-sm font-medium">
                         {hotel.rating}
                       </span>

@@ -2,6 +2,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UIState {
   isLoading: boolean;
+  activeModal: string | null;
+  currentLanguage: string;
   notifications: Array<{
     id: string;
     message: string;
@@ -13,6 +15,8 @@ interface UIState {
 
 const initialState: UIState = {
   isLoading: false,
+  activeModal: null,
+  currentLanguage: 'en',
   notifications: [],
   theme: 'light',
 };
@@ -23,6 +27,12 @@ const uiSlice = createSlice({
   reducers: {
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
+    },
+    setActiveModal: (state, action: PayloadAction<string | null>) => {
+      state.activeModal = action.payload;
+    },
+    setCurrentLanguage: (state, action: PayloadAction<string>) => {
+      state.currentLanguage = action.payload;
     },
     addNotification: (state, action: PayloadAction<{
       message: string;
@@ -52,6 +62,8 @@ const uiSlice = createSlice({
 
 export const {
   setLoading,
+  setActiveModal,
+  setCurrentLanguage,
   addNotification,
   removeNotification,
   clearNotifications,
