@@ -258,8 +258,16 @@ CRITICAL INTENT MAPPING:
 - "check in", "guest check in" → ALWAYS use intent: "checkin"
 - "check out", "guest check out" → ALWAYS use intent: "checkout"
 
-IMPORTANT: When user says anything about BOOKING or RESERVING a room/hotel, ALWAYS set intent to "reservation" and open the reservation modal, NOT the availability modal.
+CRITICAL: When user says anything about BOOKING or RESERVING a room/hotel, ALWAYS set intent to "reservation".
+NEVER use "availability" intent for booking requests. "availability" is ONLY for checking room status/calendar.
 
+Examples:
+- "I want to book a room" → intent: "reservation" 
+- "Book a hotel room" → intent: "reservation"
+- "Make a reservation" → intent: "reservation"
+- "Reserve a room for July 15" → intent: "reservation"
+- "Show room availability" → intent: "availability"
+- "Check room calendar" → intent: "availability"
 For each response, provide:
 1. A natural, conversational response
 2. Any extracted data in structured format
@@ -554,6 +562,7 @@ Format your response as JSON:
       for (const pattern of languagePatterns) {
         const regex = new RegExp(`\\b${pattern}\\b`, 'i');
         if (regex.test(lowerMessage)) {
+          console.log(`🎯 Detected intent: ${intentType} from pattern: ${pattern} in language: ${detectedLanguage}`);
           return intentType as IntentType;
         }
       }

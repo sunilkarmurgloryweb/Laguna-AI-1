@@ -25,7 +25,7 @@ import {
   VolumeOff as VolumeOffIcon,
   Chat as ChatIcon,
   Close as CloseIcon,
-  SmartToy as AIIcon,
+  Psychology as AIIcon,
   Person as PersonIcon,
   Language as LanguageIcon
 } from '@mui/icons-material';
@@ -252,11 +252,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       
       setMessages(prev => [...prev, modalMessage]);
       
-      // Delay modal opening to allow AI response to be spoken first
-      setTimeout(() => {
-        console.log('🚀 Opening modal:', modalType, 'with data:', dataWithLanguage);
-        onOpenModal(modalType, dataWithLanguage);
-      }, 2000);
+      // Open modal immediately for better user experience
+      console.log('🚀 Opening modal:', modalType, 'with data:', dataWithLanguage);
+      onOpenModal(modalType, dataWithLanguage);
     }
   }, [onOpenModal]);
 
@@ -287,7 +285,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         context: `${context}_${messageLang}`,
         currentFormData: { language: messageLang }
       }).unwrap();
-      console.log(result, messageText, "response.intent");
+      
+      console.log('🎯 AI Response:', {
+        intent: result.response.intent,
+        extractedData: result.response.extractedData,
+        text: result.response.text,
+        userInput: messageText
+      });
 
       const { response } = result;
 
@@ -300,12 +304,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         responseText = `${langInfo.flag} ${responseText}`;
       }
 
-      // Debug logging
-      console.log('🤖 AI Response:', {
-        intent: response.intent,
-        extractedData: response.extractedData,
-        text: responseText
-      });
 
       // Add AI response message
       const aiMessage: Message = {
@@ -329,7 +327,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       }
 
       // Handle modal opening based on intent
-      if (response.intent && response.extractedData) {
+      if (response.intent && response.intent !== 'inquiry' && response.intent !== 'help' && response.intent !== 'unknown') {
+        console.log('🚀 Opening modal for intent:', response.intent, 'with data:', response.extractedData);
         detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
       }
 

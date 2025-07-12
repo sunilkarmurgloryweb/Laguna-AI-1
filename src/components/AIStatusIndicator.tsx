@@ -1,10 +1,18 @@
 import React from 'react';
 import { 
-  Brain,
+  Box,
+  Typography,
+  LinearProgress,
+  Alert,
+  Paper,
+  CircularProgress
+} from '@mui/material';
+import {
+  Psychology as BrainIcon,
   CheckCircle,
-  AlertTriangle,
-  RotateCw
-} from 'lucide-react';
+  Warning as WarningIcon,
+  Refresh as RefreshIcon
+} from '@mui/icons-material';
 
 interface AIStatusIndicatorProps {
   isProcessing: boolean;
@@ -20,18 +28,18 @@ const AIStatusIndicator: React.FC<AIStatusIndicatorProps> = ({
   error
 }) => {
   const getStatusColor = () => {
-    if (error) return 'border-red-500 bg-red-50';
-    if (isProcessing) return 'border-blue-500 bg-blue-50';
-    if (confidence > 0.8) return 'border-green-500 bg-green-50';
-    if (confidence > 0.5) return 'border-yellow-500 bg-yellow-50';
-    return 'border-gray-300 bg-gray-50';
+    if (error) return 'error.main';
+    if (isProcessing) return 'primary.main';
+    if (confidence > 0.8) return 'success.main';
+    if (confidence > 0.5) return 'warning.main';
+    return 'grey.500';
   };
 
   const getStatusIcon = () => {
-    if (error) return <AlertTriangle className="w-5 h-5 text-red-600" />;
-    if (isProcessing) return <RotateCw className="w-5 h-5 text-blue-600 animate-spin" />;
-    if (confidence > 0.7) return <CheckCircle className="w-5 h-5 text-green-600" />;
-    return <Brain className="w-5 h-5 text-gray-600" />;
+    if (error) return <WarningIcon sx={{ color: 'error.main' }} />;
+    if (isProcessing) return <CircularProgress size={20} sx={{ color: 'primary.main' }} />;
+    if (confidence > 0.7) return <CheckCircle sx={{ color: 'success.main' }} />;
+    return <BrainIcon sx={{ color: 'grey.600' }} />;
   };
 
   const getStatusText = () => {
@@ -43,64 +51,103 @@ const AIStatusIndicator: React.FC<AIStatusIndicatorProps> = ({
   };
 
   const getStatusBadgeColor = () => {
-    if (error) return 'bg-red-100 text-red-800';
-    if (isProcessing) return 'bg-blue-100 text-blue-800';
-    if (confidence > 0.8) return 'bg-green-100 text-green-800';
-    if (confidence > 0.5) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-gray-100 text-gray-800';
+    if (error) return 'error';
+    if (isProcessing) return 'primary';
+    if (confidence > 0.8) return 'success';
+    if (confidence > 0.5) return 'warning';
+    return 'default';
   };
 
   return (
-    <div className={`border-2 rounded-lg p-4 mb-4 ${getStatusColor()}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+    <Paper 
+      elevation={2} 
+      sx={{ 
+        p: 2, 
+        mb: 2,
+        borderLeft: 4,
+        borderLeftColor: getStatusColor(),
+        backgroundColor: error ? 'error.light' : isProcessing ? 'primary.light' : 'background.paper'
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {getStatusIcon()}
-          <span className="font-semibold text-sm">
+          <Typography variant="subtitle2" fontWeight="bold">
             Gemini AI Assistant
-          </span>
-        </div>
+          </Typography>
+        </Box>
         
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor()}`}>
-          {getStatusText()}
-        </span>
-      </div>
+        <Box 
+          sx={{ 
+            px: 1.5, 
+            py: 0.5, 
+            borderRadius: 2, 
+            backgroundColor: `${getStatusBadgeColor()}.light`,
+            color: `${getStatusBadgeColor()}.contrastText`
+          }}
+        >
+          <Typography variant="caption" fontWeight="medium">
+            {getStatusText()}
+          </Typography>
+        </Box>
+      </Box>
       
       {isProcessing && (
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-          <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
-        </div>
+        <Box sx={{ mb: 1 }}>
+          <LinearProgress 
+            variant="indeterminate" 
+            sx={{ 
+              height: 4, 
+              borderRadius: 2,
+              backgroundColor: 'primary.light',
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: 'primary.main'
+              }
+            }} 
+          />
+        </Box>
       )}
       
       {confidence > 0 && !isProcessing && !error && (
-        <div>
-          <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>Confidence</span>
-            <span>{Math.round(confidence * 100)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className={`h-2 rounded-full ${
-                confidence > 0.7 ? 'bg-green-500' : 
-                confidence > 0.5 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${confidence * 100}%` }}
-            ></div>
-          </div>
-        </div>
+        <Box sx={{ mb: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Confidence
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {Math.round(confidence * 100)}%
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={confidence * 100}
+            sx={{ 
+              height: 4, 
+              borderRadius: 2,
+              backgroundColor: 'grey.200',
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: confidence > 0.7 ? 'success.main' : 
+                                confidence > 0.5 ? 'warning.main' : 'error.main'
+              }
+            }}
+          />
+        </Box>
       )}
       
       {error && (
-        <p className="text-sm text-red-700 mt-2">
-          {error}
-        </p>
+        <Alert severity="error" sx={{ mt: 1 }}>
+          <Typography variant="body2">
+            {error}
+          </Typography>
+        </Alert>
       )}
       
       {lastResponse && !error && (
-        <p className="text-sm text-gray-600 mt-2 italic">
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
           "{lastResponse.substring(0, 100)}{lastResponse.length > 100 ? '...' : ''}"
-        </p>
+        </Typography>
       )}
-    </div>
+    </Paper>
   );
 };
 

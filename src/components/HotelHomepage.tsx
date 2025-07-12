@@ -244,19 +244,25 @@ const HotelHomepage: React.FC = () => {
   }, [isResizing, isDesktop]);
 
   const handleOpenModal = (modalType: ModalType, data?: VoiceProcessedData) => {
+    console.log('📱 Opening modal:', modalType, 'with data:', data);
+    
     setModalData(data || {});
     
     switch (modalType) {
       case 'reservation':
+        console.log('✅ Opening Reservation Modal');
         setShowReservationModal(true);
         break;
       case 'checkin':
+        console.log('✅ Opening Check-in Modal');
         setShowCheckInModal(true);
         break;
       case 'checkout':
+        console.log('✅ Opening Check-out Modal');
         setShowCheckOutModal(true);
         break;
       case 'availability':
+        console.log('✅ Opening Availability Modal');
         setShowRoomAvailabilityModal(true);
         break;
       default:
