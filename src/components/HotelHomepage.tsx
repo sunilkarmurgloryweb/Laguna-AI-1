@@ -760,11 +760,12 @@ const HotelHomepage: React.FC = () => {
             <Box sx={{ 
               flex: 1, 
               overflow: 'hidden',
-              maxHeight: 'calc(100vh - 120px)'
+              maxHeight: 'calc(100vh - 80px)'
             }}>
               <AIChatbot 
                 onOpenModal={handleOpenModal}
                 context={`hotel_general_${currentLanguage}`}
+                onReceiveMessage={setAiMessageHandler}
               />
             </Box>
           </Box>
