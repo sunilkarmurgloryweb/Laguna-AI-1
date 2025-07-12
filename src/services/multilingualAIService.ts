@@ -60,7 +60,7 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'Your booking is confirmed! Confirmation number: {confirmationId}',
       error: 'I didn\'t understand that. Could you please repeat?',
       help: 'I can help you with reservations, check-in, check-out, and room availability. Just tell me what you need.'
-    }
+    },
     processCompletion: {
       reservation: {
         title: 'Reservation Created Successfully! 🎉',
