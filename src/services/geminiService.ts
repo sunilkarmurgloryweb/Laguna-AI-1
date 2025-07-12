@@ -4,7 +4,7 @@ export interface GeminiResponse {
   text: string;
   intent: string;
   confidence: number;
-  extractedData: Record<string, any>;
+  extractedData: Record<string, unknown>;
   shouldFillForm: boolean;
   validationErrors: string[];
   suggestions: string[];
@@ -15,7 +15,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date | string;
-  extractedData?: Record<string, any>;
+  extractedData?: Record<string, unknown>;
   formFilled?: boolean;
 }
 
@@ -61,7 +61,7 @@ class GeminiService {
     });
   }
 
-  public async sendMessage(message: string, currentFormData?: Record<string, any>): Promise<GeminiResponse> {
+  public async sendMessage(message: string, currentFormData?: Record<string, unknown>): Promise<GeminiResponse> {
     if (!this.chatSession) {
       await this.startChat();
     }
@@ -164,7 +164,7 @@ Format your response as JSON:
     return basePrompt;
   }
 
-  private buildEnhancedPrompt(message: string, currentFormData?: Record<string, any>): string {
+  private buildEnhancedPrompt(message: string, currentFormData?: Record<string, unknown>): string {
     let prompt = `User message: "${message}"`;
     
     if (currentFormData && Object.keys(currentFormData).length > 0) {
@@ -215,12 +215,12 @@ Format your response as JSON:
     };
   }
 
-  private validateExtractedData(data: Record<string, any>): {
-    data: Record<string, any>;
+  private validateExtractedData(data: Record<string, unknown>): {
+    data: Record<string, unknown>;
     isValid: boolean;
     errors: string[];
   } {
-    const validatedData: Record<string, any> = {};
+    const validatedData: Record<string, unknown> = {};
     const errors: string[] = [];
 
     // Validate dates
@@ -340,11 +340,11 @@ Format your response as JSON:
   }
 
   private extractDataWithRegex(text: string): {
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     hasValidData: boolean;
     errors: string[];
   } {
-    const data: Record<string, any> = {};
+    const data: Record<string, unknown> = {};
     const errors: string[] = [];
 
     // Extract dates

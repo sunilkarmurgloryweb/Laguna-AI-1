@@ -27,29 +27,13 @@ import {
   Cancel
 } from '@mui/icons-material';
 import dayjs, { Dayjs } from 'dayjs';
-
-interface DayAvailability {
-  date: string;
-  rooms: {
-    [roomType: string]: {
-      available: number;
-      total: number;
-      price: number;
-    };
-  };
-}
+import { DayAvailability, RoomAvailabilityInfo, VoiceProcessedData } from '../types/reservation';
 
 interface RoomAvailabilityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  availabilityData?: {
-    checkInDate?: string;
-    checkOutDate?: string;
-    adults?: number;
-    children?: number;
-    roomType?: string;
-  };
-  onBookRoom?: (roomData: any) => void;
+  availabilityData?: VoiceProcessedData;
+  onBookRoom?: (roomData: VoiceProcessedData) => void;
 }
 
 const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({ 
@@ -136,7 +120,7 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       const isHoliday = Math.random() < 0.1; // 10% chance of being a holiday
       
-      const rooms: { [key: string]: { available: number; total: number; price: number } } = {};
+      const rooms: Record<string, RoomAvailabilityInfo> = {};
       
       availableRooms.forEach(room => {
         const baseAvailable = room.baseAvailable;
@@ -212,12 +196,11 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
     });
   };
 
-  const handleBookRoom = (room: any) => {
+  const handleBookRoom = (room: RoomTypeWithAvailability): void => {
     if (onBookRoom) {
       onBookRoom({
-        checkInDate: selectedDate,
+        checkIn: selectedDate?.format('YYYY-MM-DD'),
         roomType: room.name,
-        roomPrice: room.price
       });
     }
     onClose();

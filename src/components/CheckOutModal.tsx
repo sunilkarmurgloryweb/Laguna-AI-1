@@ -32,17 +32,12 @@ import {
   CheckCircle
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
-import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
+import { ProcessedVoiceResponse, VoiceProcessedData } from '../types/reservation';
 
 interface CheckOutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  guestData?: {
-    name: string;
-    room: string;
-    checkIn: string;
-    checkOut: string;
-  };
+  guestData?: VoiceProcessedData;
 }
 
 const CheckOutModal: React.FC<CheckOutModalProps> = ({ 
@@ -90,7 +85,7 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
     onClose();
   };
 
-  const handleVoiceProcessed = (result: any) => {
+  const handleVoiceProcessed = (result: ProcessedVoiceResponse): void => {
     const voiceResult = result as ProcessedVoiceResponse;
     
     if (voiceResult.extractedData) {

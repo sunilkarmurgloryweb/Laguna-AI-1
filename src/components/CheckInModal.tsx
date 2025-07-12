@@ -36,28 +36,14 @@ import {
   CameraAlt
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
-import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
+import { ProcessedVoiceResponse, VoiceProcessedData, PassportInfo, ReservationSearchResult } from '../types/reservation';
 
 interface CheckInModalProps {
   isOpen: boolean;
   onClose: () => void;
-  guestData?: {
-    name?: string;
-    confirmationNumber?: string;
-    checkInDate?: string;
-    roomType?: string;
-    phone?: string;
-  };
+  guestData?: VoiceProcessedData;
 }
 
-interface PassportData {
-  name: string;
-  passportNumber: string;
-  nationality: string;
-  dateOfBirth: string;
-  expiryDate: string;
-  photo?: string;
-}
 
 interface RoomAssignment {
   roomNumber: string;
@@ -69,16 +55,6 @@ interface RoomAssignment {
   checkOutTime: string;
 }
 
-interface ReservationData {
-  found: boolean;
-  guestName?: string;
-  confirmationNumber?: string;
-  roomType?: string;
-  checkInDate?: string;
-  checkOutDate?: string;
-  phone?: string;
-  email?: string;
-}
 
 const CheckInModal: React.FC<CheckInModalProps> = ({ 
   isOpen, 
@@ -103,8 +79,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     isProcessing: false
   });
   
-  const [reservationData, setReservationData] = useState<ReservationData>({ found: false });
-  const [passportData, setPassportData] = useState<PassportData | null>(null);
+  const [reservationData, setReservationData] = useState<ReservationSearchResult | null>(null);
+  const [passportData, setPassportData] = useState<PassportInfo | null>(null);
   const [roomAssignment, setRoomAssignment] = useState<RoomAssignment | null>(null);
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
@@ -118,51 +94,56 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     };
   }, [stream]);
 
-  const searchReservation = (query: string): ReservationData => {
+  const searchReservation = (query: string): ReservationSearchResult | null => {
     // Simulate reservation lookup
-    const mockReservations = [
+    const mockReservations: ReservationSearchResult[] = [
       {
+        id: 'RES001',
         guestName: 'Sunil Karmur',
         confirmationNumber: '8128273972',
         phone: '+91-9876543210',
         email: 'sunil.karmur@email.com',
         roomType: 'Ocean View King Suite',
         checkInDate: '2024-01-15',
-        checkOutDate: '2024-01-18'
+        checkOutDate: '2024-01-18',
+        status: 'Confirmed',
+        totalAmount: 897,
+        nights: 3,
+        adults: 2,
+        children: 1,
+        specialRequests: 'Late check-in, Ocean view preferred'
       },
       {
+        id: 'RES002',
         guestName: 'John Smith',
         confirmationNumber: '8128273973',
         phone: '+1-555-0123',
         email: 'john.smith@email.com',
         roomType: 'Deluxe Garden Room',
         checkInDate: '2024-01-15',
-        checkOutDate: '2024-01-17'
+        checkOutDate: '2024-01-17',
+        status: 'Confirmed',
+        totalAmount: 398,
+        nights: 2,
+        adults: 2,
+        children: 0,
+        specialRequests: 'None'
       }
     ];
 
     const lowerQuery = query.toLowerCase();
-    const found = mockReservations.find(res => 
+    return mockReservations.find(res => 
       res.guestName.toLowerCase().includes(lowerQuery) ||
       res.confirmationNumber.includes(query) ||
       res.phone.includes(query)
-    );
-
-    if (found) {
-      return {
-        found: true,
-        ...found
-      };
-    }
-
-    return { found: false };
+    ) || null;
   };
 
   const handleGuestLookup = () => {
     const reservation = searchReservation(formData.searchQuery);
     setReservationData(reservation);
 
-    if (reservation.found) {
+    if (reservation) {
       // Start camera for passport verification
       setTimeout(() => {
         startCamera();
@@ -218,7 +199,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
       
       // Simulate passport scanning
       setTimeout(() => {
-        const mockPassportData: PassportData = {
+        const mockPassportData: PassportInfo = {
           name: reservationData.guestName || 'SUNIL KARMUR',
           passportNumber: 'P123456789',
           nationality: 'IND',
@@ -280,11 +261,11 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     }, 2000);
   };
 
-  const handleVoiceProcessed = (result: any) => {
+  const handleVoiceProcessed = (result: ProcessedVoiceResponse): void => {
     const voiceResult = result as ProcessedVoiceResponse;
     
     if (voiceResult.extractedData) {
-      const updates: any = {};
+      const updates: Partial<typeof formData> = {};
       const newVoiceFields = new Set(voiceFilledFields);
       
       if (voiceResult.extractedData.guestName) {
@@ -333,6 +314,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             </Typography>
             
             {!reservationData.found ? (
+            {!reservationData ? (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   Enter guest name, confirmation number, or mobile number to find reservation.

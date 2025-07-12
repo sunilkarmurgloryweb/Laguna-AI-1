@@ -242,6 +242,7 @@ const HotelHomepage: React.FC = () => {
   }, [isResizing, isDesktop]);
 
   const handleOpenModal = (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: any) => {
+  const handleOpenModal = (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: Record<string, unknown>) => {
     setModalData(data || {});
     
     switch (modalType) {

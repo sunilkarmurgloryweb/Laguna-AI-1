@@ -47,13 +47,14 @@ import {
 } from '../store/api/geminiApi';
 import { ChatMessage } from '../services/geminiService';
 import { multilingualAI } from '../services/multilingualAIService';
+import { ReservationSearchResult, VoiceProcessedData, ProcessedVoiceResponse } from '../types/reservation';
 
 interface AIChatbotProps {
   onOpenModal: (
     modalType: 'reservation' | 'checkin' | 'checkout' | 'availability',
-    data?: any
+    data?: VoiceProcessedData
   ) => void;
-  onFormDataUpdate?: (data: Record<string, any>) => void;
+  onFormDataUpdate?: (data: VoiceProcessedData) => void;
   currentFormData?: Record<string, any>;
   context?: string;
 }
@@ -82,7 +83,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState<null | HTMLElement>(null);
   const [showRoomTypes, setShowRoomTypes] = useState(false);
-  const [foundReservation, setFoundReservation] = useState<any>(null);
+  const [foundReservation, setFoundReservation] = useState<ReservationSearchResult | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -186,8 +187,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const searchReservation = (query: string): any => {
-    const mockReservations = [
+  const searchReservation = (query: string): ReservationSearchResult | undefined => {
+    const mockReservations: ReservationSearchResult[] = [
       {
         id: 'RES001',
         guestName: 'Sunil Karmur',
@@ -244,6 +245,49 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       res.confirmationNumber.includes(query) ||
       res.phone.includes(query)
     );
+  };
+
+  const handleVoiceProcessed = (result: ProcessedVoiceResponse): void => {
+    const voiceResult = result as ProcessedVoiceResponse;
+    
+    if (voiceResult.extractedData) {
+      const updates: VoiceProcessedData = {};
+      const newVoiceFields = new Set(voiceFilledFields);
+
+      // Process extracted data and update form
+      Object.entries(voiceResult.extractedData).forEach(([key, value]) => {
+        if (value && value !== currentFormData[key]) {
+          updates[key] = value;
+          newVoiceFields.add(key);
+        }
+      });
+
+      if (Object.keys(updates).length > 0) {
+        onFormDataUpdate?.(updates);
+        setVoiceFilledFields(newVoiceFields);
+        
+        // Show confirmation message
+        const confirmationMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `I've updated your form with the information you provided: ${Object.keys(updates).join(', ')}.`,
+          timestamp: new Date()
+        };
+        setMessages((prev) => [...prev, confirmationMessage]);
+      }
+    }
+
+    // Handle intent-based actions
+    if (voiceResult.intent) {
+      switch (voiceResult.intent) {
+        case 'reservation':
+        case 'checkin':
+        case 'checkout':
+        case 'availability':
+          onOpenModal(voiceResult.intent, voiceResult.extractedData);
+          break;
+      }
+    }
   };
 
   const handleSendMessage = async (messageText?: string): Promise<void> => {
@@ -398,7 +442,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     setShowRoomTypes(false);
     
     setTimeout(() => {
-      onOpenModal('reservation', { roomType: room.name, roomPrice: room.price });
+      onOpenModal('reservation', { roomType: room.name });
     }, 1000);
   };
 

@@ -40,22 +40,12 @@ import {
 import VoiceInput from './VoiceInput';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { updateReservationData } from '../store/slices/reservationSlice';
-import type { ProcessedVoiceResponse } from '../store/api/geminiApi';
+import { ProcessedVoiceResponse, VoiceProcessedData } from '../types/reservation';
 
 interface ReservationModalProps {
   isOpen?: boolean;
   onClose: () => void;
-  initialData?: {
-    checkIn?: string;
-    checkOut?: string;
-    adults?: number;
-    children?: number;
-    roomType?: string;
-    guestName?: string;
-    phone?: string;
-    email?: string;
-    paymentMethod?: string;
-  };
+  initialData?: VoiceProcessedData;
 }
 
 const ReservationModal: React.FC<ReservationModalProps> = ({ 
@@ -175,11 +165,11 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     }
   };
 
-  const handleVoiceProcessed = (result: any) => {
+  const handleVoiceProcessed = (result: ProcessedVoiceResponse): void => {
     const voiceResult = result as ProcessedVoiceResponse;
     
     if (voiceResult.extractedData) {
-      const updates: any = {};
+      const updates: Partial<typeof formData> = {};
       const newVoiceFields = new Set(voiceFilledFields);
       
       // Map extracted data to form fields
@@ -225,7 +215,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
         setVoiceFilledFields(newVoiceFields);
         
         // Convert dayjs objects to strings for Redux
-        const reduxUpdates = {
+        const reduxUpdates: VoiceProcessedData = {
           ...updates,
           checkIn: updates.checkIn ? updates.checkIn.format('YYYY-MM-DD') : undefined,
           checkOut: updates.checkOut ? updates.checkOut.format('YYYY-MM-DD') : undefined,

@@ -18,13 +18,14 @@ import {
 } from '@mui/icons-material';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useSendMessageMutation } from '../store/api/geminiApi';
+import { ProcessedVoiceResponse, VoiceProcessedData } from '../types/reservation';
 
 export interface VoiceInputProps {
   onTranscriptChange?: (transcript: string, isInterim: boolean) => void;
-  onVoiceProcessed?: (data: any) => void;
+  onVoiceProcessed?: (data: ProcessedVoiceResponse) => void;
   language?: string;
   currentStep?: string;
-  reservationData?: any;
+  reservationData?: VoiceProcessedData;
   disabled?: boolean;
   size?: 'small' | 'medium' | 'large';
   showTranscript?: boolean;
