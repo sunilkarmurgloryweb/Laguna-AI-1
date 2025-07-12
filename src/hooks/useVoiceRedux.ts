@@ -77,7 +77,10 @@ export const useVoiceRedux = () => {
       utterance.pitch = 1;
       
       utterance.onend = () => {
-        dispatch(setVoiceState('idle'));
+        // Wait 1-2 seconds after speaking before allowing new input
+        setTimeout(() => {
+          dispatch(setVoiceState('idle'));
+        }, 1500);
       };
       
       speechSynthesis.speak(utterance);

@@ -20,14 +20,31 @@ import { getLanguageCode } from './utils/voiceCommands';
 import { hotels } from './data/hotels';
 
 import LanguageSelector from './components/LanguageSelector';
-import WelcomeScreen from './components/WelcomeScreen';
-import ReservationFlow from './components/ReservationFlow';
-import ConfirmationScreen from './components/ConfirmationScreen';
+import ChatInterface from './components/ChatInterface';
+
+interface Message {
+  id: string;
+  type: 'user' | 'ai';
+  content: string;
+  timestamp: Date;
+  extractedInfo?: {
+    checkIn?: string;
+    checkOut?: string;
+    adults?: number;
+    children?: number;
+    roomType?: string;
+    guestName?: string;
+    phone?: string;
+    email?: string;
+    paymentMethod?: string;
+  };
+}
 
 function AppContent() {
   const dispatch = useAppDispatch();
   const { currentStep, data: reservationData } = useAppSelector((state) => state.reservation);
   const { selectedLanguage } = useAppSelector((state) => state.voice);
+  const [messages, setMessages] = React.useState<Message[]>([]);
   
   const {
     voiceState,
@@ -38,6 +55,19 @@ function AppContent() {
     speak,
     setLanguage
   } = useVoiceRedux();
+
+  // Add initial welcome message
+  useEffect(() => {
+    if (currentStep === 'welcome' && messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: 'Welcome to Lagunacreek! I\'m your AI assistant ready to help you book the perfect hotel room. I can help you with reservations, check availability, and answer any questions about our services. How can I assist you today?',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [currentStep, messages.length]);
 
   // Handle language selection
   const handleLanguageSelect = (language: Language) => {
@@ -65,11 +95,50 @@ function AppContent() {
     }
   }, [transcript, voiceState]);
 
+  const addMessage = (type: 'user' | 'ai', content: string, extractedInfo?: Message['extractedInfo']) => {
+    const newMessage: Message = {
+      id: Date.now().toString() + Math.random(),
+      type,
+      content,
+      timestamp: new Date(),
+      extractedInfo
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const handleSendMessage = (message: string) => {
+    addMessage('user', message);
+    processVoiceInput(message);
+  };
+
   const processVoiceInput = (input: string) => {
+    // Add user message if it's not already added
+    if (voiceState === 'processing') {
+      addMessage('user', input);
+    }
+
     const result = voiceProcessingService.processVoiceInput(input, currentStep, reservationData);
     
-    // Speak the response
-    speak(result.response);
+    // Extract information for display
+    const extractedInfo: Message['extractedInfo'] = {};
+    if (result.entities) {
+      if (result.entities.date) extractedInfo.checkIn = result.entities.date;
+      if (result.entities.adults) extractedInfo.adults = result.entities.adults;
+      if (result.entities.children) extractedInfo.children = result.entities.children;
+      if (result.entities.room_type) extractedInfo.roomType = result.entities.room_type;
+      if (result.entities.name) extractedInfo.guestName = result.entities.name;
+      if (result.entities.phone) extractedInfo.phone = result.entities.phone;
+      if (result.entities.email) extractedInfo.email = result.entities.email;
+      if (result.entities.payment_type) extractedInfo.paymentMethod = result.entities.payment_type;
+    }
+
+    // Add AI response message
+    addMessage('ai', result.response, Object.keys(extractedInfo).length > 0 ? extractedInfo : undefined);
+    
+    // Speak the response with delay
+    setTimeout(() => {
+      speak(result.response);
+    }, 500);
     
     // Handle actions
     if (result.action) {
@@ -94,58 +163,19 @@ function AppContent() {
             message: 'Booking confirmed successfully!',
             type: 'success'
           }));
+          addMessage('ai', '🎉 Congratulations! Your booking has been confirmed. You will receive a confirmation email shortly. Thank you for choosing Lagunacreek!');
           setTimeout(() => {
             dispatch(resetReservation());
+            setMessages([]);
           }, 3000);
           break;
       }
-    }
-
-    // Handle "next" command
-    if (input.toLowerCase().includes('next')) {
-      handleNext();
-    }
-  };
-
-  const handleNext = () => {
-    switch (currentStep) {
-      case 'dates-guests':
-        if (reservationData.checkIn && reservationData.adults > 0) {
-          dispatch(setCurrentStep('room-selection'));
-          speak("Now let's choose your room. Please say the room type you'd like to book.");
-        } else {
-          speak("Please provide your check-in date and number of adults first.");
-        }
-        break;
-      case 'room-selection':
-        if (reservationData.roomType) {
-          dispatch(setCurrentStep('guest-info'));
-          speak("Please tell me your full name, contact number, and email address.");
-        } else {
-          speak("Please select a room type first.");
-        }
-        break;
-      case 'guest-info':
-        if (reservationData.guestName) {
-          dispatch(setCurrentStep('payment'));
-          speak("Please choose your payment method: Credit Card, Pay at Hotel, or UPI.");
-        } else {
-          speak("Please provide your name first.");
-        }
-        break;
-      case 'payment':
-        if (reservationData.paymentMethod) {
-          dispatch(setCurrentStep('confirmation'));
-          speak("Here is your reservation summary. Please review and say 'Yes, confirm the booking' to proceed.");
-        } else {
-          speak("Please select a payment method first.");
-        }
-        break;
     }
   };
 
   const handleResetReservation = () => {
     dispatch(resetReservation());
+    setMessages([]);
   };
 
   const renderCurrentStep = () => {
@@ -154,38 +184,20 @@ function AppContent() {
         return <LanguageSelector onLanguageSelect={handleLanguageSelect} />;
       
       case 'welcome':
-        return (
-          <WelcomeScreen
-            hotels={hotels}
-            voiceState={voiceState}
-            isSupported={isSupported}
-            onStartListening={startListening}
-            onStopListening={stopListening}
-          />
-        );
-      
       case 'dates-guests':
       case 'room-selection':
       case 'guest-info':
       case 'payment':
+      case 'confirmation':
         return (
-          <ReservationFlow
-            step={currentStep}
-            reservationData={reservationData}
+          <ChatInterface
+            messages={messages}
             voiceState={voiceState}
             isSupported={isSupported}
             onStartListening={startListening}
             onStopListening={stopListening}
-            onNext={handleNext}
+            onSendMessage={handleSendMessage}
             transcript={transcript}
-          />
-        );
-      
-      case 'confirmation':
-        return (
-          <ConfirmationScreen
-            reservationData={reservationData}
-            onNewReservation={handleResetReservation}
           />
         );
       
