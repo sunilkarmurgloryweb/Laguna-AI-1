@@ -34,6 +34,7 @@ interface RoomAvailabilityModalProps {
   onClose: () => void;
   availabilityData?: VoiceProcessedData;
   onBookRoom?: (roomData: VoiceProcessedData) => void;
+  onAIMessage?: (message: string, shouldSpeak?: boolean) => void;
 }
 
 const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({ 

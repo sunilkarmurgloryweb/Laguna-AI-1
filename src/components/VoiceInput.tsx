@@ -87,6 +87,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   const handleProcessVoice = async (text: string) => {
     if (!text.trim()) return;
 
+    // Store the original user input for chatbot display
+    const userInput = text;
+
     try {
       const result = await sendMessage({
         message: text,
@@ -97,6 +100,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       if (onVoiceProcessed) {
         onVoiceProcessed({
           ...result.response,
+          originalInput: userInput,
           chatMessage: result.chatMessage
         });
       }

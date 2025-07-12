@@ -144,6 +144,7 @@ export interface ProcessedVoiceResponse {
   validationErrors: string[];
   suggestions: string[];
   text: string;
+  originalInput?: string;
 }
 
 // Utility type for converting dayjs to string

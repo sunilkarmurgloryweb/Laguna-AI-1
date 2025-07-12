@@ -43,6 +43,7 @@ interface CheckInModalProps {
   isOpen: boolean;
   onClose: () => void;
   guestData?: VoiceProcessedData;
+  onAIMessage?: (message: string, shouldSpeak?: boolean) => void;
 }
 
 
@@ -280,6 +281,17 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 
   const handleVoiceProcessed = (result: ProcessedVoiceResponse): void => {
     const voiceResult = result as ProcessedVoiceResponse;
+    
+    // Send user input and AI response to chatbot
+    if (onAIMessage) {
+      // Add user message to chatbot
+      onAIMessage(`User: "${voiceResult.originalInput || 'Voice input received'}"`, false);
+      
+      // Add AI response to chatbot
+      if (voiceResult.text) {
+        onAIMessage(`AI: ${voiceResult.text}`, false);
+      }
+    }
     
     if (voiceResult.extractedData) {
       const updates: Partial<{

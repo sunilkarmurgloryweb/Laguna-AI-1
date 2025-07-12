@@ -38,6 +38,7 @@ interface CheckOutModalProps {
   isOpen: boolean;
   onClose: () => void;
   guestData?: VoiceProcessedData;
+  onAIMessage?: (message: string, shouldSpeak?: boolean) => void;
 }
 
 const CheckOutModal: React.FC<CheckOutModalProps> = ({ 
@@ -94,6 +95,17 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
 
   const handleVoiceProcessed = (result: ProcessedVoiceResponse): void => {
     const voiceResult = result as ProcessedVoiceResponse;
+    
+    // Send user input and AI response to chatbot
+    if (onAIMessage) {
+      // Add user message to chatbot
+      onAIMessage(`User: "${voiceResult.originalInput || 'Voice input received'}"`, false);
+      
+      // Add AI response to chatbot
+      if (voiceResult.text) {
+        onAIMessage(`AI: ${voiceResult.text}`, false);
+      }
+    }
     
     if (voiceResult.extractedData) {
       const newVoiceFields = new Set(voiceFilledFields);

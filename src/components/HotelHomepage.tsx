@@ -811,6 +811,7 @@ const HotelHomepage: React.FC = () => {
           isOpen={showCheckInModal}
           onClose={() => setShowCheckInModal(false)}
           guestData={modalData}
+          onAIMessage={aiMessageHandler || undefined}
         />
       )}
       
@@ -819,6 +820,7 @@ const HotelHomepage: React.FC = () => {
           isOpen={showCheckOutModal}
           onClose={() => setShowCheckOutModal(false)}
           guestData={modalData}
+          onAIMessage={aiMessageHandler || undefined}
         />
       )}
       
@@ -827,6 +829,7 @@ const HotelHomepage: React.FC = () => {
           isOpen={showRoomAvailabilityModal}
           onClose={() => setShowRoomAvailabilityModal(false)}
           availabilityData={modalData}
+          onAIMessage={aiMessageHandler || undefined}
         />
       )}
     </Box>
