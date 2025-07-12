@@ -38,7 +38,9 @@ import {
   ModalType, 
   IntentType, 
   VoiceProcessedData,
+  ProcessedVoiceResponse
 } from '../types/reservation';
+import ProcessCompletionMessage from './ProcessCompletionMessage';
 
 type Message = ChatMessage & {
   isUser: boolean;
@@ -49,12 +51,14 @@ interface AIChatbotProps {
   onOpenModal?: (modalType: ModalType, data?: VoiceProcessedData) => void;
   context?: string;
   onReceiveMessage?: (handler: (message: string, shouldSpeak?: boolean) => void) => void;
+  onProcessCompleted?: (processType: 'reservation' | 'checkin' | 'checkout', confirmationData: any) => void;
 }
 
 const AIChatbot: React.FC<AIChatbotProps> = ({ 
   onOpenModal,
   context = 'hotel_general',
-  onReceiveMessage
+  onReceiveMessage,
+  onProcessCompleted
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));

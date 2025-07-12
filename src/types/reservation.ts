@@ -146,6 +146,17 @@ export interface ProcessedVoiceResponse {
   text: string;
   originalInput?: string;
   chatMessage?: ChatMessage;
+  processCompleted?: boolean;
+  processType?: 'reservation' | 'checkin' | 'checkout';
+  confirmationData?: {
+    confirmationNumber?: string;
+    roomNumber?: string;
+    guestName?: string;
+    checkInDate?: string;
+    checkOutDate?: string;
+    roomType?: string;
+    totalAmount?: number;
+  };
 }
 
 export interface ChatMessage {
