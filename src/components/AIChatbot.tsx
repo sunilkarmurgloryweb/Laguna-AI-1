@@ -199,23 +199,37 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     
     // Speak the message if requested
     if (shouldSpeak && isSpeechEnabled) {
-      // Use multilingualAI service for better speech synthesis
-      multilingualAI.speak(message, currentLanguage).catch((error) => {
-        console.warn('Text-to-speech failed:', error);
-        // Fallback to browser speech synthesis
-        try {
-          const utterance = new SpeechSynthesisUtterance(message);
+      speakMessage(message);
+    }
+  }, [isSpeechEnabled]);
+
+  // Enhanced speech function
+  const speakMessage = React.useCallback((text: string) => {
+    if (!isSpeechEnabled || !text.trim()) return;
+
+    // Stop any currently speaking utterance
+    speechSynthesis.cancel();
+
+    // Small delay to ensure cancellation is complete
+    setTimeout(() => {
+      try {
+        // Try multilingualAI service first
+        multilingualAI.speak(text, currentLanguage).catch((error) => {
+          console.warn('MultilingualAI speech failed, using fallback:', error);
+          
+          // Fallback to browser speech synthesis
+          const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = multilingualAI.getSpeechRecognitionLanguage();
           utterance.rate = 0.9;
           utterance.pitch = 1;
           utterance.volume = 1;
-          speechSynthesis.speak(utterance);
-        } catch (fallbackError) {
-          console.error('Both speech synthesis methods failed:', fallbackError);
-        }
-      });
-    }
-  }, [isSpeechEnabled]);
+          
+        speakMessage(result.response.text);
+      } catch (error) {
+        console.error('Speech synthesis completely failed:', error);
+      }
+    }, 100);
+  }, [isSpeechEnabled, currentLanguage]);
 
   // Expose the function to parent component
   React.useEffect(() => {
@@ -468,21 +482,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
       // Speak response in current language
       if (result?.response?.text && isSpeechEnabled && result.response.intent !== 'error') {
-        // Use multilingualAI service for consistent speech synthesis
-        multilingualAI.speak(result.response.text, currentLanguage).catch((error) => {
-          console.warn('Text-to-speech failed:', error);
-          // Fallback to browser speech synthesis
-          try {
-            const utterance = new SpeechSynthesisUtterance(result.response.text);
-            utterance.lang = multilingualAI.getSpeechRecognitionLanguage();
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-            utterance.volume = 1;
-            speechSynthesis.speak(utterance);
-          } catch (fallbackError) {
-            console.error('Speech synthesis failed:', fallbackError);
-          }
-        });
+        speakMessage(result.response.text);
       }
     } catch (error) {
       console.error('Send failed:', error);
