@@ -48,6 +48,7 @@ import CheckOutModal from './CheckOutModal';
 import RoomAvailabilityModal from './RoomAvailabilityModal';
 import LanguageSelector from './LanguageSelector';
 import { multilingualAI } from '../services/multilingualAIService';
+import { ModalType, VoiceProcessedData } from '../types/reservation';
 
 const ResizeHandle = styled(Box)(({ theme }) => ({
   width: 4,
@@ -129,7 +130,7 @@ const HotelHomepage: React.FC = () => {
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [aiPanelWidth, setAiPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
-  const [modalData, setModalData] = useState<any>({});
+  const [modalData, setModalData] = useState<VoiceProcessedData>({});
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('en');
@@ -242,7 +243,7 @@ const HotelHomepage: React.FC = () => {
     }
   }, [isResizing, isDesktop]);
 
-  const handleOpenModal = (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: Record<string, unknown>) => {
+  const handleOpenModal = (modalType: ModalType, data?: VoiceProcessedData) => {
     setModalData(data || {});
     
     switch (modalType) {

@@ -145,6 +145,80 @@ export interface ProcessedVoiceResponse {
   suggestions: string[];
   text: string;
   originalInput?: string;
+  chatMessage?: ChatMessage;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  extractedData?: VoiceProcessedData;
+  formFilled?: boolean;
+  language?: string;
+  intent?: string;
+}
+
+export interface GeminiResponse {
+  text: string;
+  intent: IntentType;
+  confidence: number;
+  extractedData: VoiceProcessedData;
+  shouldFillForm: boolean;
+  validationErrors: string[];
+  suggestions: string[];
+}
+
+export type IntentType = 
+  | 'reservation' 
+  | 'checkin' 
+  | 'checkout' 
+  | 'availability' 
+  | 'search_reservation' 
+  | 'inquiry' 
+  | 'help' 
+  | 'error' 
+  | 'unknown';
+
+export type ModalType = 'reservation' | 'checkin' | 'checkout' | 'availability';
+
+export interface LanguageConfig {
+  code: string;
+  name: string;
+  flag: string;
+  speechCode: string;
+  voiceNames: string[];
+  greetings: {
+    welcome: string;
+    reservation: string;
+    checkin: string;
+    checkout: string;
+    roomAvailability: string;
+  };
+  prompts: {
+    dates: string;
+    guests: string;
+    roomType: string;
+    guestInfo: string;
+    payment: string;
+    confirmation: string;
+  };
+  responses: {
+    dateConfirm: string;
+    roomSelected: string;
+    infoReceived: string;
+    paymentSet: string;
+    bookingConfirmed: string;
+    error: string;
+    help: string;
+  };
+}
+
+export interface MultilingualBookingPatterns {
+  reservation: Record<string, string[]>;
+  checkin: Record<string, string[]>;
+  checkout: Record<string, string[]>;
+  availability: Record<string, string[]>;
 }
 
 // Utility type for converting dayjs to string

@@ -1,34 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { geminiService, GeminiResponse, ChatMessage } from '../../services/geminiService';
+import { geminiService } from '../../services/geminiService';
+import { GeminiResponse, ChatMessage, VoiceProcessedData } from '../../types/reservation';
 
 export interface SendMessageRequest {
   message: string;
-  currentFormData?: Record<string, any>;
+  currentFormData?: VoiceProcessedData;
   context?: string;
 }
 
 export interface SendMessageResponse {
   response: GeminiResponse;
   chatMessage: ChatMessage;
-}
-
-interface GeminiResponse {
-  text: string;
-  intent: string;
-  confidence: number;
-  extractedData: Record<string, any>;
-  shouldFillForm: boolean;
-  validationErrors: string[];
-  suggestions: string[];
-}
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  extractedData?: Record<string, any>;
-  formFilled?: boolean;
 }
 
 export const geminiApi = createApi({

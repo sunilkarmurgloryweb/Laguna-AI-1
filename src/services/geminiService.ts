@@ -1,23 +1,121 @@
 import { GoogleGenerativeAI, GenerativeModel, ChatSession } from '@google/generative-ai';
+import { 
+  GeminiResponse, 
+  ChatMessage, 
+  IntentType, 
+  VoiceProcessedData,
+  MultilingualBookingPatterns 
+} from '../types/reservation';
 
-export interface GeminiResponse {
-  text: string;
-  intent: string;
-  confidence: number;
-  extractedData: Record<string, unknown>;
-  shouldFillForm: boolean;
-  validationErrors: string[];
-  suggestions: string[];
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date | string;
-  extractedData?: Record<string, unknown>;
-  formFilled?: boolean;
-}
+// Multilingual booking patterns for enhanced intent detection
+const MULTILINGUAL_BOOKING_PATTERNS: MultilingualBookingPatterns = {
+  reservation: {
+    en: [
+      'book.*room', 'book.*hotel', 'want.*book', 'need.*book', 'make.*booking', 
+      'new.*booking', 'reserve.*room', 'reserve.*hotel', 'make.*reservation', 
+      'new.*reservation', 'want.*reserve', 'need.*reserve', 'book.*stay', 'reserve.*stay'
+    ],
+    es: [
+      'hacer.*reserva', 'reservar.*habitación', 'reservar.*hotel', 'quiero.*reservar',
+      'necesito.*reservar', 'hacer.*booking', 'nueva.*reserva', 'reservar.*cuarto'
+    ],
+    fr: [
+      'faire.*réservation', 'réserver.*chambre', 'réserver.*hôtel', 'veux.*réserver',
+      'besoin.*réserver', 'nouvelle.*réservation', 'faire.*booking'
+    ],
+    de: [
+      'reservierung.*machen', 'zimmer.*buchen', 'hotel.*buchen', 'möchte.*buchen',
+      'brauche.*reservierung', 'neue.*reservierung', 'zimmer.*reservieren'
+    ],
+    it: [
+      'fare.*prenotazione', 'prenotare.*camera', 'prenotare.*hotel', 'voglio.*prenotare',
+      'bisogno.*prenotare', 'nuova.*prenotazione', 'prenotare.*stanza'
+    ],
+    pt: [
+      'fazer.*reserva', 'reservar.*quarto', 'reservar.*hotel', 'quero.*reservar',
+      'preciso.*reservar', 'nova.*reserva', 'fazer.*booking'
+    ],
+    hi: [
+      'कमरा.*बुक', 'होटल.*बुक', 'आरक्षण.*करना', 'बुकिंग.*करना', 'रूम.*बुक',
+      'होटल.*आरक्षण', 'कमरा.*आरक्षण'
+    ],
+    ja: [
+      '部屋.*予約', 'ホテル.*予約', '予約.*したい', '部屋.*取りたい', 'ルーム.*予約',
+      '宿泊.*予約', 'ホテル.*ブッキング'
+    ],
+    ko: [
+      '방.*예약', '호텔.*예약', '예약.*하고싶어', '룸.*예약', '숙박.*예약',
+      '호텔.*방.*예약', '객실.*예약'
+    ],
+    zh: [
+      '订房', '预订.*房间', '酒店.*预订', '想.*订房', '需要.*预订', '房间.*预订',
+      '酒店.*房间.*预订', '预定.*客房'
+    ]
+  },
+  checkin: {
+    en: ['check.?in', 'checking.?in', 'want.*check.?in', 'guest.*check.?in', 'arrival', 'arrive'],
+    es: ['check.?in', 'registrarse', 'entrada', 'llegar', 'registro.*hotel'],
+    fr: ['check.?in', 'enregistrement', 'arrivée', 'arriver', 's\'enregistrer'],
+    de: ['check.?in', 'einchecken', 'ankunft', 'ankommen', 'hotel.*anmeldung'],
+    it: ['check.?in', 'registrazione', 'arrivo', 'arrivare', 'fare.*check.?in'],
+    pt: ['check.?in', 'fazer.*check.?in', 'chegada', 'chegar', 'registro.*hotel'],
+    hi: ['चेक.*इन', 'होटल.*में.*आना', 'पहुंचना', 'रजिस्ट्रेशन'],
+    ja: ['チェックイン', 'ホテル.*到着', '宿泊.*手続き', 'フロント.*手続き'],
+    ko: ['체크인', '호텔.*도착', '숙박.*수속', '프론트.*접수'],
+    zh: ['入住', '办理.*入住', '酒店.*登记', '到达.*酒店']
+  },
+  checkout: {
+    en: ['check.?out', 'checking.?out', 'want.*check.?out', 'guest.*check.?out', 'departure', 'leave'],
+    es: ['check.?out', 'salir', 'salida', 'dejar.*hotel', 'checkout'],
+    fr: ['check.?out', 'départ', 'partir', 'quitter.*hôtel', 'libérer.*chambre'],
+    de: ['check.?out', 'auschecken', 'abreise', 'hotel.*verlassen', 'zimmer.*räumen'],
+    it: ['check.?out', 'partenza', 'partire', 'lasciare.*hotel', 'liberare.*camera'],
+    pt: ['check.?out', 'saída', 'sair', 'deixar.*hotel', 'fazer.*checkout'],
+    hi: ['चेक.*आउट', 'होटल.*छोड़ना', 'जाना', 'निकलना'],
+    ja: ['チェックアウト', 'ホテル.*出発', '宿泊.*終了', 'フロント.*精算'],
+    ko: ['체크아웃', '호텔.*출발', '숙박.*종료', '계산.*하기'],
+    zh: ['退房', '办理.*退房', '离开.*酒店', '结账']
+  },
+  availability: {
+    en: [
+      'show.*availability', 'check.*availability', 'room.*availability', 'display.*availability',
+      'view.*availability', 'calendar.*view', 'availability.*calendar', 'show.*vacant',
+      'show.*free.*rooms', 'available.*rooms'
+    ],
+    es: [
+      'mostrar.*disponibilidad', 'ver.*disponibilidad', 'disponibilidad.*habitaciones',
+      'habitaciones.*disponibles', 'calendario.*disponibilidad'
+    ],
+    fr: [
+      'voir.*disponibilité', 'afficher.*disponibilité', 'disponibilité.*chambres',
+      'chambres.*disponibles', 'calendrier.*disponibilité'
+    ],
+    de: [
+      'verfügbarkeit.*zeigen', 'verfügbarkeit.*prüfen', 'zimmer.*verfügbarkeit',
+      'verfügbare.*zimmer', 'kalender.*verfügbarkeit'
+    ],
+    it: [
+      'mostra.*disponibilità', 'vedere.*disponibilità', 'disponibilità.*camere',
+      'camere.*disponibili', 'calendario.*disponibilità'
+    ],
+    pt: [
+      'mostrar.*disponibilidade', 'ver.*disponibilidade', 'disponibilidade.*quartos',
+      'quartos.*disponíveis', 'calendário.*disponibilidade'
+    ],
+    hi: [
+      'उपलब्धता.*देखना', 'कमरे.*उपलब्ध', 'खाली.*कमरे', 'उपलब्ध.*कमरे.*दिखाना'
+    ],
+    ja: [
+      '空室.*確認', '利用可能.*部屋', '空いている.*部屋', 'カレンダー.*確認'
+    ],
+    ko: [
+      '객실.*현황.*보기', '이용가능.*객실', '빈.*방.*보기', '예약.*현황'
+    ],
+    zh: [
+      '查看.*房间.*状况', '可用.*房间', '空房.*查询', '房间.*可用性'
+    ]
+  }
+};
 
 class GeminiService {
   private genAI: GoogleGenerativeAI;
@@ -61,7 +159,7 @@ class GeminiService {
     });
   }
 
-  public async sendMessage(message: string, currentFormData?: Record<string, unknown>): Promise<GeminiResponse> {
+  public async sendMessage(message: string, currentFormData?: VoiceProcessedData): Promise<GeminiResponse> {
     if (!this.chatSession) {
       await this.startChat();
     }
@@ -196,7 +294,7 @@ Format your response as JSON:
     return basePrompt;
   }
 
-  private buildEnhancedPrompt(message: string, currentFormData?: Record<string, unknown>): string {
+  private buildEnhancedPrompt(message: string, currentFormData?: VoiceProcessedData): string {
     let prompt = `User message: "${message}"`;
     
     if (currentFormData && Object.keys(currentFormData).length > 0) {
@@ -221,7 +319,7 @@ Format your response as JSON:
         
         return {
           text: parsed.text || text,
-          intent: parsed.intent || 'inquiry',
+          intent: this.validateIntent(parsed.intent) || 'inquiry',
           confidence: parsed.confidence || 0.7,
           extractedData: validatedData.data,
           shouldFillForm: validatedData.isValid,
@@ -247,17 +345,25 @@ Format your response as JSON:
     };
   }
 
-  private validateExtractedData(data: Record<string, unknown>): {
-    data: Record<string, unknown>;
+  private validateIntent(intent: string): IntentType {
+    const validIntents: IntentType[] = [
+      'reservation', 'checkin', 'checkout', 'availability', 
+      'search_reservation', 'inquiry', 'help', 'error', 'unknown'
+    ];
+    return validIntents.includes(intent as IntentType) ? intent as IntentType : 'unknown';
+  }
+
+  private validateExtractedData(data: VoiceProcessedData): {
+    data: VoiceProcessedData;
     isValid: boolean;
     errors: string[];
   } {
-    const validatedData: Record<string, unknown> = {};
+    const validatedData: VoiceProcessedData = {};
     const errors: string[] = [];
 
     // Validate dates
     if (data.checkIn) {
-      const checkInDate = new Date(data.checkIn);
+      const checkInDate = new Date(data.checkIn as string);
       if (isNaN(checkInDate.getTime())) {
         errors.push('Invalid check-in date format');
       } else if (checkInDate < new Date()) {
@@ -268,10 +374,10 @@ Format your response as JSON:
     }
 
     if (data.checkOut) {
-      const checkOutDate = new Date(data.checkOut);
+      const checkOutDate = new Date(data.checkOut as string);
       if (isNaN(checkOutDate.getTime())) {
         errors.push('Invalid check-out date format');
-      } else if (data.checkIn && checkOutDate <= new Date(data.checkIn)) {
+      } else if (data.checkIn && checkOutDate <= new Date(data.checkIn as string)) {
         errors.push('Check-out date must be after check-in date');
       } else {
         validatedData.checkOut = data.checkOut;
@@ -280,7 +386,7 @@ Format your response as JSON:
 
     // Validate guest counts
     if (data.adults !== undefined) {
-      const adults = parseInt(data.adults);
+      const adults = typeof data.adults === 'number' ? data.adults : parseInt(String(data.adults));
       if (isNaN(adults) || adults < 1 || adults > 10) {
         errors.push('Adults must be between 1 and 10');
       } else {
@@ -289,7 +395,7 @@ Format your response as JSON:
     }
 
     if (data.children !== undefined) {
-      const children = parseInt(data.children);
+      const children = typeof data.children === 'number' ? data.children : parseInt(String(data.children));
       if (isNaN(children) || children < 0 || children > 8) {
         errors.push('Children must be between 0 and 8');
       } else {
@@ -323,7 +429,7 @@ Format your response as JSON:
     // Validate email
     if (data.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(data.email)) {
+      if (emailRegex.test(String(data.email))) {
         validatedData.email = data.email;
       } else {
         errors.push('Invalid email format');
@@ -333,8 +439,8 @@ Format your response as JSON:
     // Validate phone
     if (data.phone) {
       const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
-      if (phoneRegex.test(data.phone)) {
-        validatedData.phone = data.phone.replace(/\D/g, '');
+      if (phoneRegex.test(String(data.phone))) {
+        validatedData.phone = String(data.phone).replace(/\D/g, '');
       } else {
         errors.push('Invalid phone number format');
       }
@@ -342,8 +448,8 @@ Format your response as JSON:
 
     // Validate guest name
     if (data.guestName) {
-      if (data.guestName.trim().length >= 2) {
-        validatedData.guestName = data.guestName.trim();
+      if (String(data.guestName).trim().length >= 2) {
+        validatedData.guestName = String(data.guestName).trim();
       } else {
         errors.push('Guest name must be at least 2 characters');
       }
@@ -353,8 +459,8 @@ Format your response as JSON:
     if (data.paymentMethod) {
       const validMethods = ['Credit Card', 'Pay at Hotel', 'UPI or Digital Wallet'];
       const matchedMethod = validMethods.find(method =>
-        method.toLowerCase().includes(data.paymentMethod.toLowerCase()) ||
-        data.paymentMethod.toLowerCase().includes(method.toLowerCase())
+        method.toLowerCase().includes(String(data.paymentMethod).toLowerCase()) ||
+        String(data.paymentMethod).toLowerCase().includes(method.toLowerCase())
       );
       
       if (matchedMethod) {
@@ -372,11 +478,11 @@ Format your response as JSON:
   }
 
   private extractDataWithRegex(text: string): {
-    data: Record<string, unknown>;
+    data: VoiceProcessedData;
     hasValidData: boolean;
     errors: string[];
   } {
-    const data: Record<string, unknown> = {};
+    const data: VoiceProcessedData = {};
     const errors: string[] = [];
 
     // Extract dates
@@ -435,32 +541,22 @@ Format your response as JSON:
     return dateStr;
   }
 
-  private detectIntent(message: string): string {
+  private detectIntent(message: string): IntentType {
     const lowerMessage = message.toLowerCase();
     
-    // Enhanced reservation/booking detection (multilingual) - PRIORITY 1
-    if (lowerMessage.match(/\b(book.*room|book.*hotel|want.*book|need.*book|make.*booking|new.*booking|reserve.*room|reserve.*hotel|make.*reservation|new.*reservation|want.*reserve|need.*reserve|book.*stay|reserve.*stay|hacer.*reserva|reservar.*habitación|reservar.*hotel|réserver.*chambre|réserver.*hôtel|zimmer.*buchen|hotel.*buchen|prenotare.*camera|prenotare.*hotel|reservar.*quarto|reservar.*hotel|कमरा.*बुक|होटल.*बुक|आरक्षण.*करना|部屋.*予約|ホテル.*予約|방.*예약|호텔.*예약|订房|预订.*房间)\b/)) {
-      return 'reservation';
-    }
+    // Detect language first
+    const detectedLanguage = this.detectLanguage(lowerMessage);
     
-    // General reservation terms (lower priority)
-    if (lowerMessage.match(/\b(reservation|booking|reserve|book|hacer.*reserva|reservar|réserver|buchen|prenotare|आरक्षण|बुकिंग|予約|예약|预订)\b/)) {
-      return 'reservation';
-    }
-    
-    // Enhanced check-in detection (multilingual)
-    if (lowerMessage.match(/\b(check.?in|checking.?in|want.*check.?in|guest.*check.?in|arrival|arrive|registrarse|enregistrement|einchecken|check.?in|चेक.*इन|チェックイン|체크인|入住)\b/)) {
-      return 'checkin';
-    }
-    
-    // Enhanced check-out detection (multilingual)
-    if (lowerMessage.match(/\b(check.?out|checking.?out|want.*check.?out|guest.*check.?out|departure|leave|salir|départ|auschecken|check.?out|चेक.*आउट|チェックアウト|체크아웃|退房)\b/)) {
-      return 'checkout';
-    }
-    
-    // Enhanced availability detection (multilingual) - More specific patterns
-    if (lowerMessage.match(/\b(show.*availability|check.*availability|room.*availability|display.*availability|view.*availability|calendar.*view|availability.*calendar|show.*vacant|show.*free.*rooms|disponibilidad.*habitaciones|voir.*disponibilité|verfügbarkeit.*prüfen|mostra.*disponibilità|उपलब्धता.*देखना|空室.*確認|객실.*현황.*보기|查看.*房间.*状况)\b/)) {
-      return 'availability';
+    // Check multilingual patterns for each intent
+    for (const [intentType, patterns] of Object.entries(MULTILINGUAL_BOOKING_PATTERNS)) {
+      const languagePatterns = patterns[detectedLanguage] || patterns['en'];
+      
+      for (const pattern of languagePatterns) {
+        const regex = new RegExp(`\\b${pattern}\\b`, 'i');
+        if (regex.test(lowerMessage)) {
+          return intentType as IntentType;
+        }
+      }
     }
     
     // Search reservation (multilingual)
@@ -479,6 +575,38 @@ Format your response as JSON:
     }
     
     return 'inquiry';
+  }
+  
+  private detectLanguage(text: string): string {
+    // Simple language detection based on common words/patterns
+    const lowerText = text.toLowerCase();
+    
+    // Script-based detection
+    if (/[\u0900-\u097F]/.test(text)) return 'hi'; // Devanagari script
+    if (/[\u4e00-\u9fff]/.test(text)) return 'zh'; // Chinese characters
+    if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja'; // Japanese hiragana/katakana
+    if (/[\uac00-\ud7af]/.test(text)) return 'ko'; // Korean hangul
+    
+    // Word-based detection with more comprehensive patterns
+    const languagePatterns: Record<string, RegExp> = {
+      'es': /\b(hola|gracias|por favor|habitación|reserva|español|quiero|necesito|hotel|cuarto|hacer|reservar)\b/,
+      'fr': /\b(bonjour|merci|chambre|réservation|français|voudrais|besoin|hôtel|faire|réserver)\b/,
+      'de': /\b(hallo|danke|zimmer|reservierung|deutsch|möchte|brauche|hotel|buchen|machen)\b/,
+      'it': /\b(ciao|grazie|camera|prenotazione|italiano|vorrei|bisogno|albergo|prenotare|fare)\b/,
+      'pt': /\b(olá|obrigado|quarto|reserva|português|quero|preciso|hotel|reservar|fazer)\b/,
+      'hi': /\b(नमस्ते|धन्यवाद|कमरा|बुकिंग|होटल|आरक्षण|चाहिए|करना|बुक)\b/,
+      'ja': /\b(こんにちは|ありがとう|部屋|予約|ホテル|したい|お願い)\b/,
+      'ko': /\b(안녕하세요|감사합니다|방|예약|호텔|하고싶어요|주세요)\b/,
+      'zh': /\b(你好|谢谢|房间|预订|酒店|想要|请)\b/
+    };
+    
+    for (const [lang, pattern] of Object.entries(languagePatterns)) {
+      if (pattern.test(lowerText)) {
+        return lang;
+      }
+    }
+    
+    return 'en'; // Default to English
   }
 
   public async speak(text: string, language: string = 'en-US'): Promise<void> {

@@ -1,4 +1,4 @@
-interface LanguageConfig {
+export interface LanguageConfig {
   code: string;
   name: string;
   flag: string;

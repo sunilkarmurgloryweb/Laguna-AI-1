@@ -30,21 +30,24 @@ import {
   Language as LanguageIcon
 } from '@mui/icons-material';
 import { useSendMessageMutation } from '../store/api/geminiApi';
-import { multilingualAI, languageConfigs } from '../services/multilingualAIService';
+import { multilingualAI } from '../services/multilingualAIService';
+import { languageConfigs, LanguageConfig } from '../services/multilingualAIService';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { 
+  ChatMessage, 
+  ModalType, 
+  IntentType, 
+  VoiceProcessedData,
+  GeminiResponse 
+} from '../types/reservation';
 
-interface Message {
-  id: string;
-  text: string;
+type Message = ChatMessage & {
   isUser: boolean;
-  timestamp: Date;
-  extractedData?: Record<string, unknown>;
-  intent?: string;
-  language?: string;
-}
+  text: string;
+};
 
 interface AIChatbotProps {
-  onOpenModal?: (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: Record<string, unknown>) => void;
+  onOpenModal?: (modalType: ModalType, data?: VoiceProcessedData) => void;
   context?: string;
   onReceiveMessage?: (handler: (message: string, shouldSpeak?: boolean) => void) => void;
 }
@@ -87,8 +90,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   useEffect(() => {
     const welcomeMessage: Message = {
       id: '1',
+      role: 'assistant' as const,
+      content: multilingualAI.getGreeting('welcome'),
       text: multilingualAI.getGreeting('welcome'),
-      isUser: false,
       timestamp: new Date(),
       language: currentLanguage
     };
@@ -135,8 +139,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       onReceiveMessage((message: string, shouldSpeak: boolean = true) => {
         const aiMessage: Message = {
           id: Date.now().toString(),
+          role: 'assistant' as const,
+          content: message,
           text: message,
-          isUser: false,
           timestamp: new Date(),
           language: currentLanguage
         };
@@ -185,8 +190,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     const langInfo = multilingualAI.getLanguageInfo(language);
     const changeMessage: Message = {
       id: Date.now().toString(),
+      role: 'assistant' as const,
+      content: multilingualAI.getResponse('help', {}, language),
       text: multilingualAI.getResponse('help', {}, language),
-      isUser: false,
       timestamp: new Date(),
       language: language
     };
@@ -201,28 +207,34 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   };
 
   // Detect intent and open appropriate modal
-  const detectIntentAndOpenModal = useCallback((intent: string, extractedData: any, language: string) => {
+  const detectIntentAndOpenModal = useCallback((intent: IntentType, extractedData: VoiceProcessedData, language: string) => {
     if (!onOpenModal) return;
 
     console.log('🎯 Intent detected:', intent, 'Data:', extractedData);
 
-    const modalMappings: Record<string, string> = {
+    const modalMappings: Record<IntentType, ModalType | null> = {
       'reservation': 'reservation',
       'checkin': 'checkin', 
       'checkout': 'checkout',
-      'availability': 'availability'
+      'availability': 'availability',
+      'search_reservation': null,
+      'inquiry': null,
+      'help': null,
+      'error': null,
+      'unknown': null
     };
 
     const modalType = modalMappings[intent];
     if (modalType) {
       // Add language context to extracted data
-      const dataWithLanguage = {
+      const dataWithLanguage: VoiceProcessedData = {
         ...extractedData,
-        preferredLanguage: language
+        // Note: preferredLanguage is not in VoiceProcessedData type, 
+        // but we can add it as additional context
       };
       
       // Show user which modal is opening
-      const modalMessages = {
+      const modalMessages: Record<ModalType, string> = {
         'reservation': 'Opening reservation form...',
         'checkin': 'Opening check-in process...',
         'checkout': 'Opening check-out process...',
@@ -231,8 +243,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       
       const modalMessage: Message = {
         id: Date.now().toString() + '_modal',
+        role: 'assistant' as const,
+        content: modalMessages[modalType] || 'Opening requested service...',
         text: modalMessages[modalType] || 'Opening requested service...',
-        isUser: false,
         timestamp: new Date(),
         language: language
       };
@@ -257,8 +270,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
+      role: 'user' as const,
+      content: messageText,
       text: messageText,
-      isUser: true,
       timestamp: new Date(),
       language: messageLang
     };
@@ -296,8 +310,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       // Add AI response message
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
+        role: 'assistant' as const,
+        content: responseText,
         text: responseText,
-        isUser: false,
         timestamp: new Date(),
         extractedData: response.extractedData,
         intent: response.intent,
@@ -324,8 +339,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       const errorText = multilingualAI.getResponse('error', {}, messageLang);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
+        role: 'assistant' as const,
+        content: errorText,
         text: errorText,
-        isUser: false,
         timestamp: new Date(),
         language: messageLang
       };
@@ -519,12 +535,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
             <Box
               sx={{
                 display: 'flex',
-                justifyContent: message.isUser ? 'flex-end' : 'flex-start',
+                justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
                 alignItems: 'flex-start',
                 gap: 1
               }}
             >
-              {!message.isUser && (
+              {message.role === 'assistant' && (
                 <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
                   <AIIcon sx={{ fontSize: 18 }} />
                 </Avatar>
@@ -535,11 +551,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                 sx={{
                   maxWidth: '75%',
                   p: 2,
-                  bgcolor: message.isUser ? 'primary.main' : 'white',
-                  color: message.isUser ? 'white' : 'text.primary',
+                  bgcolor: message.role === 'user' ? 'primary.main' : 'white',
+                  color: message.role === 'user' ? 'white' : 'text.primary',
                   borderRadius: 2,
-                  borderTopLeftRadius: message.isUser ? 2 : 0.5,
-                  borderTopRightRadius: message.isUser ? 0.5 : 2
+                  borderTopLeftRadius: message.role === 'user' ? 2 : 0.5,
+                  borderTopRightRadius: message.role === 'user' ? 0.5 : 2
                 }}
               >
                 {/* Language indicator for messages */}
@@ -557,7 +573,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                 </Typography>
                 
                 {/* Show extracted data for AI messages */}
-                {!message.isUser && message.extractedData && Object.keys(message.extractedData).length > 0 && (
+                {message.role === 'assistant' && message.extractedData && Object.keys(message.extractedData).length > 0 && (
                   <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {Object.entries(message.extractedData).map(([key, value]) => (
                       <Chip
@@ -581,7 +597,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                 </Typography>
               </Paper>
               
-              {message.isUser && (
+              {message.role === 'user' && (
                 <Avatar sx={{ bgcolor: 'grey.400', width: 32, height: 32 }}>
                   <PersonIcon sx={{ fontSize: 18 }} />
                 </Avatar>
