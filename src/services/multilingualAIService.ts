@@ -61,6 +61,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       error: 'I didn\'t understand that. Could you please repeat?',
       help: 'I can help you with reservations, check-in, check-out, and room availability. Just tell me what you need.'
     }
+    processCompletion: {
+      reservation: {
+        title: 'Reservation Created Successfully! 🎉',
+        description: 'Your hotel reservation has been confirmed and is ready for your stay.',
+        voiceMessage: 'Your reservation has been created successfully! Confirmation number {confirmationNumber}.',
+        fields: {
+          confirmationNumber: 'Confirmation Number',
+          guestName: 'Guest Name',
+          roomType: 'Room Type',
+          checkInDate: 'Check-in Date',
+          checkOutDate: 'Check-out Date',
+          totalAmount: 'Total Amount'
+        }
+      },
+      checkin: {
+        title: 'Check-in Completed Successfully! 🏨',
+        description: 'Welcome to Lagunacreek! Your room is ready and key cards have been prepared.',
+        voiceMessage: 'Check-in completed successfully! Your room {roomNumber} is ready.',
+        fields: {
+          roomNumber: 'Room Number',
+          guestName: 'Guest Name',
+          roomType: 'Room Type',
+          keyCards: 'Key Cards Ready'
+        }
+      },
+      checkout: {
+        title: 'Check-out Completed Successfully! ✅',
+        description: 'Thank you for staying with us! We hope you enjoyed your experience.',
+        voiceMessage: 'Check-out completed successfully! Thank you for staying with us.',
+        fields: {
+          guestName: 'Guest Name',
+          roomNumber: 'Room Number',
+          totalAmount: 'Final Amount',
+          receipt: 'Receipt sent to email'
+        }
+      }
+    }
   },
   es: {
     code: 'es',
@@ -91,6 +128,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: '¡Tu reserva está confirmada! Número de confirmación: {confirmationId}',
       error: 'No entendí eso. ¿Podrías repetir por favor?',
       help: 'Puedo ayudarte con reservas, check-in, check-out y disponibilidad de habitaciones. Solo dime qué necesitas.'
+    }
+    processCompletion: {
+      reservation: {
+        title: '¡Reserva Creada Exitosamente! 🎉',
+        description: 'Tu reserva de hotel ha sido confirmada y está lista para tu estadía.',
+        voiceMessage: '¡Tu reserva ha sido creada exitosamente! Número de confirmación {confirmationNumber}.',
+        fields: {
+          confirmationNumber: 'Número de Confirmación',
+          guestName: 'Nombre del Huésped',
+          roomType: 'Tipo de Habitación',
+          checkInDate: 'Fecha de Entrada',
+          checkOutDate: 'Fecha de Salida',
+          totalAmount: 'Monto Total'
+        }
+      },
+      checkin: {
+        title: '¡Check-in Completado Exitosamente! 🏨',
+        description: '¡Bienvenido a Lagunacreek! Tu habitación está lista y las tarjetas de acceso han sido preparadas.',
+        voiceMessage: '¡Check-in completado exitosamente! Tu habitación {roomNumber} está lista.',
+        fields: {
+          roomNumber: 'Número de Habitación',
+          guestName: 'Nombre del Huésped',
+          roomType: 'Tipo de Habitación',
+          keyCards: 'Tarjetas de Acceso Listas'
+        }
+      },
+      checkout: {
+        title: '¡Check-out Completado Exitosamente! ✅',
+        description: '¡Gracias por hospedarte con nosotros! Esperamos que hayas disfrutado tu experiencia.',
+        voiceMessage: '¡Check-out completado exitosamente! Gracias por hospedarte con nosotros.',
+        fields: {
+          guestName: 'Nombre del Huésped',
+          roomNumber: 'Número de Habitación',
+          totalAmount: 'Monto Final',
+          receipt: 'Recibo enviado al email'
+        }
+      }
     }
   },
   hi: {
@@ -123,6 +197,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       error: 'मैं समझ नहीं पाया। कृपया दोबारा कहें?',
       help: 'मैं बुकिंग, चेक-इन, चेक-आउट और कमरों की उपलब्धता में मदद कर सकता हूं। बस बताएं कि आपको क्या चाहिए।'
     }
+    processCompletion: {
+      reservation: {
+        title: 'आरक्षण सफलतापूर्वक बनाया गया! 🎉',
+        description: 'आपका होटल आरक्षण पुष्ट हो गया है और आपके प्रवास के लिए तैयार है।',
+        voiceMessage: 'आपका आरक्षण सफलतापूर्वक बनाया गया है! पुष्टिकरण संख्या {confirmationNumber}।',
+        fields: {
+          confirmationNumber: 'पुष्टिकरण संख्या',
+          guestName: 'अतिथि का नाम',
+          roomType: 'कमरे का प्रकार',
+          checkInDate: 'चेक-इन तारीख',
+          checkOutDate: 'चेक-आउट तारीख',
+          totalAmount: 'कुल राशि'
+        }
+      },
+      checkin: {
+        title: 'चेक-इन सफलतापूर्वक पूरा हुआ! 🏨',
+        description: 'लगुनाक्रीक में आपका स्वागत है! आपका कमरा तैयार है और की कार्ड तैयार कर दिए गए हैं।',
+        voiceMessage: 'चेक-इन सफलतापूर्वक पूरा हुआ! आपका कमरा {roomNumber} तैयार है।',
+        fields: {
+          roomNumber: 'कमरा संख्या',
+          guestName: 'अतिथि का नाम',
+          roomType: 'कमरे का प्रकार',
+          keyCards: 'की कार्ड तैयार'
+        }
+      },
+      checkout: {
+        title: 'चेक-आउट सफलतापूर्वक पूरा हुआ! ✅',
+        description: 'हमारे साथ रहने के लिए धन्यवाद! हमें उम्मीद है कि आपने अपना अनुभव का आनंद लिया।',
+        voiceMessage: 'चेक-आउट सफलतापूर्वक पूरा हुआ! हमारे साथ रहने के लिए धन्यवाद।',
+        fields: {
+          guestName: 'अतिथि का नाम',
+          roomNumber: 'कमरा संख्या',
+          totalAmount: 'अंतिम राशि',
+          receipt: 'रसीद ईमेल पर भेजी गई'
+        }
+      }
+    }
   },
   fr: {
     code: 'fr',
@@ -153,6 +264,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'Votre réservation est confirmée! Numéro de confirmation: {confirmationId}',
       error: 'Je n\'ai pas compris. Pourriez-vous répéter s\'il vous plaît?',
       help: 'Je peux vous aider avec les réservations, l\'enregistrement, le départ et la disponibilité des chambres. Dites-moi simplement ce dont vous avez besoin.'
+    }
+    processCompletion: {
+      reservation: {
+        title: 'Réservation Créée avec Succès! 🎉',
+        description: 'Votre réservation d\'hôtel a été confirmée et est prête pour votre séjour.',
+        voiceMessage: 'Votre réservation a été créée avec succès! Numéro de confirmation {confirmationNumber}.',
+        fields: {
+          confirmationNumber: 'Numéro de Confirmation',
+          guestName: 'Nom de l\'Invité',
+          roomType: 'Type de Chambre',
+          checkInDate: 'Date d\'Arrivée',
+          checkOutDate: 'Date de Départ',
+          totalAmount: 'Montant Total'
+        }
+      },
+      checkin: {
+        title: 'Enregistrement Terminé avec Succès! 🏨',
+        description: 'Bienvenue à Lagunacreek! Votre chambre est prête et les cartes d\'accès ont été préparées.',
+        voiceMessage: 'Enregistrement terminé avec succès! Votre chambre {roomNumber} est prête.',
+        fields: {
+          roomNumber: 'Numéro de Chambre',
+          guestName: 'Nom de l\'Invité',
+          roomType: 'Type de Chambre',
+          keyCards: 'Cartes d\'Accès Prêtes'
+        }
+      },
+      checkout: {
+        title: 'Départ Terminé avec Succès! ✅',
+        description: 'Merci d\'avoir séjourné avec nous! Nous espérons que vous avez apprécié votre expérience.',
+        voiceMessage: 'Départ terminé avec succès! Merci d\'avoir séjourné avec nous.',
+        fields: {
+          guestName: 'Nom de l\'Invité',
+          roomNumber: 'Numéro de Chambre',
+          totalAmount: 'Montant Final',
+          receipt: 'Reçu envoyé par email'
+        }
+      }
     }
   },
   de: {
@@ -185,6 +333,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       error: 'Das habe ich nicht verstanden. Könnten Sie das bitte wiederholen?',
       help: 'Ich kann Ihnen bei Reservierungen, Check-in, Check-out und Zimmerverfügbarkeit helfen. Sagen Sie mir einfach, was Sie brauchen.'
     }
+    processCompletion: {
+      reservation: {
+        title: 'Reservierung Erfolgreich Erstellt! 🎉',
+        description: 'Ihre Hotelreservierung wurde bestätigt und ist für Ihren Aufenthalt bereit.',
+        voiceMessage: 'Ihre Reservierung wurde erfolgreich erstellt! Bestätigungsnummer {confirmationNumber}.',
+        fields: {
+          confirmationNumber: 'Bestätigungsnummer',
+          guestName: 'Gastname',
+          roomType: 'Zimmertyp',
+          checkInDate: 'Anreisedatum',
+          checkOutDate: 'Abreisedatum',
+          totalAmount: 'Gesamtbetrag'
+        }
+      },
+      checkin: {
+        title: 'Check-in Erfolgreich Abgeschlossen! 🏨',
+        description: 'Willkommen im Lagunacreek! Ihr Zimmer ist bereit und die Schlüsselkarten wurden vorbereitet.',
+        voiceMessage: 'Check-in erfolgreich abgeschlossen! Ihr Zimmer {roomNumber} ist bereit.',
+        fields: {
+          roomNumber: 'Zimmernummer',
+          guestName: 'Gastname',
+          roomType: 'Zimmertyp',
+          keyCards: 'Schlüsselkarten Bereit'
+        }
+      },
+      checkout: {
+        title: 'Check-out Erfolgreich Abgeschlossen! ✅',
+        description: 'Vielen Dank für Ihren Aufenthalt bei uns! Wir hoffen, Sie haben Ihre Erfahrung genossen.',
+        voiceMessage: 'Check-out erfolgreich abgeschlossen! Vielen Dank für Ihren Aufenthalt bei uns.',
+        fields: {
+          guestName: 'Gastname',
+          roomNumber: 'Zimmernummer',
+          totalAmount: 'Endbetrag',
+          receipt: 'Quittung per E-Mail gesendet'
+        }
+      }
+    }
   },
   it: {
     code: 'it',
@@ -215,6 +400,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'La vostra prenotazione è confermata! Numero di conferma: {confirmationId}',
       error: 'Non ho capito. Potreste ripetere per favore?',
       help: 'Posso aiutarvi con prenotazioni, check-in, check-out e disponibilità camere. Ditemi semplicemente di cosa avete bisogno.'
+    }
+    processCompletion: {
+      reservation: {
+        title: 'Prenotazione Creata con Successo! 🎉',
+        description: 'La vostra prenotazione hotel è stata confermata ed è pronta per il vostro soggiorno.',
+        voiceMessage: 'La vostra prenotazione è stata creata con successo! Numero di conferma {confirmationNumber}.',
+        fields: {
+          confirmationNumber: 'Numero di Conferma',
+          guestName: 'Nome Ospite',
+          roomType: 'Tipo di Camera',
+          checkInDate: 'Data di Arrivo',
+          checkOutDate: 'Data di Partenza',
+          totalAmount: 'Importo Totale'
+        }
+      },
+      checkin: {
+        title: 'Check-in Completato con Successo! 🏨',
+        description: 'Benvenuti al Lagunacreek! La vostra camera è pronta e le carte d\'accesso sono state preparate.',
+        voiceMessage: 'Check-in completato con successo! La vostra camera {roomNumber} è pronta.',
+        fields: {
+          roomNumber: 'Numero Camera',
+          guestName: 'Nome Ospite',
+          roomType: 'Tipo di Camera',
+          keyCards: 'Carte d\'Accesso Pronte'
+        }
+      },
+      checkout: {
+        title: 'Check-out Completato con Successo! ✅',
+        description: 'Grazie per aver soggiornato con noi! Speriamo abbiate apprezzato la vostra esperienza.',
+        voiceMessage: 'Check-out completato con successo! Grazie per aver soggiornato con noi.',
+        fields: {
+          guestName: 'Nome Ospite',
+          roomNumber: 'Numero Camera',
+          totalAmount: 'Importo Finale',
+          receipt: 'Ricevuta inviata via email'
+        }
+      }
     }
   },
   pt: {
@@ -247,6 +469,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       error: 'Não entendi isso. Poderiam repetir por favor?',
       help: 'Posso ajudá-los com reservas, check-in, check-out e disponibilidade de quartos. Digam-me simplesmente o que precisam.'
     }
+    processCompletion: {
+      reservation: {
+        title: 'Reserva Criada com Sucesso! 🎉',
+        description: 'A vossa reserva de hotel foi confirmada e está pronta para a vossa estadia.',
+        voiceMessage: 'A vossa reserva foi criada com sucesso! Número de confirmação {confirmationNumber}.',
+        fields: {
+          confirmationNumber: 'Número de Confirmação',
+          guestName: 'Nome do Hóspede',
+          roomType: 'Tipo de Quarto',
+          checkInDate: 'Data de Chegada',
+          checkOutDate: 'Data de Partida',
+          totalAmount: 'Valor Total'
+        }
+      },
+      checkin: {
+        title: 'Check-in Concluído com Sucesso! 🏨',
+        description: 'Bem-vindos ao Lagunacreek! O vosso quarto está pronto e os cartões de acesso foram preparados.',
+        voiceMessage: 'Check-in concluído com sucesso! O vosso quarto {roomNumber} está pronto.',
+        fields: {
+          roomNumber: 'Número do Quarto',
+          guestName: 'Nome do Hóspede',
+          roomType: 'Tipo de Quarto',
+          keyCards: 'Cartões de Acesso Prontos'
+        }
+      },
+      checkout: {
+        title: 'Check-out Concluído com Sucesso! ✅',
+        description: 'Obrigado por ficarem connosco! Esperamos que tenham desfrutado da vossa experiência.',
+        voiceMessage: 'Check-out concluído com sucesso! Obrigado por ficarem connosco.',
+        fields: {
+          guestName: 'Nome do Hóspede',
+          roomNumber: 'Número do Quarto',
+          totalAmount: 'Valor Final',
+          receipt: 'Recibo enviado por email'
+        }
+      }
+    }
   },
   ja: {
     code: 'ja',
@@ -277,6 +536,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: 'ご予約が確定いたしました！確認番号：{confirmationId}',
       error: '申し訳ございませんが、理解できませんでした。もう一度おっしゃっていただけますか？',
       help: '予約、チェックイン、チェックアウト、お部屋の空室状況についてお手伝いできます。ご用件をお聞かせください。'
+    }
+    processCompletion: {
+      reservation: {
+        title: 'ご予約が正常に作成されました！🎉',
+        description: 'ホテルのご予約が確認され、ご滞在の準備が整いました。',
+        voiceMessage: 'ご予約が正常に作成されました！確認番号は{confirmationNumber}です。',
+        fields: {
+          confirmationNumber: '確認番号',
+          guestName: 'お客様のお名前',
+          roomType: 'お部屋タイプ',
+          checkInDate: 'チェックイン日',
+          checkOutDate: 'チェックアウト日',
+          totalAmount: '合計金額'
+        }
+      },
+      checkin: {
+        title: 'チェックインが正常に完了しました！🏨',
+        description: 'ラグナクリークへようこそ！お部屋の準備が整い、キーカードをご用意いたしました。',
+        voiceMessage: 'チェックインが正常に完了しました！お部屋{roomNumber}の準備が整いました。',
+        fields: {
+          roomNumber: 'お部屋番号',
+          guestName: 'お客様のお名前',
+          roomType: 'お部屋タイプ',
+          keyCards: 'キーカード準備完了'
+        }
+      },
+      checkout: {
+        title: 'チェックアウトが正常に完了しました！✅',
+        description: 'ご利用いただきありがとうございました！お客様の体験をお楽しみいただけたことを願っております。',
+        voiceMessage: 'チェックアウトが正常に完了しました！ご利用いただきありがとうございました。',
+        fields: {
+          guestName: 'お客様のお名前',
+          roomNumber: 'お部屋番号',
+          totalAmount: '最終金額',
+          receipt: 'レシートをメールで送信'
+        }
+      }
     }
   },
   ko: {
@@ -309,6 +605,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       error: '죄송합니다. 이해하지 못했습니다. 다시 말씀해 주시겠어요?',
       help: '예약, 체크인, 체크아웃, 객실 이용 가능 여부에 대해 도움을 드릴 수 있습니다. 무엇이 필요한지 말씀해 주세요.'
     }
+    processCompletion: {
+      reservation: {
+        title: '예약이 성공적으로 생성되었습니다! 🎉',
+        description: '호텔 예약이 확인되었으며 숙박을 위한 준비가 완료되었습니다.',
+        voiceMessage: '예약이 성공적으로 생성되었습니다! 확인 번호는 {confirmationNumber}입니다.',
+        fields: {
+          confirmationNumber: '확인 번호',
+          guestName: '투숙객 성함',
+          roomType: '객실 유형',
+          checkInDate: '체크인 날짜',
+          checkOutDate: '체크아웃 날짜',
+          totalAmount: '총 금액'
+        }
+      },
+      checkin: {
+        title: '체크인이 성공적으로 완료되었습니다! 🏨',
+        description: '라구나크릭에 오신 것을 환영합니다! 객실이 준비되었으며 키 카드가 준비되었습니다.',
+        voiceMessage: '체크인이 성공적으로 완료되었습니다! 객실 {roomNumber}이 준비되었습니다.',
+        fields: {
+          roomNumber: '객실 번호',
+          guestName: '투숙객 성함',
+          roomType: '객실 유형',
+          keyCards: '키 카드 준비 완료'
+        }
+      },
+      checkout: {
+        title: '체크아웃이 성공적으로 완료되었습니다! ✅',
+        description: '저희와 함께 머물러 주셔서 감사합니다! 즐거운 경험이 되셨기를 바랍니다.',
+        voiceMessage: '체크아웃이 성공적으로 완료되었습니다! 저희와 함께 머물러 주셔서 감사합니다.',
+        fields: {
+          guestName: '투숙객 성함',
+          roomNumber: '객실 번호',
+          totalAmount: '최종 금액',
+          receipt: '영수증이 이메일로 전송됨'
+        }
+      }
+    }
   },
   zh: {
     code: 'zh',
@@ -339,6 +672,43 @@ export const languageConfigs: Record<string, LanguageConfig> = {
       bookingConfirmed: '您的预订已确认！确认号码：{confirmationId}',
       error: '抱歉，我没有理解。您能再说一遍吗？',
       help: '我可以帮助您预订、办理入住、退房和查询客房可用性。请告诉我您需要什么。'
+    }
+    processCompletion: {
+      reservation: {
+        title: '预订创建成功！🎉',
+        description: '您的酒店预订已确认，为您的住宿做好了准备。',
+        voiceMessage: '您的预订创建成功！确认号码是{confirmationNumber}。',
+        fields: {
+          confirmationNumber: '确认号码',
+          guestName: '客人姓名',
+          roomType: '房间类型',
+          checkInDate: '入住日期',
+          checkOutDate: '退房日期',
+          totalAmount: '总金额'
+        }
+      },
+      checkin: {
+        title: '入住办理成功！🏨',
+        description: '欢迎来到拉古纳克里克！您的房间已准备好，房卡已准备完毕。',
+        voiceMessage: '入住办理成功！您的房间{roomNumber}已准备好。',
+        fields: {
+          roomNumber: '房间号码',
+          guestName: '客人姓名',
+          roomType: '房间类型',
+          keyCards: '房卡已准备'
+        }
+      },
+      checkout: {
+        title: '退房办理成功！✅',
+        description: '感谢您选择我们！希望您享受了这次的体验。',
+        voiceMessage: '退房办理成功！感谢您选择我们。',
+        fields: {
+          guestName: '客人姓名',
+          roomNumber: '房间号码',
+          totalAmount: '最终金额',
+          receipt: '收据已发送至邮箱'
+        }
+      }
     }
   }
 };
@@ -470,6 +840,35 @@ class MultilingualAIService {
     return response;
   }
 
+  public getProcessCompletionMessage(
+    processType: 'reservation' | 'checkin' | 'checkout',
+    messageType: 'title' | 'description' | 'voiceMessage',
+    variables?: Record<string, string>,
+    languageCode?: string
+  ): string {
+    const lang = languageCode || this.currentLanguage;
+    const config = languageConfigs[lang];
+    let message = config?.processCompletion?.[processType]?.[messageType] || 
+                  languageConfigs.en.processCompletion[processType][messageType];
+    
+    if (variables) {
+      Object.entries(variables).forEach(([key, value]) => {
+        message = message.replace(`{${key}}`, value);
+      });
+    }
+    
+    return message;
+  }
+
+  public getProcessCompletionFields(
+    processType: 'reservation' | 'checkin' | 'checkout',
+    languageCode?: string
+  ): Record<string, string> {
+    const lang = languageCode || this.currentLanguage;
+    const config = languageConfigs[lang];
+    return config?.processCompletion?.[processType]?.fields || 
+           languageConfigs.en.processCompletion[processType].fields;
+  }
   public getSpeechRecognitionLanguage(): string {
     const config = languageConfigs[this.currentLanguage];
     return config?.speechCode || 'en-US';

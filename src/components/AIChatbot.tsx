@@ -588,49 +588,52 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                     processType={(message as any).processType}
                     confirmationData={(message as any).confirmationData}
                     timestamp={message.timestamp}
+                    language={message.language || currentLanguage}
                   />
                 )}
                 
                 {/* Regular Message */}
                 {!(message as any).isProcessCompletion && (
                   <>
-                {/* Language indicator for messages */}
-                {message.language && message.language !== 'en' && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                    <LanguageIcon sx={{ fontSize: 14 }} />
-                    <Typography variant="caption">
-                      {languageConfigs[message.language]?.flag} {languageConfigs[message.language]?.name}
-                    </Typography>
-                  </Box>
-                )}
+                    {/* Language indicator for messages */}
+                    {message.language && message.language !== 'en' && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                        <LanguageIcon sx={{ fontSize: 14 }} />
+                        <Typography variant="caption">
+                          {languageConfigs[message.language]?.flag} {languageConfigs[message.language]?.name}
+                        </Typography>
+                      </Box>
+                    )}
 
-                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {message.text}
-                </Typography>
-                
-                {/* Show extracted data for AI messages */}
-                {message.role === 'assistant' && message.extractedData && Object.keys(message.extractedData).length > 0 && (
-                  <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {Object.entries(message.extractedData).map(([key, value]) => (
-                      <Chip
-                        key={key}
-                        label={`${key}: ${value}`}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: '0.7rem' }}
-                      />
-                    ))}
-                  </Box>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {message.text}
+                    </Typography>
+                    
+                    {/* Show extracted data for AI messages */}
+                    {message.role === 'assistant' && message.extractedData && Object.keys(message.extractedData).length > 0 && (
+                      <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {Object.entries(message.extractedData).map(([key, value]) => (
+                          <Chip
+                            key={key}
+                            label={`${key}: ${value}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: '0.7rem' }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                    
+                    <Typography variant="caption" sx={{ 
+                      display: 'block', 
+                      mt: 0.5, 
+                      opacity: 0.7,
+                      fontSize: '0.7rem'
+                    }}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Typography>
+                  </>
                 )}
-                
-                <Typography variant="caption" sx={{ 
-                  display: 'block', 
-                  mt: 0.5, 
-                  opacity: 0.7,
-                  fontSize: '0.7rem'
-                }}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Typography>
               </Paper>
               
               {message.role === 'user' && (
@@ -655,8 +658,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
                   AI is thinking...
                 </Typography>
               </Box>
-                  </>
-                )}
             </Paper>
           </Box>
         )}

@@ -61,7 +61,9 @@ interface RoomAssignment {
 const CheckInModal: React.FC<CheckInModalProps> = ({ 
   isOpen, 
   onClose,
-  guestData = {}
+  guestData = {},
+  onAIMessage,
+  onProcessCompleted
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -267,18 +269,6 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     setFormData(prev => ({ ...prev, isProcessing: true }));
     
     setTimeout(() => {
-      // Generate check-in confirmation data
-      const confirmationData = {
-        roomNumber: roomAssignment?.roomNumber || '501',
-        guestName: reservationData?.guestName || 'Guest',
-        roomType: roomAssignment?.roomType || 'Ocean View King Suite'
-      };
-      
-      // Notify parent about process completion
-      if (onProcessCompleted) {
-        onProcessCompleted(confirmationData);
-      }
-      
       setFormData(prev => ({ 
         ...prev, 
         isProcessing: false, 

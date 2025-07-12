@@ -223,6 +223,43 @@ export interface LanguageConfig {
     error: string;
     help: string;
   };
+  processCompletion: {
+    reservation: {
+      title: string;
+      description: string;
+      voiceMessage: string;
+      fields: {
+        confirmationNumber: string;
+        guestName: string;
+        roomType: string;
+        checkInDate: string;
+        checkOutDate: string;
+        totalAmount: string;
+      };
+    };
+    checkin: {
+      title: string;
+      description: string;
+      voiceMessage: string;
+      fields: {
+        roomNumber: string;
+        guestName: string;
+        roomType: string;
+        keyCards: string;
+      };
+    };
+    checkout: {
+      title: string;
+      description: string;
+      voiceMessage: string;
+      fields: {
+        guestName: string;
+        roomNumber: string;
+        totalAmount: string;
+        receipt: string;
+      };
+    };
+  };
 }
 
 export interface MultilingualBookingPatterns {

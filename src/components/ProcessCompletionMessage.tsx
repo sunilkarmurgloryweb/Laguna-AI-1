@@ -22,6 +22,7 @@ import {
   ExitToApp,
   Login
 } from '@mui/icons-material';
+import { multilingualAI } from '../services/multilingualAIService';
 
 interface ProcessCompletionMessageProps {
   processType: 'reservation' | 'checkin' | 'checkout';
@@ -35,46 +36,56 @@ interface ProcessCompletionMessageProps {
     totalAmount?: number;
   };
   timestamp: Date;
+  language?: string;
 }
 
 const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
   processType,
   confirmationData,
-  timestamp
+  timestamp,
+  language = 'en'
 }) => {
+  // Get multilingual content
+  const title = multilingualAI.getProcessCompletionMessage(processType, 'title', {
+    confirmationNumber: confirmationData.confirmationNumber || '',
+    roomNumber: confirmationData.roomNumber || ''
+  }, language);
+  
+  const description = multilingualAI.getProcessCompletionMessage(processType, 'description', {}, language);
+  const fields = multilingualAI.getProcessCompletionFields(processType, language);
   const getProcessConfig = () => {
     switch (processType) {
       case 'reservation':
         return {
-          title: 'Reservation Created Successfully! 🎉',
+          title,
           icon: <Hotel sx={{ fontSize: 32, color: 'success.main' }} />,
           color: 'success.main',
           bgColor: 'success.light',
-          description: 'Your hotel reservation has been confirmed and is ready for your stay.'
+          description
         };
       case 'checkin':
         return {
-          title: 'Check-in Completed Successfully! 🏨',
+          title,
           icon: <Login sx={{ fontSize: 32, color: 'primary.main' }} />,
           color: 'primary.main',
           bgColor: 'primary.light',
-          description: 'Welcome to Lagunacreek! Your room is ready and key cards have been prepared.'
+          description
         };
       case 'checkout':
         return {
-          title: 'Check-out Completed Successfully! ✅',
+          title,
           icon: <ExitToApp sx={{ fontSize: 32, color: 'warning.main' }} />,
           color: 'warning.main',
           bgColor: 'warning.light',
-          description: 'Thank you for staying with us! We hope you enjoyed your experience.'
+          description
         };
       default:
         return {
-          title: 'Process Completed Successfully!',
+          title,
           icon: <CheckCircle sx={{ fontSize: 32, color: 'success.main' }} />,
           color: 'success.main',
           bgColor: 'success.light',
-          description: 'Your request has been processed successfully.'
+          description
         };
     }
   };
@@ -85,7 +96,16 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
     <Card sx={{ mt: 2, border: 1, borderColor: 'success.main' }}>
       <CardContent sx={{ p: 2 }}>
         <Typography variant="h6" fontWeight="bold" color="success.main" gutterBottom>
-          Reservation Details
+          {language === 'es' ? 'Detalles de la Reserva' :
+           language === 'hi' ? 'आरक्षण विवरण' :
+           language === 'fr' ? 'Détails de la Réservation' :
+           language === 'de' ? 'Reservierungsdetails' :
+           language === 'it' ? 'Dettagli della Prenotazione' :
+           language === 'pt' ? 'Detalhes da Reserva' :
+           language === 'ja' ? 'ご予約詳細' :
+           language === 'ko' ? '예약 세부사항' :
+           language === 'zh' ? '预订详情' :
+           'Reservation Details'}
         </Typography>
         
         <Grid container spacing={2}>
@@ -94,7 +114,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <ConfirmationNumber sx={{ fontSize: 20, color: 'success.main' }} />
                 <Typography variant="body2" fontWeight="bold">
-                  Confirmation Number:
+                  {fields.confirmationNumber}:
                 </Typography>
                 <Chip 
                   label={confirmationData.confirmationNumber} 
@@ -110,7 +130,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Guest:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.guestName}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.guestName}
                 </Typography>
@@ -122,7 +142,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Hotel sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Room:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.roomType}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.roomType}
                 </Typography>
@@ -134,7 +154,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CalendarToday sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Check-in:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.checkInDate}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.checkInDate}
                 </Typography>
@@ -146,7 +166,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CalendarToday sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Check-out:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.checkOutDate}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.checkOutDate}
                 </Typography>
@@ -160,7 +180,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Payment sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2" color="text.secondary">Total Amount:</Typography>
+                  <Typography variant="body2" color="text.secondary">{fields.totalAmount}:</Typography>
                 </Box>
                 <Typography variant="h6" fontWeight="bold" color="success.main">
                   ${confirmationData.totalAmount}
@@ -177,7 +197,16 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
     <Card sx={{ mt: 2, border: 1, borderColor: 'primary.main' }}>
       <CardContent sx={{ p: 2 }}>
         <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
-          Check-in Details
+          {language === 'es' ? 'Detalles del Check-in' :
+           language === 'hi' ? 'चेक-इन विवरण' :
+           language === 'fr' ? 'Détails de l\'Enregistrement' :
+           language === 'de' ? 'Check-in Details' :
+           language === 'it' ? 'Dettagli del Check-in' :
+           language === 'pt' ? 'Detalhes do Check-in' :
+           language === 'ja' ? 'チェックイン詳細' :
+           language === 'ko' ? '체크인 세부사항' :
+           language === 'zh' ? '入住详情' :
+           'Check-in Details'}
         </Typography>
         
         <Grid container spacing={2}>
@@ -186,7 +215,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Room sx={{ fontSize: 20, color: 'primary.main' }} />
                 <Typography variant="body2" fontWeight="bold">
-                  Room Number:
+                  {fields.roomNumber}:
                 </Typography>
                 <Chip 
                   label={confirmationData.roomNumber} 
@@ -202,7 +231,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Guest:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.guestName}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.guestName}
                 </Typography>
@@ -214,7 +243,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Hotel sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Room Type:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.roomType}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.roomType}
                 </Typography>
@@ -231,7 +260,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
               mt: 1
             }}>
               <Typography variant="body2" fontWeight="bold" color="primary.contrastText">
-                🗝️ Key cards are ready at the front desk
+                🗝️ {fields.keyCards}
               </Typography>
             </Box>
           </Grid>
@@ -244,7 +273,16 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
     <Card sx={{ mt: 2, border: 1, borderColor: 'warning.main' }}>
       <CardContent sx={{ p: 2 }}>
         <Typography variant="h6" fontWeight="bold" color="warning.main" gutterBottom>
-          Check-out Summary
+          {language === 'es' ? 'Resumen del Check-out' :
+           language === 'hi' ? 'चेक-आउट सारांश' :
+           language === 'fr' ? 'Résumé du Départ' :
+           language === 'de' ? 'Check-out Zusammenfassung' :
+           language === 'it' ? 'Riepilogo Check-out' :
+           language === 'pt' ? 'Resumo do Check-out' :
+           language === 'ja' ? 'チェックアウト概要' :
+           language === 'ko' ? '체크아웃 요약' :
+           language === 'zh' ? '退房摘要' :
+           'Check-out Summary'}
         </Typography>
         
         <Grid container spacing={2}>
@@ -252,7 +290,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Guest:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.guestName}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.guestName}
                 </Typography>
@@ -264,7 +302,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Room sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">Room:</Typography>
+                <Typography variant="body2" color="text.secondary">{fields.roomNumber}:</Typography>
                 <Typography variant="body2" fontWeight="medium">
                   {confirmationData.roomNumber}
                 </Typography>
@@ -278,7 +316,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Payment sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2" color="text.secondary">Final Amount:</Typography>
+                  <Typography variant="body2" color="text.secondary">{fields.totalAmount}:</Typography>
                 </Box>
                 <Typography variant="h6" fontWeight="bold" color="warning.main">
                   ${confirmationData.totalAmount}
@@ -296,7 +334,7 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
               mt: 1
             }}>
               <Typography variant="body2" fontWeight="bold" color="warning.contrastText">
-                🧾 Receipt has been sent to your email
+                🧾 {fields.receipt}
               </Typography>
             </Box>
           </Grid>
@@ -341,10 +379,37 @@ const ProcessCompletionMessage: React.FC<ProcessCompletionMessageProps> = ({
       {/* Footer */}
       <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          Completed at {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} on {timestamp.toLocaleDateString()}
+          {language === 'es' ? 'Completado a las' :
+           language === 'hi' ? 'पूर्ण समय' :
+           language === 'fr' ? 'Terminé à' :
+           language === 'de' ? 'Abgeschlossen um' :
+           language === 'it' ? 'Completato alle' :
+           language === 'pt' ? 'Concluído às' :
+           language === 'ja' ? '完了時刻' :
+           language === 'ko' ? '완료 시간' :
+           language === 'zh' ? '完成时间' :
+           'Completed at'} {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {language === 'es' ? 'el' :
+           language === 'hi' ? 'को' :
+           language === 'fr' ? 'le' :
+           language === 'de' ? 'am' :
+           language === 'it' ? 'il' :
+           language === 'pt' ? 'em' :
+           language === 'ja' ? '' :
+           language === 'ko' ? '' :
+           language === 'zh' ? '' :
+           'on'} {timestamp.toLocaleDateString()}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-          Need help? Say "help" or contact our front desk at +1 (555) 123-4567
+          {language === 'es' ? '¿Necesita ayuda? Diga "ayuda" o contacte recepción al +1 (555) 123-4567' :
+           language === 'hi' ? 'मदद चाहिए? "मदद" कहें या +1 (555) 123-4567 पर संपर्क करें' :
+           language === 'fr' ? 'Besoin d\'aide? Dites "aide" ou contactez la réception au +1 (555) 123-4567' :
+           language === 'de' ? 'Hilfe benötigt? Sagen Sie "Hilfe" oder kontaktieren Sie die Rezeption unter +1 (555) 123-4567' :
+           language === 'it' ? 'Serve aiuto? Dite "aiuto" o contattate la reception al +1 (555) 123-4567' :
+           language === 'pt' ? 'Precisa de ajuda? Diga "ajuda" ou contacte a recepção em +1 (555) 123-4567' :
+           language === 'ja' ? 'ヘルプが必要ですか？「ヘルプ」と言うか、+1 (555) 123-4567 までお電話ください' :
+           language === 'ko' ? '도움이 필요하신가요? "도움"이라고 말하거나 +1 (555) 123-4567로 연락하세요' :
+           language === 'zh' ? '需要帮助？说"帮助"或致电前台 +1 (555) 123-4567' :
+           'Need help? Say "help" or contact our front desk at +1 (555) 123-4567'}
         </Typography>
       </Box>
     </Paper>

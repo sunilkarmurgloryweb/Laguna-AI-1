@@ -49,7 +49,9 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
     room: 'Ocean View King Suite - 205',
     checkIn: 'January 15, 2024',
     checkOut: 'January 17, 2024'
-  }
+  },
+  onAIMessage,
+  onProcessCompleted
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -89,18 +91,7 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
   };
 
   const handleSettleBalance = () => {
-    // Generate checkout confirmation data
-    const confirmationData = {
-      guestName: guestData.name || 'Guest',
-      roomNumber: guestData.room?.split(' - ')[1] || '205',
-      totalAmount: finalTotal
-    };
-    
-    // Notify parent about process completion
-    if (onProcessCompleted) {
-      onProcessCompleted(confirmationData);
-    }
-    
+    alert('Checkout completed successfully!');
     onClose();
   };
 
