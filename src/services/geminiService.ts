@@ -192,7 +192,7 @@ Format your response as JSON:
           intent: parsed.intent || 'inquiry',
           confidence: parsed.confidence || 0.7,
           extractedData: validatedData.data,
-          timestamp: new Date().toISOString(), // Convert to string
+          shouldFillForm: validatedData.isValid,
           validationErrors: validatedData.errors,
           suggestions: parsed.suggestions || []
         };
