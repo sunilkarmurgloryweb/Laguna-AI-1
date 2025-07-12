@@ -224,7 +224,16 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           utterance.pitch = 1;
           utterance.volume = 1;
           
-        speakMessage(result.response.text);
+          utterance.onend = () => {
+            console.log('Speech synthesis completed');
+          };
+          
+          utterance.onerror = (event) => {
+            console.error('Speech synthesis error:', event.error);
+          };
+          
+          speechSynthesis.speak(utterance);
+        });
       } catch (error) {
         console.error('Speech synthesis completely failed:', error);
       }
