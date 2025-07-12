@@ -12,6 +12,25 @@ export interface SendMessageResponse {
   chatMessage: ChatMessage;
 }
 
+interface GeminiResponse {
+  text: string;
+  intent: string;
+  confidence: number;
+  extractedData: Record<string, any>;
+  shouldFillForm: boolean;
+  validationErrors: string[];
+  suggestions: string[];
+}
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  extractedData?: Record<string, any>;
+  formFilled?: boolean;
+}
+
 export const geminiApi = createApi({
   reducerPath: 'geminiApi',
   baseQuery: fetchBaseQuery({ baseUrl: '/' }), // Dummy base query since we're using the service directly
@@ -20,6 +39,9 @@ export const geminiApi = createApi({
     sendMessage: builder.mutation<SendMessageResponse, SendMessageRequest>({
       queryFn: async ({ message, currentFormData, context }) => {
         try {
+          // Import geminiService dynamically to avoid circular imports
+          const { geminiService } = await import('../../services/geminiService');
+          
           if (context) {
             geminiService.setContext(context);
           }
@@ -35,8 +57,6 @@ export const geminiApi = createApi({
             extractedData: response.extractedData,
             formFilled: response.shouldFillForm
           };
-
-          // Speak the response if it's not an error
 
           return {
             data: {
@@ -59,6 +79,7 @@ export const geminiApi = createApi({
     resetChat: builder.mutation<void, void>({
       queryFn: async () => {
         try {
+          const { geminiService } = await import('../../services/geminiService');
           await geminiService.resetChat();
           return { data: undefined };
         } catch (error) {
@@ -76,6 +97,7 @@ export const geminiApi = createApi({
     setContext: builder.mutation<void, string>({
       queryFn: async (context) => {
         try {
+          const { geminiService } = await import('../../services/geminiService');
           geminiService.setContext(context);
           return { data: undefined };
         } catch (error) {

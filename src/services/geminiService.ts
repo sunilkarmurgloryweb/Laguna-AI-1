@@ -410,45 +410,32 @@ Format your response as JSON:
     const lowerMessage = message.toLowerCase();
     
     // Enhanced reservation detection
-    if (lowerMessage.includes('book') || lowerMessage.includes('reserve') || 
-        lowerMessage.includes('reservation') || lowerMessage.includes('make a booking') ||
-        lowerMessage.includes('i want to book') || lowerMessage.includes('book a room') ||
-        lowerMessage.includes('new reservation') || lowerMessage.includes('make reservation')) {
+    if (lowerMessage.match(/\b(book|reserve|reservation|make.*booking|want.*book|book.*room|new.*reservation|make.*reservation)\b/)) {
       return 'reservation';
     }
     
     // Enhanced check-in detection
-    if (lowerMessage.includes('check in') || lowerMessage.includes('checkin') || 
-        lowerMessage.includes('checking in') || lowerMessage.includes('check-in') ||
-        lowerMessage.includes('i want to check in') || lowerMessage.includes('guest check in') ||
-        lowerMessage.includes('arrival') || lowerMessage.includes('arrive')) {
+    if (lowerMessage.match(/\b(check.?in|checking.?in|want.*check.?in|guest.*check.?in|arrival|arrive)\b/)) {
       return 'checkin';
     }
     
     // Enhanced check-out detection
-    if (lowerMessage.includes('check out') || lowerMessage.includes('checkout') || 
-        lowerMessage.includes('checking out') || lowerMessage.includes('check-out') ||
-        lowerMessage.includes('i want to check out') || lowerMessage.includes('guest check out') ||
-        lowerMessage.includes('departure') || lowerMessage.includes('leave')) {
+    if (lowerMessage.match(/\b(check.?out|checking.?out|want.*check.?out|guest.*check.?out|departure|leave)\b/)) {
       return 'checkout';
     }
     
     // Enhanced availability detection
-    if (lowerMessage.includes('available') || lowerMessage.includes('availability') || 
-        lowerMessage.includes('rooms available') || lowerMessage.includes('display room') || 
-        lowerMessage.includes('show room') || lowerMessage.includes('room availability') ||
-        lowerMessage.includes('check availability') || lowerMessage.includes('vacant rooms') ||
-        lowerMessage.includes('free rooms') || lowerMessage.includes('calendar')) {
+    if (lowerMessage.match(/\b(available|availability|rooms.*available|display.*room|show.*room|room.*availability|check.*availability|vacant.*rooms|free.*rooms|calendar)\b/)) {
       return 'availability';
     }
     
-    if (lowerMessage.includes('find reservation') || lowerMessage.includes('search reservation') || lowerMessage.includes('find booking') || lowerMessage.includes('check reservation') || lowerMessage.includes('reservation status')) {
+    if (lowerMessage.match(/\b(find.*reservation|search.*reservation|find.*booking|check.*reservation|reservation.*status)\b/)) {
       return 'search_reservation';
     }
-    if (lowerMessage.includes('show reservation list') || lowerMessage.includes('reservation list') || lowerMessage.includes('all reservations') || lowerMessage.includes('list reservations')) {
+    if (lowerMessage.match(/\b(show.*reservation.*list|reservation.*list|all.*reservations|list.*reservations)\b/)) {
       return 'reservation_list';
     }
-    if (lowerMessage.includes('help') || lowerMessage.includes('assist')) {
+    if (lowerMessage.match(/\b(help|assist)\b/)) {
       return 'help';
     }
     
