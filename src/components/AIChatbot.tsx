@@ -20,9 +20,9 @@ import {
   ListItemText,
   Card,
   CardContent,
-  Grid2 as Grid,
   Divider
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import {
   Mic,
   MicOff,

@@ -11,7 +11,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  Grid2 as Grid,
   Paper,
   LinearProgress,
   IconButton,
@@ -25,6 +24,7 @@ import {
   Chip,
   Avatar
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import {
   Close,
   Person,

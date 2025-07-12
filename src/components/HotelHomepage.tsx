@@ -7,7 +7,6 @@ import {
   TextField,
   IconButton,
   Badge,
-  Grid2 as Grid,
   Card,
   CardContent,
   Button,
@@ -26,6 +25,7 @@ import {
   ListItemText,
   Fab
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import {
   Search,
   Notifications,

@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid2 as Grid,
   Typography,
   Box,
   Stepper,
@@ -25,6 +24,7 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';

@@ -7,7 +7,6 @@ import {
   Button,
   Typography,
   Box,
-  Grid2 as Grid,
   Card,
   CardContent,
   Chip,
@@ -18,6 +17,7 @@ import {
   useMediaQuery,
   Avatar
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import {
   Close,
   Hotel,
