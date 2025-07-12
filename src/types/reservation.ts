@@ -109,8 +109,8 @@ export interface DayAvailability {
 }
 
 export interface VoiceProcessedData {
-  checkIn?: string;
-  checkOut?: string;
+  checkIn?: string | Date;
+  checkOut?: string | Date;
   adults?: number;
   children?: number;
   roomType?: string;
@@ -120,6 +120,20 @@ export interface VoiceProcessedData {
   paymentMethod?: string;
   confirmationNumber?: string;
   searchQuery?: string;
+  room?: string;
+  name?: string;
+}
+
+export interface FormDataWithDayjs {
+  checkIn: dayjs.Dayjs | null;
+  checkOut: dayjs.Dayjs | null;
+  adults: number;
+  children: number;
+  roomType: string;
+  guestName: string;
+  phone: string;
+  email: string;
+  paymentMethod: string;
 }
 
 export interface ProcessedVoiceResponse {
@@ -131,3 +145,10 @@ export interface ProcessedVoiceResponse {
   suggestions: string[];
   text: string;
 }
+
+// Utility type for converting dayjs to string
+export type ConvertDayjsToString<T> = {
+  [K in keyof T]: T[K] extends dayjs.Dayjs | null 
+    ? string | undefined 
+    : T[K];
+};
