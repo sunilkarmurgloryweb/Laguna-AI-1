@@ -124,11 +124,14 @@ Payment Methods:
 - UPI or Digital Wallet
 
 Voice Command Examples:
-- "Make a reservation" / "Book a room" → Open reservation modal
-- "Check in" / "I'm checking in" / "Check in guest [name]" → Open check-in modal
-- "Check out" / "I'm checking out" / "Check out guest [name]" → Open check-out modal
-- "Show room availability" / "Display room availability" → Open availability modal
+- "Make a reservation" / "Book a room" / "I want to book" → Open reservation modal
+- "Check in" / "I'm checking in" / "Guest check in" / "Arrival" → Open check-in modal  
+- "Check out" / "I'm checking out" / "Guest check out" / "Departure" → Open check-out modal
+- "Show room availability" / "Room availability" / "Check availability" → Open availability modal
 - "Find reservation [name/phone]" → Search and display reservation details
+
+IMPORTANT: When user expresses intent to book, check-in, check-out, or check availability, 
+ALWAYS set the correct intent in your response and provide a helpful message about opening the modal.
 
 For each response, provide:
 1. A natural, conversational response
@@ -406,18 +409,39 @@ Format your response as JSON:
   private detectIntent(message: string): string {
     const lowerMessage = message.toLowerCase();
     
-    if (lowerMessage.includes('book') || lowerMessage.includes('reserve') || lowerMessage.includes('reservation')) {
+    // Enhanced reservation detection
+    if (lowerMessage.includes('book') || lowerMessage.includes('reserve') || 
+        lowerMessage.includes('reservation') || lowerMessage.includes('make a booking') ||
+        lowerMessage.includes('i want to book') || lowerMessage.includes('book a room') ||
+        lowerMessage.includes('new reservation') || lowerMessage.includes('make reservation')) {
       return 'reservation';
     }
-    if (lowerMessage.includes('check in') || lowerMessage.includes('checkin') || lowerMessage.includes('checking in')) {
+    
+    // Enhanced check-in detection
+    if (lowerMessage.includes('check in') || lowerMessage.includes('checkin') || 
+        lowerMessage.includes('checking in') || lowerMessage.includes('check-in') ||
+        lowerMessage.includes('i want to check in') || lowerMessage.includes('guest check in') ||
+        lowerMessage.includes('arrival') || lowerMessage.includes('arrive')) {
       return 'checkin';
     }
-    if (lowerMessage.includes('check out') || lowerMessage.includes('checkout') || lowerMessage.includes('checking out')) {
+    
+    // Enhanced check-out detection
+    if (lowerMessage.includes('check out') || lowerMessage.includes('checkout') || 
+        lowerMessage.includes('checking out') || lowerMessage.includes('check-out') ||
+        lowerMessage.includes('i want to check out') || lowerMessage.includes('guest check out') ||
+        lowerMessage.includes('departure') || lowerMessage.includes('leave')) {
       return 'checkout';
     }
-    if (lowerMessage.includes('available') || lowerMessage.includes('availability') || lowerMessage.includes('rooms available') || lowerMessage.includes('display room') || lowerMessage.includes('show room')) {
+    
+    // Enhanced availability detection
+    if (lowerMessage.includes('available') || lowerMessage.includes('availability') || 
+        lowerMessage.includes('rooms available') || lowerMessage.includes('display room') || 
+        lowerMessage.includes('show room') || lowerMessage.includes('room availability') ||
+        lowerMessage.includes('check availability') || lowerMessage.includes('vacant rooms') ||
+        lowerMessage.includes('free rooms') || lowerMessage.includes('calendar')) {
       return 'availability';
     }
+    
     if (lowerMessage.includes('find reservation') || lowerMessage.includes('search reservation') || lowerMessage.includes('find booking') || lowerMessage.includes('check reservation') || lowerMessage.includes('reservation status')) {
       return 'search_reservation';
     }

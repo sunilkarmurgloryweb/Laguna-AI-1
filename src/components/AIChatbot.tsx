@@ -343,8 +343,28 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
 
-    // Check for reservation search
+    // Enhanced intent detection for modal opening
     const lowerText = textToSend.toLowerCase();
+    
+    // Check for reservation/booking requests
+    if (lowerText.includes('book') || lowerText.includes('reservation') || 
+        lowerText.includes('reserve') || lowerText.includes('make a booking') ||
+        lowerText.includes('i want to book') || lowerText.includes('book a room')) {
+      const bookingMessage: ChatMessage = {
+        id: Date.now().toString() + '_booking',
+        role: 'assistant',
+        content: `I'll help you make a reservation. Opening the booking form...`,
+        timestamp: new Date()
+      };
+      setMessages((prev) => [...prev, bookingMessage]);
+      
+      setTimeout(() => {
+        onOpenModal('reservation', {});
+      }, 1000);
+      return;
+    }
+
+    // Check for reservation search
     if (lowerText.includes('find reservation') || lowerText.includes('search reservation') || 
         lowerText.includes('check reservation') || lowerText.includes('reservation status') ||
         lowerText.includes('find the reservation')) {
@@ -433,9 +453,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         setMessages((prev) => [...prev, result.chatMessage]);
       }
 
+      // Enhanced modal opening based on AI intent detection
       const intent = result?.response?.intent;
-      if (['reservation', 'checkin', 'checkout', 'availability'].includes(intent)) {
-        onOpenModal(intent as 'reservation' | 'checkin' | 'checkout' | 'availability', result.response.extractedData);
+      if (intent && ['reservation', 'checkin', 'checkout', 'availability'].includes(intent)) {
+        // Add a small delay for better UX
+        setTimeout(() => {
+          onOpenModal(intent as 'reservation' | 'checkin' | 'checkout' | 'availability', result.response.extractedData || {});
+        }, 500);
       }
 
       if (result?.response?.shouldFillForm && result.response.extractedData) {
