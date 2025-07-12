@@ -319,6 +319,25 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       }
     }
 
+    // Check for availability requests
+    if (lowerText.includes('available') || lowerText.includes('availability') || 
+        lowerText.includes('rooms available') || lowerText.includes('display room') || 
+        lowerText.includes('show room') || lowerText.includes('display the room availability') ||
+        lowerText.includes('room availability calendar') || lowerText.includes('calendar view')) {
+      const availabilityMessage: ChatMessage = {
+        id: Date.now().toString() + '_availability',
+        role: 'assistant',
+        content: `I'll show you our room availability with calendar view. Opening availability checker...`,
+        timestamp: new Date()
+      };
+      setMessages((prev) => [...prev, availabilityMessage]);
+      
+      setTimeout(() => {
+        onOpenModal('availability', {});
+      }, 1000);
+      return;
+    }
+
     try {
       const result = await sendMessage({
         message: textToSend,
