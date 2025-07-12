@@ -304,23 +304,23 @@ const HotelHomepage: React.FC = () => {
         </Box>
         
         <List>
-          <ListItem button onClick={() => setShowReservationModal(true)}>
+          <ListItem onClick={() => setShowReservationModal(true)}>
             <ListItemIcon><CalendarToday /></ListItemIcon>
             <ListItemText primary="New Reservation" />
           </ListItem>
-          <ListItem button onClick={() => setShowCheckInModal(true)}>
+          <ListItem onClick={() => setShowCheckInModal(true)}>
             <ListItemIcon><People /></ListItemIcon>
             <ListItemText primary="Check In" />
           </ListItem>
-          <ListItem button onClick={() => setShowCheckOutModal(true)}>
+          <ListItem onClick={() => setShowCheckOutModal(true)}>
             <ListItemIcon><CreditCard /></ListItemIcon>
             <ListItemText primary="Check Out" />
           </ListItem>
-          <ListItem button onClick={() => setShowRoomAvailabilityModal(true)}>
+          <ListItem onClick={() => setShowRoomAvailabilityModal(true)}>
             <ListItemIcon><Search /></ListItemIcon>
             <ListItemText primary="Room Availability" />
           </ListItem>
-          <ListItem button onClick={() => setShowLanguageSelector(true)}>
+          <ListItem onClick={() => setShowLanguageSelector(true)}>
             <ListItemIcon><Language /></ListItemIcon>
             <ListItemText primary="Language" />
           </ListItem>
@@ -368,6 +368,7 @@ const HotelHomepage: React.FC = () => {
       </Box>
     </Drawer>
   );
+  console.log(showReservationModal, "showReservationModal");
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.50' }}>

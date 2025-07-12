@@ -38,7 +38,6 @@ import {
   ModalType, 
   IntentType, 
   VoiceProcessedData,
-  GeminiResponse 
 } from '../types/reservation';
 
 type Message = ChatMessage & {
@@ -327,6 +326,28 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       }
 
       // Handle modal opening based on intent
+      console.log(response.intent, "response.intent");
+      switch (response.intent) {
+        case 'reservation':
+          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          break;
+        case 'checkin':
+          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          break;
+        case 'checkout':
+          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          break;
+        case 'availability':
+          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          break;
+        case 'search_reservation':
+          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          break;
+      
+        default:
+          break;
+      }
+      
       if (response.intent && response.intent !== 'inquiry' && response.intent !== 'help' && response.intent !== 'unknown') {
         console.log('🚀 Opening modal for intent:', response.intent, 'with data:', response.extractedData);
         detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);

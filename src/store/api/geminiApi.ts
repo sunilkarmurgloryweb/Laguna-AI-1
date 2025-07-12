@@ -21,14 +21,12 @@ export const geminiApi = createApi({
     sendMessage: builder.mutation<SendMessageResponse, SendMessageRequest>({
       queryFn: async ({ message, currentFormData, context }) => {
         try {
-          // Import geminiService dynamically to avoid circular imports
-          const { geminiService } = await import('../../services/geminiService');
-          
           if (context) {
             geminiService.setContext(context);
           }
 
           const response = await geminiService.sendMessage(message, currentFormData);
+          console.log(response, "response");
           
           // Create chat message
           const chatMessage: ChatMessage = {
