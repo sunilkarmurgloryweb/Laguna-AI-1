@@ -22,9 +22,9 @@ import {
   Card,
   CardContent,
   Chip,
-  Avatar
+  Avatar,
+  Grid
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
 import {
   Close,
   Person,
@@ -469,7 +469,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 
                 {/* Camera Controls */}
                 <Grid container spacing={2}>
-                  <Grid item xs={6}>
+                  <Grid size={{ xs: 6 }}>
                     <Button
                       fullWidth
                       variant="contained"
@@ -481,7 +481,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       {formData.scanningPassport ? 'Scanning...' : 'Scan Passport'}
                     </Button>
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid size={{ xs: 6 }}>
                     <Button
                       fullWidth
                       variant="outlined"
@@ -505,19 +505,19 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                         </Typography>
                       </Box>
                       <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                           <Typography variant="body2" fontWeight="bold">Name:</Typography>
                           <Typography variant="body2">{passportData.name}</Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                           <Typography variant="body2" fontWeight="bold">Passport Number:</Typography>
                           <Typography variant="body2">{passportData.passportNumber}</Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                           <Typography variant="body2" fontWeight="bold">Nationality:</Typography>
                           <Typography variant="body2">{passportData.nationality}</Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                           <Typography variant="body2" fontWeight="bold">Expiry Date:</Typography>
                           <Typography variant="body2">{passportData.expiryDate}</Typography>
                         </Grid>
@@ -591,23 +591,23 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, bgcolor: 'grey.50' }}>
                   <Typography variant="h6" gutterBottom>Guest Information</Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Typography variant="body2" fontWeight="bold">Guest Name:</Typography>
                       <Typography variant="body2">{reservationData.guestName}</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Typography variant="body2" fontWeight="bold">Confirmation:</Typography>
                       <Typography variant="body2">{reservationData.confirmationNumber}</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Typography variant="body2" fontWeight="bold">Check-in Date:</Typography>
                       <Typography variant="body2">{reservationData.checkInDate}</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={{ xs: 6 }}>
                       <Typography variant="body2" fontWeight="bold">Check-out Date:</Typography>
                       <Typography variant="body2">{reservationData.checkOutDate}</Typography>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <Typography variant="body2" fontWeight="bold">Phone:</Typography>
                       <Typography variant="body2">{reservationData.phone}</Typography>
                     </Grid>
@@ -634,11 +634,11 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       </Typography>
                       
                       <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Typography variant="body2" fontWeight="bold">Check-in Time:</Typography>
                           <Typography variant="body2">{roomAssignment.checkInTime}</Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Typography variant="body2" fontWeight="bold">Key Cards:</Typography>
                           <Typography variant="body2">{roomAssignment.keyCards} cards</Typography>
                         </Grid>

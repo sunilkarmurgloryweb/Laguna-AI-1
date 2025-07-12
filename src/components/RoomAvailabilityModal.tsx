@@ -17,7 +17,7 @@ import {
   useMediaQuery,
   Avatar
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import { Grid } from '@mui/material';
 import {
   Close,
   Hotel,
@@ -239,7 +239,7 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
         {/* Day Headers */}
         <Grid container spacing={1} sx={{ mb: 1 }}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <Grid item xs key={day}>
+            <Grid size={{ xs: true }} key={day}>
               <Typography variant="caption" fontWeight="bold" sx={{ display: 'block', textAlign: 'center' }}>
                 {day}
               </Typography>
@@ -261,7 +261,7 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
               const totalRooms = dayData ? Object.values(dayData.rooms).reduce((sum, room) => sum + room.total, 0) : 0;
               
               return (
-                <Grid item xs key={day.format('YYYY-MM-DD')}>
+                <Grid size={{ xs: true }} key={day.format('YYYY-MM-DD')}>
                   <Tooltip
                     title={
                       dayData && isCurrentMonth ? (
@@ -375,7 +375,7 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
         
         <Grid container spacing={2}>
           {rooms.map((room) => (
-            <Grid item xs={12} key={room.id}>
+            <Grid size={{ xs: 12 }} key={room.id}>
               <Card
                 sx={{
                   border: room.available === 0 ? 1 : 0,
@@ -486,12 +486,12 @@ const RoomAvailabilityModal: React.FC<RoomAvailabilityModalProps> = ({
       <DialogContent sx={{ p: { xs: 1, md: 3 } }}>
         <Grid container spacing={3}>
           {/* Left Side - Calendar */}
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             {renderCalendar()}
           </Grid>
           
           {/* Right Side - Room Availability */}
-          <Grid item xs={12} md={7}>
+          <Grid size={{ xs: 12, md: 7 }}>
             {selectedDate ? (
               renderRoomAvailability()
             ) : (

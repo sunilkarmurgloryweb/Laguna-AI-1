@@ -24,7 +24,7 @@ import {
   RadioGroup,
   Divider
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import { Grid } from '@mui/material';
 import {
   Close,
   Receipt,
@@ -128,20 +128,20 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
             {/* Guest Information */}
             <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Guest Information</Typography>
                   <Typography variant="body2">Guest Name:</Typography>
                   <Typography variant="body1" fontWeight="medium">{guestData.name}</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Room</Typography>
                   <Typography variant="body1" fontWeight="medium">{guestData.room}</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Check In</Typography>
                   <Typography variant="body1" fontWeight="medium">{guestData.checkIn}</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Check Out</Typography>
                   <Typography variant="body1" fontWeight="medium">{guestData.checkOut}</Typography>
                 </Grid>
@@ -179,31 +179,31 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
                 Total Outstanding:
               </Typography>
               <Grid container spacing={1}>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <Typography variant="body2">Subtotal</Typography>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography variant="body2" align="right">${totalAmount.toFixed(2)}</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <Typography variant="body2">Taxes</Typography>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography variant="body2" align="right">${taxes.toFixed(2)}</Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <Typography variant="body2">Fees</Typography>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography variant="body2" align="right">${fees.toFixed(2)}</Typography>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Divider sx={{ my: 1 }} />
                 </Grid>
-                <Grid item xs={8}>
+                <Grid size={{ xs: 8 }}>
                   <Typography variant="h6" fontWeight="bold">Total Outstanding:</Typography>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Typography variant="h6" fontWeight="bold" color="primary.main" align="right">
                     ${finalTotal.toFixed(2)}
                   </Typography>
@@ -322,18 +322,18 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
 
             <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
               <Grid container spacing={1}>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body1" fontWeight="medium">Total Amount:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="h5" fontWeight="bold" color="success.main" align="right">
                     ${finalTotal.toFixed(2)}
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" align="right">
                     {paymentMethod === 'card' ? 'Credit Card (**** 1234)' : 'Cash Payment'}
                   </Typography>
