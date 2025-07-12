@@ -204,6 +204,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const detectIntentAndOpenModal = useCallback((intent: string, extractedData: any, language: string) => {
     if (!onOpenModal) return;
 
+    console.log('🎯 Intent detected:', intent, 'Data:', extractedData);
+
     const modalMappings: Record<string, string> = {
       'reservation': 'reservation',
       'checkin': 'checkin', 
@@ -219,8 +221,27 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         preferredLanguage: language
       };
       
+      // Show user which modal is opening
+      const modalMessages = {
+        'reservation': 'Opening reservation form...',
+        'checkin': 'Opening check-in process...',
+        'checkout': 'Opening check-out process...',
+        'availability': 'Opening room availability calendar...'
+      };
+      
+      const modalMessage: Message = {
+        id: Date.now().toString() + '_modal',
+        text: modalMessages[modalType] || 'Opening requested service...',
+        isUser: false,
+        timestamp: new Date(),
+        language: language
+      };
+      
+      setMessages(prev => [...prev, modalMessage]);
+      
       // Delay modal opening to allow AI response to be spoken first
       setTimeout(() => {
+        console.log('🚀 Opening modal:', modalType, 'with data:', dataWithLanguage);
         onOpenModal(modalType, dataWithLanguage);
       }, 2000);
     }
@@ -256,7 +277,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
       const { response } = result;
 
-      // Generate response in detected/current language
+      // Generate response in detected/current language  
       let responseText = response.text;
       
       // If language was auto-detected and different, acknowledge it
@@ -264,6 +285,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         const langInfo = multilingualAI.getLanguageInfo(detectedLang);
         responseText = `${langInfo.flag} ${responseText}`;
       }
+
+      // Debug logging
+      console.log('🤖 AI Response:', {
+        intent: response.intent,
+        extractedData: response.extractedData,
+        text: responseText
+      });
 
       // Add AI response message
       const aiMessage: Message = {

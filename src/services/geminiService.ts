@@ -130,20 +130,20 @@ LANGUAGE-SPECIFIC RESPONSES:
 - Chinese: Use polite forms, "请" and "谢谢"
 
 Available Room Types:
-- Ocean View King Suite ($299/night)
-- Deluxe Garden Room ($199/night)  
-- Family Oceanfront Suite ($399/night)
-- Presidential Suite ($599/night)
-- Standard Double Room ($149/night)
-- Luxury Spa Suite ($449/night)
+- Ocean View King Suite ($299/night) - Luxurious suite with panoramic ocean views
+- Deluxe Garden Room ($199/night) - Comfortable room overlooking beautiful gardens
+- Family Oceanfront Suite ($399/night) - Spacious suite perfect for families
+- Presidential Suite ($599/night) - Ultimate luxury with premium amenities
+- Standard Double Room ($149/night) - Comfortable standard accommodation
+- Luxury Spa Suite ($449/night) - Relaxation suite with spa amenities
 
 Payment Methods:
 - Credit Card
 - Pay at Hotel
 - UPI or Digital Wallet
 
-Voice Command Examples (Multilingual):
-English: "Make a reservation" / "Book a room" / "Check in" / "Check out" / "Room availability"
+BOOKING/RESERVATION Voice Command Examples (Multilingual):
+English: "I want to book a room" / "Book a hotel room" / "Make a reservation" / "Need to book a stay"
 Spanish: "Hacer una reserva" / "Reservar una habitación" / "Registrarse" / "Salir" / "Disponibilidad"
 French: "Faire une réservation" / "Réserver une chambre" / "Enregistrement" / "Départ" / "Disponibilité"
 German: "Reservierung machen" / "Zimmer buchen" / "Einchecken" / "Auschecken" / "Verfügbarkeit"
@@ -154,8 +154,13 @@ Japanese: "予約する" / "部屋を予約" / "チェックイン" / "チェッ
 Korean: "예약하기" / "방 예약" / "체크인" / "체크아웃" / "객실 현황"
 Chinese: "预订" / "订房间" / "入住" / "退房" / "房间状况"
 
-IMPORTANT: When user expresses intent to book, check-in, check-out, or check availability, 
-ALWAYS set the correct intent in your response and provide a helpful message about opening the modal.
+CRITICAL INTENT MAPPING:
+- "book room", "book hotel", "want to book", "make reservation" → ALWAYS use intent: "reservation"
+- "check availability", "show availability", "room availability" → ALWAYS use intent: "availability"  
+- "check in", "guest check in" → ALWAYS use intent: "checkin"
+- "check out", "guest check out" → ALWAYS use intent: "checkout"
+
+IMPORTANT: When user says anything about BOOKING or RESERVING a room/hotel, ALWAYS set intent to "reservation" and open the reservation modal, NOT the availability modal.
 
 For each response, provide:
 1. A natural, conversational response
@@ -433,8 +438,13 @@ Format your response as JSON:
   private detectIntent(message: string): string {
     const lowerMessage = message.toLowerCase();
     
-    // Enhanced reservation detection (multilingual)
-    if (lowerMessage.match(/\b(book|reserve|reservation|make.*booking|want.*book|book.*room|new.*reservation|make.*reservation|hacer.*reserva|reservar|réserver|buchen|prenotare|reservar|आरक्षण|बुकिंग|予約|예약|预订)\b/)) {
+    // Enhanced reservation/booking detection (multilingual) - PRIORITY 1
+    if (lowerMessage.match(/\b(book.*room|book.*hotel|want.*book|need.*book|make.*booking|new.*booking|reserve.*room|reserve.*hotel|make.*reservation|new.*reservation|want.*reserve|need.*reserve|book.*stay|reserve.*stay|hacer.*reserva|reservar.*habitación|reservar.*hotel|réserver.*chambre|réserver.*hôtel|zimmer.*buchen|hotel.*buchen|prenotare.*camera|prenotare.*hotel|reservar.*quarto|reservar.*hotel|कमरा.*बुक|होटल.*बुक|आरक्षण.*करना|部屋.*予約|ホテル.*予約|방.*예약|호텔.*예약|订房|预订.*房间)\b/)) {
+      return 'reservation';
+    }
+    
+    // General reservation terms (lower priority)
+    if (lowerMessage.match(/\b(reservation|booking|reserve|book|hacer.*reserva|reservar|réserver|buchen|prenotare|आरक्षण|बुकिंग|予約|예약|预订)\b/)) {
       return 'reservation';
     }
     
@@ -448,8 +458,8 @@ Format your response as JSON:
       return 'checkout';
     }
     
-    // Enhanced availability detection (multilingual)
-    if (lowerMessage.match(/\b(available|availability|rooms.*available|display.*room|show.*room|room.*availability|check.*availability|vacant.*rooms|free.*rooms|calendar|disponibilidad|disponible|disponibilité|verfügbarkeit|disponibilità|उपलब्धता|空室|객실.*현황|房间.*状况)\b/)) {
+    // Enhanced availability detection (multilingual) - More specific patterns
+    if (lowerMessage.match(/\b(show.*availability|check.*availability|room.*availability|display.*availability|view.*availability|calendar.*view|availability.*calendar|show.*vacant|show.*free.*rooms|disponibilidad.*habitaciones|voir.*disponibilité|verfügbarkeit.*prüfen|mostra.*disponibilità|उपलब्धता.*देखना|空室.*確認|객실.*현황.*보기|查看.*房间.*状况)\b/)) {
       return 'availability';
     }
     
