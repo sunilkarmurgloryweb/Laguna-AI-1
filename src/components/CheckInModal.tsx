@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
 import { ProcessedVoiceResponse, VoiceProcessedData, PassportInfo, ReservationSearchResult } from '../types/reservation';
+import { FormDataWithDayjs } from '../types/reservation';
 
 interface CheckInModalProps {
   isOpen: boolean;
@@ -69,7 +70,15 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   const [stream, setStream] = useState<MediaStream | null>(null);
   
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    searchQuery: string;
+    cameraActive: boolean;
+    scanningPassport: boolean;
+    passportScanned: boolean;
+    passportVerified: boolean;
+    checkInComplete: boolean;
+    isProcessing: boolean;
+  }>({
     searchQuery: guestData.confirmationNumber || guestData.name || '',
     cameraActive: false,
     scanningPassport: false,
@@ -83,6 +92,14 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   const [passportData, setPassportData] = useState<PassportInfo | null>(null);
   const [roomAssignment, setRoomAssignment] = useState<RoomAssignment | null>(null);
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
+
+  // Convert formData to VoiceProcessedData format for voice input
+  const getVoiceCompatibleData = (): VoiceProcessedData => ({
+    searchQuery: formData.searchQuery,
+    guestName: formData.searchQuery,
+    confirmationNumber: formData.searchQuery,
+    phone: formData.searchQuery
+  });
 
   const steps = ['Document Verification', 'Check-in Summary'];
 
@@ -265,7 +282,15 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     const voiceResult = result as ProcessedVoiceResponse;
     
     if (voiceResult.extractedData) {
-      const updates: Partial<typeof formData> = {};
+      const updates: Partial<{
+        searchQuery: string;
+        cameraActive: boolean;
+        scanningPassport: boolean;
+        passportScanned: boolean;
+        passportVerified: boolean;
+        checkInComplete: boolean;
+        isProcessing: boolean;
+      }> = {};
       const newVoiceFields = new Set(voiceFilledFields);
       
       if (voiceResult.extractedData.guestName) {
@@ -323,7 +348,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                   <VoiceInput
                     onVoiceProcessed={handleVoiceProcessed}
                     currentStep="check-in"
-                    reservationData={formData}
+                    reservationData={getVoiceCompatibleData()}
                     size={isMobile ? "small" : "medium"}
                     showTranscript={true}
                   />

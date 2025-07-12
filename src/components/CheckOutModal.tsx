@@ -54,6 +54,13 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
+  // Convert data to VoiceProcessedData format for voice input
+  const getVoiceCompatibleData = (): VoiceProcessedData => ({
+    paymentMethod: paymentMethod,
+    guestName: guestData.name,
+    room: guestData.room
+  });
+
   const steps = ['Guest Folio', 'Payment Method', 'Checkout Confirmation'];
 
   const charges = [
@@ -222,7 +229,7 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
               <VoiceInput
                 onVoiceProcessed={handleVoiceProcessed}
                 currentStep="payment"
-                reservationData={{ paymentMethod }}
+                reservationData={getVoiceCompatibleData()}
                 size="medium"
                 showTranscript={true}
               />

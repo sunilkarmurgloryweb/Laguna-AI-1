@@ -54,7 +54,7 @@ interface AIChatbotProps {
     modalType: 'reservation' | 'checkin' | 'checkout' | 'availability',
     data?: VoiceProcessedData
   ) => void;
-  onFormDataUpdate?: (data: VoiceProcessedData) => void;
+  onFormDataUpdate?: (data: Record<string, unknown>) => void;
   currentFormData?: Record<string, any>;
   context?: string;
 }
@@ -85,6 +85,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const [showRoomTypes, setShowRoomTypes] = useState(false);
   const [foundReservation, setFoundReservation] = useState<ReservationSearchResult | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
 
   const {
     isListening,
@@ -251,11 +253,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     const voiceResult = result as ProcessedVoiceResponse;
     
     if (voiceResult.extractedData) {
-      const updates: VoiceProcessedData = {};
+      const updates: Record<string, unknown> = {};
       const newVoiceFields = new Set(voiceFilledFields);
 
       // Process extracted data and update form
-      Object.entries(voiceResult.extractedData).forEach(([key, value]) => {
+      Object.entries(voiceResult.extractedData).forEach(([key, value]: [string, unknown]) => {
         if (value && value !== currentFormData[key]) {
           updates[key] = value;
           newVoiceFields.add(key);

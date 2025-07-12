@@ -25,7 +25,7 @@ export interface VoiceInputProps {
   onVoiceProcessed?: (data: ProcessedVoiceResponse) => void;
   language?: string;
   currentStep?: string;
-  reservationData?: VoiceProcessedData;
+  reservationData?: VoiceProcessedData | Record<string, unknown>;
   disabled?: boolean;
   size?: 'small' | 'medium' | 'large';
   showTranscript?: boolean;
@@ -38,7 +38,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   onVoiceProcessed,
   language = 'en-US',
   currentStep = 'welcome',
-  reservationData = {},
+  reservationData,
   disabled = false,
   size = 'medium',
   showTranscript = true,
@@ -46,6 +46,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   context = 'hotel_reservation'
 }) => {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  
+  // Ensure reservationData is always an object
+  const safeReservationData = reservationData || {};
   
   const {
     isListening,
@@ -87,7 +90,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
     try {
       const result = await sendMessage({
         message: text,
-        currentFormData: reservationData,
+        currentFormData: safeReservationData,
         context: context
       }).unwrap();
 
