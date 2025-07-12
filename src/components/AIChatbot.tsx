@@ -342,7 +342,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       // Speak response in current language
       if (result?.response?.text && isSpeechEnabled && result.response.intent !== 'error') {
         try {
-          await multilingualAI.speak(result.response.text, currentLanguage);
+          // Use browser's speech synthesis directly for better compatibility
+          const utterance = new SpeechSynthesisUtterance(result.response.text);
+          utterance.lang = multilingualAI.getSpeechRecognitionLanguage();
+          utterance.rate = 0.9;
+          utterance.pitch = 1;
+          utterance.volume = 1;
+          speechSynthesis.speak(utterance);
         } catch (speechError) {
           console.warn('Text-to-speech failed:', speechError);
         }
