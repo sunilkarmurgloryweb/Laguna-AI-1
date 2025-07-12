@@ -38,6 +38,7 @@ import {
   CheckCircle
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
+import { multilingualAI } from '../services/multilingualAIService';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { updateReservationData } from '../store/slices/reservationSlice';
 import { ProcessedVoiceResponse, VoiceProcessedData } from '../types/reservation';
@@ -60,6 +61,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   
   const dispatch = useAppDispatch();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
   const [formData, setFormData] = useState<FormDataWithDayjs>({
     checkIn: initialData.checkIn ? dayjs(initialData.checkIn) : null,
     checkOut: initialData.checkOut ? dayjs(initialData.checkOut) : null,
@@ -159,9 +162,33 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   };
 
   const handleSubmit = () => {
-    console.log('Reservation submitted:', formData);
-    alert('Reservation confirmed! You will receive a confirmation email shortly.');
-    onClose();
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsCompleted(true);
+      
+      // Get success message in current language
+      const successMessage = multilingualAI.getResponse('bookingConfirmed', {
+        confirmationId: `LG${Math.random().toString(36).substr(2, 8).toUpperCase()}`
+      });
+      
+      // Speak the success message
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(successMessage);
+        utterance.lang = multilingualAI.getSpeechRecognitionLanguage();
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        speechSynthesis.speak(utterance);
+      }
+      
+      // Auto-close after 5 seconds
+      setTimeout(() => {
+        onClose();
+      }, 5000);
+    }, 2000);
   };
 
   const canProceedToNext = () => {
@@ -670,7 +697,49 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
       </DialogTitle>
 
       <DialogContent sx={{ p: { xs: 2, md: 3 } }}>
-        {renderStepContent()}
+        {isCompleted ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Avatar sx={{ 
+              bgcolor: 'success.main', 
+              width: { xs: 80, md: 100 }, 
+              height: { xs: 80, md: 100 }, 
+              mx: 'auto', 
+              mb: 3 
+            }}>
+              <CheckCircle sx={{ fontSize: { xs: 40, md: 50 } }} />
+            </Avatar>
+            
+            <Typography variant="h4" color="success.main" gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
+              🎉 Reservation Confirmed!
+            </Typography>
+            
+            <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+              Thank you for choosing Lagunacreek!
+            </Typography>
+            
+            <Paper sx={{ p: 3, mt: 3, bgcolor: 'success.light', maxWidth: 400, mx: 'auto' }}>
+              <Typography variant="body1" color="success.contrastText" gutterBottom>
+                ✅ Reservation confirmed successfully
+              </Typography>
+              <Typography variant="body1" color="success.contrastText" gutterBottom>
+                📧 Confirmation email will be sent shortly
+              </Typography>
+              <Typography variant="body1" color="success.contrastText">
+                📱 SMS confirmation will follow
+              </Typography>
+            </Paper>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 3 }}>
+              Confirmation ID: LG{Math.random().toString(36).substr(2, 8).toUpperCase()}
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              This window will close automatically in a few seconds...
+            </Typography>
+          </Box>
+        ) : (
+          renderStepContent()
+        )}
       </DialogContent>
 
       <DialogActions sx={{ 
