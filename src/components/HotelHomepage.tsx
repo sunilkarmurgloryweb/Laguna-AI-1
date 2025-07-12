@@ -348,34 +348,6 @@ const HotelHomepage: React.FC = () => {
         overflow: 'hidden'
       }}>
         <Box sx={{ 
-          p: 2, 
-          borderBottom: 1, 
-          borderColor: 'divider',
-          background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 32, height: 32 }}>
-              <Settings />
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle1" fontWeight="bold">
-                AI Assistant
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                {getLanguageInfo().name} • Powered by Gemini AI
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton onClick={() => setChatDrawerOpen(false)} sx={{ color: 'white' }}>
-            <Close />
-          </IconButton>
-        </Box>
-        
-        <Box sx={{ 
           flex: 1, 
           overflow: 'hidden',
           maxHeight: 'calc(100vh - 80px)'
@@ -735,28 +707,6 @@ const HotelHomepage: React.FC = () => {
               overflow: 'hidden'
             }}
           >
-            <Box sx={{ 
-              p: 2, 
-              borderBottom: 1, 
-              borderColor: 'divider',
-              background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
-              color: 'white'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 32, height: 32 }}>
-                  <Settings />
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    AI Assistant
-                  </Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                    {getLanguageInfo().name} • Powered by Gemini AI
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-            
             <Box sx={{ 
               flex: 1, 
               overflow: 'hidden',

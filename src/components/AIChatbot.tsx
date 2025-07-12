@@ -44,7 +44,7 @@ interface Message {
 }
 
 interface AIChatbotProps {
-  onOpenModal?: (modalType: string, data?: any) => void;
+  onOpenModal?: (modalType: 'reservation' | 'checkin' | 'checkout' | 'availability', data?: Record<string, unknown>) => void;
   context?: string;
   onReceiveMessage?: (handler: (message: string, shouldSpeak?: boolean) => void) => void;
 }
@@ -252,6 +252,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         context: `${context}_${messageLang}`,
         currentFormData: { language: messageLang }
       }).unwrap();
+      console.log(result, messageText, "response.intent");
 
       const { response } = result;
 
