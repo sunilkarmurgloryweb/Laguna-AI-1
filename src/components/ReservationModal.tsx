@@ -22,9 +22,9 @@ import {
   IconButton,
   TextField,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Grid
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -279,7 +279,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             </Box>
             
             <Grid container spacing={{ xs: 2, md: 3 }}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     label="Check-in Date"
@@ -296,7 +296,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   />
                 </LocalizationProvider>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     label="Check-out Date"
@@ -314,7 +314,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   />
                 </LocalizationProvider>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
                   <InputLabel>Adults</InputLabel>
                   <Select
@@ -334,7 +334,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   )}
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
                   <InputLabel>Children</InputLabel>
                   <Select
@@ -379,7 +379,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             
             <Grid container spacing={{ xs: 2, md: 2 }}>
               {roomTypes.map((room) => (
-                <Grid item xs={12} key={room.id}>
+                <Grid size={{ xs: 12 }} key={room.id}>
                   <Card
                     sx={{
                       cursor: 'pointer',
@@ -464,7 +464,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             </Box>
             
             <Grid container spacing={{ xs: 2, md: 3 }}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   size={isMobile ? 'small' : 'medium'}
@@ -476,7 +476,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   helperText={isVoiceFilled('guestName') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   size={isMobile ? 'small' : 'medium'}
@@ -488,7 +488,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                   helperText={isVoiceFilled('phone') ? '✓ Filled by voice' : ''}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   size={isMobile ? 'small' : 'medium'}
@@ -526,7 +526,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
             
             <Grid container spacing={{ xs: 2, md: 2 }} sx={{ mb: 3 }}>
               {paymentMethods.map((method) => (
-                <Grid item xs={12} key={method.id}>
+                <Grid size={{ xs: 12 }} key={method.id}>
                   <Card
                     sx={{
                       cursor: 'pointer',
@@ -568,46 +568,46 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                 Booking Summary
               </Typography>
               <Grid container spacing={1}>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2">Check-in:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" fontWeight="medium">
                     {formData.checkIn ? formData.checkIn.format('MMM DD, YYYY') : ''}
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2">Check-out:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" fontWeight="medium">
                     {formData.checkOut ? formData.checkOut.format('MMM DD, YYYY') : ''}
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2">Guests:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" fontWeight="medium">
                     {formData.adults} adults, {formData.children} children
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2">Room:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" fontWeight="medium">{formData.roomType}</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2">Guest:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" fontWeight="medium">{formData.guestName}</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" fontWeight="bold">Payment:</Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" fontWeight="bold">{formData.paymentMethod}</Typography>
                 </Grid>
               </Grid>
