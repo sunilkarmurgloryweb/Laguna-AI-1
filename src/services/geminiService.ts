@@ -573,6 +573,11 @@ Format your response as JSON:
       return 'search_reservation';
     }
     
+    // Enhanced reservation detection with more patterns
+    if (lowerMessage.match(/\b(make.*reservation|book.*room|reserve.*room|new.*booking|create.*reservation|hacer.*reserva|faire.*réservation|reservierung.*machen|fare.*prenotazione|fazer.*reserva|आरक्षण.*करना|予約.*する|예약.*하기|预订.*房间)\b/)) {
+      return 'reservation';
+    }
+    
     // Reservation list (multilingual)
     if (lowerMessage.match(/\b(show.*reservation.*list|reservation.*list|all.*reservations|list.*reservations|lista.*reservas|liste.*réservations|reservierungsliste|elenco.*prenotazioni|lista.*reservas|आरक्षण.*सूची|予約.*リスト|예약.*목록|预订.*列表)\b/)) {
       return 'reservation_list';

@@ -33,6 +33,9 @@ import {
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
 import { ProcessedVoiceResponse, VoiceProcessedData } from '../types/reservation';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { useAppDispatch } from '../hooks/useAppDispatch';
+import { selectAllReservations, selectAllCheckIns, addCheckOut } from '../store/slices/mockDataSlice';
 
 interface CheckOutModalProps {
   isOpen: boolean;
@@ -45,18 +48,37 @@ interface CheckOutModalProps {
 const CheckOutModal: React.FC<CheckOutModalProps> = ({ 
   isOpen, 
   onClose,
-  guestData = {
-    name: 'John Smith',
-    room: 'Ocean View King Suite - 205',
-    checkIn: 'January 15, 2024',
-    checkOut: 'January 17, 2024'
-  },
+  guestData = {},
   onAIMessage,
   onProcessCompleted
 }) => {
+  const dispatch = useAppDispatch();
+  const allReservations = useAppSelector(selectAllReservations);
+  const allCheckIns = useAppSelector(selectAllCheckIns);
+  
   const [currentStep, setCurrentStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
+
+  // Find active check-in for guest
+  React.useEffect(() => {
+    if (guestData.guestName || guestData.room) {
+      const checkIn = allCheckIns.find(ci => 
+        ci.status === 'active' && (
+          ci.guestName.toLowerCase().includes((guestData.guestName || '').toLowerCase()) ||
+          ci.roomNumber === (guestData.room || '').split(' - ')[1]
+        )
+      );
+      
+      if (checkIn) {
+        setSelectedCheckIn(checkIn);
+        const reservation = allReservations.find(r => r.id === checkIn.reservationId);
+        setSelectedReservation(reservation);
+      }
+    }
+  }, [guestData, allCheckIns, allReservations]);
 
   // Convert data to VoiceProcessedData format for voice input
   const getVoiceCompatibleData = (): VoiceProcessedData => ({
@@ -92,7 +114,22 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
   };
 
   const handleSettleBalance = () => {
-        onProcessCompleted?.(guestData)
+    if (selectedReservation && selectedCheckIn) {
+      // Add checkout to store
+      dispatch(addCheckOut({
+        reservationId: selectedReservation.id,
+        roomNumber: selectedCheckIn.roomNumber,
+        totalAmount: finalTotal
+      }));
+      
+      onProcessCompleted?.({
+        guestName: selectedReservation.guestName,
+        roomNumber: selectedCheckIn.roomNumber,
+        totalAmount: finalTotal,
+        confirmationNumber: selectedReservation.confirmationNumber
+      });
+    }
+    
     onClose();
   };
 
@@ -146,19 +183,19 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
                 <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Guest Information</Typography>
                   <Typography variant="body2">Guest Name:</Typography>
-                  <Typography variant="body1" fontWeight="medium">{guestData.name}</Typography>
+                  <Typography variant="body1" fontWeight="medium">{selectedReservation?.guestName || 'Guest'}</Typography>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Room</Typography>
-                  <Typography variant="body1" fontWeight="medium">{guestData.room}</Typography>
+                  <Typography variant="body1" fontWeight="medium">{selectedReservation?.roomType} - {selectedCheckIn?.roomNumber}</Typography>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Check In</Typography>
-                  <Typography variant="body1" fontWeight="medium">{guestData.checkIn}</Typography>
+                  <Typography variant="body1" fontWeight="medium">{selectedReservation?.checkIn}</Typography>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
                   <Typography variant="subtitle2" fontWeight="bold">Check Out</Typography>
-                  <Typography variant="body1" fontWeight="medium">{guestData.checkOut}</Typography>
+                  <Typography variant="body1" fontWeight="medium">{selectedReservation?.checkOut}</Typography>
                 </Grid>
               </Grid>
             </Paper>
@@ -177,7 +214,7 @@ const CheckOutModal: React.FC<CheckOutModalProps> = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {charges.map((charge, index) => (
+                  {selectedReservation && charges.map((charge, index) => (
                     <TableRow key={index}>
                       <TableCell>{charge.description}</TableCell>
                       <TableCell>{charge.date}</TableCell>

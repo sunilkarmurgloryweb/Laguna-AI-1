@@ -37,6 +37,8 @@ import {
 import VoiceInput from "./VoiceInput";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { updateReservationData } from "../store/slices/reservationSlice";
+import { addReservation } from '../store/slices/mockDataSlice';
+import { getDefaultCheckInDate, getDefaultCheckOutDate } from '../utils/dateUtils';
 import {
   ProcessedVoiceResponse,
   VoiceProcessedData,
@@ -71,10 +73,8 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   );
   const [lastUpdatedByVoice, setLastUpdatedByVoice] = useState<boolean>(false)
   const [formData, setFormData] = useState<FormDataWithDayjs>({
-    checkIn: initialData.checkIn ? dayjs(initialData.checkIn as string) : null,
-    checkOut: initialData.checkOut
-      ? dayjs(initialData.checkOut as string)
-      : null,
+    checkIn: initialData.checkIn ? dayjs(initialData.checkIn as string) : dayjs(getDefaultCheckInDate()),
+    checkOut: initialData.checkOut ? dayjs(initialData.checkOut as string) : dayjs(getDefaultCheckOutDate()),
     adults: initialData.adults || 1,
     children: initialData.children || 0,
     roomType: initialData.roomType || "",
@@ -310,7 +310,11 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
       paymentMethod: formData.paymentMethod,
     };
 
-    dispatch(updateReservationData(reservationData));
+    // Add to mock data store
+    dispatch(addReservation({
+      ...reservationData,
+      hotel: 'Laguna Creek Downtown'
+    }));
 
     // Simulate API call
     setTimeout(() => {

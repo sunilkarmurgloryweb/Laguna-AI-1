@@ -38,6 +38,9 @@ import {
 import VoiceInput from './VoiceInput';
 import { ProcessedVoiceResponse, VoiceProcessedData, PassportInfo, ReservationSearchResult } from '../types/reservation';
 import { FormDataWithDayjs } from '../types/reservation';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { useAppDispatch } from '../hooks/useAppDispatch';
+import { selectAllReservations, addCheckIn } from '../store/slices/mockDataSlice';
 
 interface CheckInModalProps {
   isOpen: boolean;
@@ -68,6 +71,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const dispatch = useAppDispatch();
+  const allReservations = useAppSelector(selectAllReservations);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -116,48 +122,35 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   }, [stream]);
 
   const searchReservation = (query: string): ReservationSearchResult | null => {
-    // Simulate reservation lookup
-    const mockReservations: ReservationSearchResult[] = [
-      {
-        id: 'RES001',
-        guestName: 'Sunil Karmur',
-        confirmationNumber: '8128273972',
-        phone: '+91-9876543210',
-        email: 'sunil.karmur@email.com',
-        roomType: 'Ocean View King Suite',
-        checkInDate: '2024-01-15',
-        checkOutDate: '2024-01-18',
-        status: 'Confirmed',
-        totalAmount: 897,
-        nights: 3,
-        adults: 2,
-        children: 1,
-        specialRequests: 'Late check-in, Ocean view preferred'
-      },
-      {
-        id: 'RES002',
-        guestName: 'John Smith',
-        confirmationNumber: '8128273973',
-        phone: '+1-555-0123',
-        email: 'john.smith@email.com',
-        roomType: 'Deluxe Garden Room',
-        checkInDate: '2024-01-15',
-        checkOutDate: '2024-01-17',
-        status: 'Confirmed',
-        totalAmount: 398,
-        nights: 2,
-        adults: 2,
-        children: 0,
-        specialRequests: 'None'
-      }
-    ];
-
+    // Search in actual reservations from store
     const lowerQuery = query.toLowerCase();
-    return mockReservations.find(res => 
+    const found = allReservations.find(res => 
       res.guestName.toLowerCase().includes(lowerQuery) ||
-      res.confirmationNumber.includes(query) ||
-      res.phone.includes(query)
-    ) || null;
+      res.confirmationNumber.toLowerCase().includes(lowerQuery) ||
+      res.phone.includes(query) ||
+      res.email.toLowerCase().includes(lowerQuery)
+    );
+
+    if (found) {
+      return {
+        id: found.id,
+        guestName: found.guestName,
+        confirmationNumber: found.confirmationNumber,
+        phone: found.phone,
+        email: found.email,
+        roomType: found.roomType,
+        checkInDate: found.checkIn,
+        checkOutDate: found.checkOut,
+        status: found.status === 'confirmed' ? 'Confirmed' : found.status === 'checked-in' ? 'Checked In' : 'Completed',
+        totalAmount: found.totalAmount,
+        nights: found.nights,
+        adults: found.adults,
+        children: found.children,
+        specialRequests: 'None'
+      };
+    }
+    
+    return null;
   };
 
   const handleGuestLookup = () => {
@@ -268,7 +261,22 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 
   const completeCheckIn = () => {
     setFormData(prev => ({ ...prev, isProcessing: true }));
-    onProcessCompleted(formData)
+    
+    if (reservationData) {
+      // Add check-in to store
+      dispatch(addCheckIn({
+        reservationId: reservationData.id,
+        roomNumber: roomAssignment?.roomNumber || '501',
+        keyCards: roomAssignment?.keyCards || 2
+      }));
+      
+      onProcessCompleted?.({
+        guestName: reservationData.guestName,
+        roomNumber: roomAssignment?.roomNumber || '501',
+        roomType: reservationData.roomType,
+        confirmationNumber: reservationData.confirmationNumber
+      });
+    }
     
     setTimeout(() => {
       setFormData(prev => ({ 

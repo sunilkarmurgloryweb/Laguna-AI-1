@@ -41,6 +41,12 @@ import {
   ProcessedVoiceResponse
 } from '../types/reservation';
 import ProcessCompletionMessage from './ProcessCompletionMessage';
+import SpeechCaption from './SpeechCaption';
+import ReservationPreview from './ReservationPreview';
+import { useAppDispatch } from '../hooks/useAppDispatch';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { addReservation, selectAllReservations, selectReservationsByGuest, selectReservationsByPhone, selectReservationByConfirmation } from '../store/slices/mockDataSlice';
+import { getDefaultCheckInDate, getDefaultCheckOutDate, getCurrentMonthYear } from '../utils/dateUtils';
 
 type Message = ChatMessage & {
   isUser: boolean;
@@ -73,9 +79,16 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [detectedLanguage, setDetectedLanguage] = useState('en');
+  const [showReservationPreview, setShowReservationPreview] = useState(false);
+  const [previewReservationData, setPreviewReservationData] = useState<any>(null);
+  const [currentSpeechText, setCurrentSpeechText] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [sendMessage, { isLoading: isProcessing }] = useSendMessageMutation();
+  const dispatch = useAppDispatch();
+  const allReservations = useAppSelector(selectAllReservations);
   
   // Speech recognition hook with dynamic language
   const {
@@ -87,7 +100,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     startListening,
     stopListening,
     resetTranscript
-  } = useSpeechRecognition(
+  } = useSpeechRecognition( 
+    languageConfigs[currentLanguage]?.speechCode || 'en-US', 
     languageConfigs[currentLanguage]?.speechCode || 'en-US', 
     false, 
     true
@@ -164,6 +178,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   // Speech synthesis function with language support
   const speakMessage = useCallback(async (text: string, language: string = currentLanguage) => {
     if (!isSpeechEnabled || !text) return;
+    
+    setCurrentSpeechText(text);
+    setIsSpeaking(true);
 
     try {
       // Cancel any ongoing speech
@@ -171,6 +188,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       
       // Use multilingual AI service
       await multilingualAI.speak(text, language);
+      
+      setIsSpeaking(false);
     } catch (error) {
       console.error('Speech synthesis error:', error);
       
@@ -183,8 +202,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         utterance.volume = 0.8;
         speechSynthesis.speak(utterance);
       } catch (fallbackError) {
+        setIsSpeaking(false);
         console.error('Fallback speech synthesis failed:', fallbackError);
       }
+    } finally {
+      setTimeout(() => setIsSpeaking(false), 100);
     }
   }, [isSpeechEnabled, currentLanguage]);
 
@@ -241,6 +263,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     if (!onOpenModal) return;
 
     console.log('🎯 Intent detected:', intent, 'Data:', extractedData);
+    
+    // Handle reservation search
+    if (intent === 'search_reservation') {
+      handleReservationSearch(extractedData);
+      return;
+    }
 
     const modalMappings: Record<IntentType, ModalType | null> = {
       'reservation': 'reservation',
@@ -287,6 +315,161 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       onOpenModal(modalType, dataWithLanguage);
     }
   }, [onOpenModal]);
+
+  // Handle reservation search
+  const handleReservationSearch = (extractedData: VoiceProcessedData) => {
+    let foundReservations: any[] = [];
+    
+    if (extractedData.confirmationNumber) {
+      const reservation = selectReservationByConfirmation({ mockData: { reservations: allReservations, checkIns: [], checkOuts: [], roomAvailability: {} } }, extractedData.confirmationNumber);
+      if (reservation) foundReservations = [reservation];
+    } else if (extractedData.guestName) {
+      foundReservations = selectReservationsByGuest({ mockData: { reservations: allReservations, checkIns: [], checkOuts: [], roomAvailability: {} } }, extractedData.guestName);
+    } else if (extractedData.phone) {
+      foundReservations = selectReservationsByPhone({ mockData: { reservations: allReservations, checkIns: [], checkOuts: [], roomAvailability: {} } }, extractedData.phone);
+    }
+    
+    let responseText = '';
+    if (foundReservations.length > 0) {
+      const reservation = foundReservations[0];
+      responseText = `Found reservation for ${reservation.guestName}. Confirmation: ${reservation.confirmationNumber}, Room: ${reservation.roomType}, Check-in: ${reservation.checkIn}, Status: ${reservation.status}`;
+    } else {
+      responseText = 'No reservations found with the provided information. Please check your confirmation number or contact details.';
+    }
+    
+    const searchMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant' as const,
+      content: responseText,
+      text: responseText,
+      timestamp: new Date(),
+      language: currentLanguage,
+      isUser: false,
+    };
+    
+    setMessages(prev => [...prev, searchMessage]);
+    
+    if (isSpeechEnabled) {
+      setTimeout(() => {
+        speakMessage(responseText, currentLanguage);
+      }, 500);
+    }
+  };
+
+  // Enhanced date processing with current month/year defaults
+  const processDateWithDefaults = (extractedData: VoiceProcessedData) => {
+    const currentDate = getCurrentMonthYear();
+    const processedData = { ...extractedData };
+    
+    // If no check-in date provided, use tomorrow
+    if (!processedData.checkIn) {
+      processedData.checkIn = getDefaultCheckInDate();
+    }
+    
+    // If no check-out date provided, use day after check-in
+    if (!processedData.checkOut) {
+      processedData.checkOut = getDefaultCheckOutDate();
+    }
+    
+    return processedData;
+  };
+
+  // Handle reservation preview and confirmation
+  const handleReservationIntent = (extractedData: VoiceProcessedData, responseText: string) => {
+    const processedData = processDateWithDefaults(extractedData);
+    
+    // Check if we have enough data for a preview
+    const hasMinimumData = processedData.checkIn && processedData.checkOut && 
+                          processedData.adults && processedData.roomType && 
+                          processedData.guestName && processedData.phone && 
+                          processedData.email && processedData.paymentMethod;
+    
+    if (hasMinimumData) {
+      // Show preview instead of opening modal directly
+      const reservationData = {
+        checkIn: processedData.checkIn as string,
+        checkOut: processedData.checkOut as string,
+        adults: processedData.adults as number,
+        children: processedData.children || 0,
+        roomType: processedData.roomType as string,
+        roomPrice: getRoomPrice(processedData.roomType as string),
+        guestName: processedData.guestName as string,
+        phone: processedData.phone as string,
+        email: processedData.email as string,
+        paymentMethod: processedData.paymentMethod as string,
+        hotel: 'Laguna Creek Downtown'
+      };
+      
+      setPreviewReservationData(reservationData);
+      setShowReservationPreview(true);
+      
+      const previewMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant' as const,
+        content: 'I have all the information needed for your reservation. Please review the details and confirm.',
+        text: 'I have all the information needed for your reservation. Please review the details and confirm.',
+        timestamp: new Date(),
+        language: currentLanguage,
+        isUser: false,
+      };
+      
+      setMessages(prev => [...prev, previewMessage]);
+      
+      if (isSpeechEnabled) {
+        setTimeout(() => {
+          speakMessage('Please review your reservation details and confirm to proceed.', currentLanguage);
+        }, 500);
+      }
+    } else {
+      // Open modal for data collection
+      detectIntentAndOpenModal('reservation', processedData, currentLanguage);
+    }
+  };
+
+  // Get room price helper
+  const getRoomPrice = (roomType: string): number => {
+    const roomPrices: Record<string, number> = {
+      'Ocean View King Suite': 299,
+      'Deluxe Garden Room': 199,
+      'Family Oceanfront Suite': 399,
+      'Presidential Suite': 599,
+      'Standard Double Room': 149,
+      'Luxury Spa Suite': 449
+    };
+    return roomPrices[roomType] || 199;
+  };
+
+  // Confirm reservation from preview
+  const handleConfirmReservation = () => {
+    if (previewReservationData) {
+      dispatch(addReservation(previewReservationData));
+      
+      const confirmationMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant' as const,
+        content: `Reservation confirmed! Your confirmation number is ${generateConfirmationNumber()}. You will receive an email confirmation shortly.`,
+        text: `Reservation confirmed! Your confirmation number is ${generateConfirmationNumber()}. You will receive an email confirmation shortly.`,
+        timestamp: new Date(),
+        language: currentLanguage,
+        isUser: false,
+      };
+      
+      setMessages(prev => [...prev, confirmationMessage]);
+      setShowReservationPreview(false);
+      setPreviewReservationData(null);
+      
+      if (isSpeechEnabled) {
+        setTimeout(() => {
+          speakMessage('Your reservation has been confirmed successfully!', currentLanguage);
+        }, 500);
+      }
+    }
+  };
+
+  // Generate confirmation number
+  const generateConfirmationNumber = () => {
+    return 'LG' + Math.random().toString(36).substr(2, 8).toUpperCase();
+  };
 
   // Enhanced message processing with language detection
   const handleSendMessage = async (text?: string, detectedLang?: string) => {
@@ -353,7 +536,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       // Handle modal opening based on intent
       switch (response.intent) {
         case 'reservation':
-          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          handleReservationIntent(response.extractedData, responseText);
           break;
         case 'checkin':
           detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
@@ -363,6 +546,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           break;
         case 'availability':
           detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          break;
+        case 'search_reservation':
+          handleReservationSearch(response.extractedData);
           break;
         case 'search_reservation':
           detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
@@ -399,9 +585,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
   // Toggle speech synthesis
   const toggleSpeech = () => {
-    setIsSpeechEnabled(!isSpeechEnabled);
+    const newState = !isSpeechEnabled;
+    setIsSpeechEnabled(newState);
     if (isSpeechEnabled) {
       speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setCurrentSpeechText('');
     }
   };
 
@@ -789,6 +978,28 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         </Box>
       )}
     </Paper>
+      {/* Speech Caption */}
+      <SpeechCaption
+        isVisible={isSpeaking && currentSpeechText.length > 0}
+        text={currentSpeechText}
+        isPlaying={isSpeaking}
+        onToggleSound={toggleSpeech}
+        isSoundEnabled={isSpeechEnabled}
+      />
+
+      {/* Reservation Preview Modal */}
+      {showReservationPreview && previewReservationData && (
+        <ReservationPreview
+          isOpen={showReservationPreview}
+          onClose={() => {
+            setShowReservationPreview(false);
+            setPreviewReservationData(null);
+          }}
+          onConfirm={handleConfirmReservation}
+          reservationData={previewReservationData}
+        />
+      )}
+
   );
 };
 

@@ -3,6 +3,7 @@ import { geminiApi } from './api/geminiApi';
 import reservationReducer from './slices/reservationSlice';
 import voiceReducer from './slices/voiceSlice';
 import uiReducer from './slices/uiSlice';
+import mockDataReducer from './slices/mockDataSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     reservation: reservationReducer,
     voice: voiceReducer,
     ui: uiReducer,
+    mockData: mockDataReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

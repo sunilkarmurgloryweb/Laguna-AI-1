@@ -15,7 +15,8 @@ export interface SpeechRecognitionHook {
 export const useSpeechRecognition = (
   language: string = 'en-US',
   continuous: boolean = true,
-  interimResults: boolean = true
+  interimResults: boolean = true,
+  noSpeechTimeout: number = 10000 // 10 seconds timeout
 ): SpeechRecognitionHook => {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
@@ -25,6 +26,7 @@ export const useSpeechRecognition = (
   const [error, setError] = useState<string | null>(null);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -36,11 +38,21 @@ export const useSpeechRecognition = (
       recognition.continuous = continuous;
       recognition.interimResults = interimResults;
       recognition.lang = language;
+      recognition.maxAlternatives = 3;
       recognition.maxAlternatives = 1;
       
       recognition.onstart = () => {
         setIsListening(true);
         setError(null);
+      };
+      
+      // Clear any existing timeout when recognition starts
+      recognition.onstart = () => {
+        setIsListening(true);
+        setError(null);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
       };
       
       recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -63,17 +75,30 @@ export const useSpeechRecognition = (
           setTranscript(newFinalTranscript + interimTranscript);
           return newFinalTranscript;
         });
+        
+        // Reset timeout on speech detection
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
       };
       
       recognition.onend = () => {
         setIsListening(false);
         setInterimTranscript('');
+        
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
       };
       
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         setError(event.error);
         setIsListening(false);
         console.error('Speech recognition error:', event.error);
+      };
+      
+      // Handle no speech timeout
+      recognition.onnomatch = () => {
       };
       
       recognitionRef.current = recognition;
@@ -85,12 +110,25 @@ export const useSpeechRecognition = (
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        recognitionRef.current.abort();
+      }
     };
   }, [language, continuous, interimResults]);
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening && isSupported) {
       setError(null);
+      
+      // Set up no-speech timeout
+      timeoutRef.current = setTimeout(() => {
+        if (recognitionRef.current && isListening) {
+          recognitionRef.current.stop();
+          setError('No speech detected. Click to try again.');
+        }
+      }, noSpeechTimeout);
+      
       recognitionRef.current.start();
     }
   }, [isListening, isSupported]);
@@ -98,6 +136,10 @@ export const useSpeechRecognition = (
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
       recognitionRef.current.stop();
+    }
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
     }
   }, [isListening]);
 
