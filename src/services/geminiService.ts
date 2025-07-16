@@ -216,6 +216,15 @@ IMPORTANT INSTRUCTIONS:
 - For room availability requests, open availability modal
 - For reservation searches, display reservation details in chat
 
+DATE INTERPRETATION RULES:
+- If user says "today and tomorrow", set:
+  - checkIn: current date (e.g., 2025-07-16)
+  - checkOut: next day (e.g., 2025-07-17)
+- If user says "for X days" or "for 3 days", assume:
+  - checkIn: current date
+  - checkOut: current date + X days
+- Ensure correct date arithmetic and formatting (YYYY-MM-DD)
+
 LANGUAGE-SPECIFIC RESPONSES:
 - Spanish: Use formal "usted" for politeness, include "por favor" and "gracias"
 - French: Use polite forms, "s'il vous plaît" and "merci"
@@ -242,15 +251,7 @@ Payment Methods:
 
 BOOKING/RESERVATION Voice Command Examples (Multilingual):
 English: "I want to book a room" / "Book a hotel room" / "Make a reservation" / "Need to book a stay"
-Spanish: "Hacer una reserva" / "Reservar una habitación" / "Registrarse" / "Salir" / "Disponibilidad"
-French: "Faire une réservation" / "Réserver une chambre" / "Enregistrement" / "Départ" / "Disponibilité"
-German: "Reservierung machen" / "Zimmer buchen" / "Einchecken" / "Auschecken" / "Verfügbarkeit"
-Italian: "Fare una prenotazione" / "Prenotare una camera" / "Check-in" / "Check-out" / "Disponibilità"
-Portuguese: "Fazer uma reserva" / "Reservar um quarto" / "Check-in" / "Check-out" / "Disponibilidade"
-Hindi: "आरक्षण करना" / "कमरा बुक करना" / "चेक इन" / "चेक आउट" / "उपलब्धता"
-Japanese: "予約する" / "部屋を予約" / "チェックイン" / "チェックアウト" / "空室状況"
-Korean: "예약하기" / "방 예약" / "체크인" / "체크아웃" / "객실 현황"
-Chinese: "预订" / "订房间" / "入住" / "退房" / "房间状况"
+...
 
 CRITICAL INTENT MAPPING:
 - "book room", "book hotel", "want to book", "make reservation" → ALWAYS use intent: "reservation"
@@ -262,12 +263,14 @@ CRITICAL: When user says anything about BOOKING or RESERVING a room/hotel, ALWAY
 NEVER use "availability" intent for booking requests. "availability" is ONLY for checking room status/calendar.
 
 Examples:
-- "I want to book a room" → intent: "reservation" 
+- "I want to book a room" → intent: "reservation"
 - "Book a hotel room" → intent: "reservation"
-- "Make a reservation" → intent: "reservation"
 - "Reserve a room for July 15" → intent: "reservation"
 - "Show room availability" → intent: "availability"
 - "Check room calendar" → intent: "availability"
+- "Book for today and tomorrow" → checkIn: today, checkOut: tomorrow
+- "Make a reservation for 3 days" → checkIn: today, checkOut: today + 3 days
+
 For each response, provide:
 1. A natural, conversational response
 2. Any extracted data in structured format
@@ -300,20 +303,25 @@ Format your response as JSON:
 `;
 
     return basePrompt;
-  }
+}
+
 
   private buildEnhancedPrompt(message: string, currentFormData?: VoiceProcessedData): string {
-    let prompt = `User message: "${message}"`;
-    
-    if (currentFormData && Object.keys(currentFormData).length > 0) {
-      prompt += `\n\nCurrent form data: ${JSON.stringify(currentFormData, null, 2)}`;
-    }
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-07-16"
+  
+  let prompt = `User message: "${message}"`;
 
-    prompt += `\n\nContext: ${this.currentContext}`;
-    prompt += `\n\nPlease analyze this message and provide a helpful response with any extractable data.`;
-
-    return prompt;
+  if (currentFormData && Object.keys(currentFormData).length > 0) {
+    prompt += `\n\nCurrent form data: ${JSON.stringify(currentFormData, null, 2)}`;
   }
+
+  prompt += `\n\nContext: ${this.currentContext}`;
+  prompt += `\n\nToday's date is: ${today}`; // ← Add this line
+  prompt += `\n\nPlease analyze this message and provide a helpful response with any extractable data.`;
+
+  return prompt;
+}
+
 
   private parseGeminiResponse(text: string, originalMessage: string): GeminiResponse {
     try {
@@ -321,6 +329,7 @@ Format your response as JSON:
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
+        console.log(parsed.extractedData, "parsed.extractedData");
         
         // Validate and clean the extracted data
         const validatedData = this.validateExtractedData(parsed.extractedData || {});

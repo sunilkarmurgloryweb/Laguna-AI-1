@@ -26,7 +26,6 @@ export const geminiApi = createApi({
           }
 
           const response = await geminiService.sendMessage(message, currentFormData);
-          console.log(response, "response");
           
           // Create chat message
           const chatMessage: ChatMessage = {
