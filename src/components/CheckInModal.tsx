@@ -37,7 +37,7 @@ import {
 } from '@mui/icons-material';
 import VoiceInput from './VoiceInput';
 import { ProcessedVoiceResponse, VoiceProcessedData, PassportInfo, ReservationSearchResult } from '../types/reservation';
-import { FormDataWithDayjs } from '../types/reservation';
+import { FormDataWithDayjs } from '../types/reservation'; // This type seems unused in this specific component.
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { selectAllReservations, addCheckIn } from '../store/slices/mockDataSlice';
@@ -62,23 +62,25 @@ interface RoomAssignment {
 }
 
 
-const CheckInModal: React.FC<CheckInModalProps> = ({ 
-  isOpen, 
+const CheckInModal: React.FC<CheckInModalProps> = ({
+  isOpen,
   onClose,
   guestData = {},
   onAIMessage,
   onProcessCompleted
 }) => {
+  console.log(guestData, "guestData");
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const dispatch = useAppDispatch();
   const allReservations = useAppSelector(selectAllReservations);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  
+
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<{
     searchQuery: string;
@@ -89,7 +91,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     checkInComplete: boolean;
     isProcessing: boolean;
   }>({
-    searchQuery: guestData.confirmationNumber || guestData.name || '',
+    searchQuery: guestData.confirmationNumber || guestData.name || guestData.guestName || guestData.phone || '', // Initialize with any relevant guestData field
     cameraActive: false,
     scanningPassport: false,
     passportScanned: false,
@@ -97,7 +99,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     checkInComplete: false,
     isProcessing: false
   });
-  
+
   const [reservationData, setReservationData] = useState<ReservationSearchResult | null>(null);
   const [passportData, setPassportData] = useState<PassportInfo | null>(null);
   const [roomAssignment, setRoomAssignment] = useState<RoomAssignment | null>(null);
@@ -106,13 +108,14 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   // Convert formData to VoiceProcessedData format for voice input
   const getVoiceCompatibleData = (): VoiceProcessedData => ({
     searchQuery: formData.searchQuery,
-    guestName: formData.searchQuery,
-    confirmationNumber: formData.searchQuery,
-    phone: formData.searchQuery
+    guestName: formData.searchQuery, // Assuming searchQuery can act as guestName for initial lookup
+    confirmationNumber: formData.searchQuery, // Assuming searchQuery can act as confirmationNumber
+    phone: formData.searchQuery // Assuming searchQuery can act as phone
   });
 
   const steps = ['Document Verification', 'Check-in Summary'];
 
+  // Effect for handling camera stream cleanup
   useEffect(() => {
     return () => {
       if (stream) {
@@ -121,10 +124,33 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     };
   }, [stream]);
 
+  // NEW useEffect for initial guestData processing
+  useEffect(() => {
+    if (isOpen && (guestData.confirmationNumber || guestData.name || guestData.phone|| guestData.guestName)) {
+      const query = guestData.confirmationNumber || guestData.name || guestData.guestName || guestData.phone;
+      if (query && formData.searchQuery !== query) { // Prevent re-setting if already set by voice or initial render
+        setFormData(prev => ({ ...prev, searchQuery: query }));
+        // Simulate immediate search if guestData is provided
+        // We'll call handleGuestLookup in a timeout to ensure state updates
+        setTimeout(() => {
+          const reservation = searchReservation(query);
+          setReservationData(reservation);
+          if (reservation) {
+            // Automatically start camera if reservation is found
+            startCamera();
+            onAIMessage?.(`Found reservation for ${query}. Please proceed with passport scan.`, true);
+          } else {
+            onAIMessage?.(`Could not find a reservation for ${query}. Please try again.`, true);
+          }
+        }, 300); // Small delay to allow state to settle
+      }
+    }
+  }, [isOpen, guestData.confirmationNumber, guestData.name, guestData.phone, onAIMessage]); // Depend on isOpen and guestData fields
+
   const searchReservation = (query: string): ReservationSearchResult | null => {
     // Search in actual reservations from store
     const lowerQuery = query.toLowerCase();
-    const found = allReservations.find(res => 
+    const found = allReservations.find(res =>
       res.guestName.toLowerCase().includes(lowerQuery) ||
       res.confirmationNumber.toLowerCase().includes(lowerQuery) ||
       res.phone.includes(query) ||
@@ -141,15 +167,16 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         roomType: found.roomType,
         checkInDate: found.checkIn,
         checkOutDate: found.checkOut,
+        // Ensure status mapping is correct, `checked-in` is a good state for this modal to confirm
         status: found.status === 'confirmed' ? 'Confirmed' : found.status === 'checked-in' ? 'Checked In' : 'Completed',
         totalAmount: found.totalAmount,
         nights: found.nights,
         adults: found.adults,
         children: found.children,
-        specialRequests: 'None'
+        specialRequests: 'None' // You might want to pull this from your reservation data
       };
     }
-    
+
     return null;
   };
 
@@ -158,17 +185,20 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     setReservationData(reservation);
 
     if (reservation) {
+      onAIMessage?.(`Found reservation for ${reservation.guestName}. Please proceed with passport scan.`, true);
       // Start camera for passport verification
       setTimeout(() => {
         startCamera();
       }, 500);
+    } else {
+      onAIMessage?.(`Could not find a reservation for "${formData.searchQuery}". Please double-check the details.`, true);
     }
   };
 
   const startCamera = async () => {
     try {
       setFormData(prev => ({ ...prev, cameraActive: true }));
-      
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -176,9 +206,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           facingMode: 'environment'
         }
       });
-      
+
       setStream(mediaStream);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.play();
@@ -186,6 +216,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     } catch (error) {
       console.error('Camera access error:', error);
       alert('Unable to access camera. Please check permissions.');
+      setFormData(prev => ({ ...prev, cameraActive: false })); // Reset cameraActive on error
     }
   };
 
@@ -198,142 +229,154 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   };
 
   const capturePassport = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || !reservationData) return; // Ensure reservationData exists
 
     setFormData(prev => ({ ...prev, scanningPassport: true }));
-    
+
     const canvas = canvasRef.current;
     const video = videoRef.current;
     const context = canvas.getContext('2d');
-    
+
     if (context) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0);
-      
+
       // Simulate passport scanning
       setTimeout(() => {
         const mockPassportData: PassportInfo = {
-          name: reservationData.guestName || 'SUNIL KARMUR',
-          passportNumber: 'P123456789',
-          nationality: 'IND',
-          dateOfBirth: '1985-03-15',
-          expiryDate: '2030-03-15',
+          name: reservationData.guestName || 'SUNIL KARMUR', // Use actual guest name from reservation
+          passportNumber: 'P123456789', // Mock data
+          nationality: 'IND', // Mock data
+          dateOfBirth: '1985-03-15', // Mock data
+          expiryDate: '2030-03-15', // Mock data
           photo: canvas.toDataURL()
         };
-        
+
         setPassportData(mockPassportData);
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           passportScanned: true,
           scanningPassport: false
         }));
-        
+        onAIMessage?.("Passport scanned. Verifying identity...", true);
+
         // Verify passport
         setTimeout(() => {
-          setFormData(prev => ({ ...prev, passportVerified: true }));
+          // In a real application, you'd compare passportData.name with reservationData.guestName
+          // For now, we'll assume it's verified if data is present.
+          const isVerified = mockPassportData.name.toLowerCase() === reservationData.guestName.toLowerCase();
+
+          setFormData(prev => ({ ...prev, passportVerified: isVerified }));
           stopCamera();
-          
-          // Assign room and move to summary
-          setTimeout(() => {
-            assignRoomAndProceed();
-          }, 1500);
+
+          if (isVerified) {
+            onAIMessage?.("Identity verified successfully! Preparing room assignment.", true);
+            // Assign room and move to summary
+            setTimeout(() => {
+              assignRoomAndProceed();
+            }, 1500);
+          } else {
+            onAIMessage?.("Identity verification failed. Please ensure the passport matches the reservation name or try again.", true);
+            setPassportData(null); // Clear passport data if verification fails
+            setFormData(prev => ({ ...prev, passportScanned: false })); // Allow re-scan
+          }
+
         }, 2000);
       }, 3000);
     }
   };
 
   const assignRoomAndProceed = () => {
-    // Assign room based on reservation
+    if (!reservationData) return; // Ensure reservation data is available
+
+    // Assign room based on reservation (you might have a more complex logic here)
     const assignment: RoomAssignment = {
-      roomNumber: '501',
-      floor: 5,
+      roomNumber: '501', // This should ideally be dynamically assigned based on room type and availability
+      floor: 5, // Example
       roomType: reservationData.roomType || 'Ocean View King Suite',
-      keyCards: 2,
-      amenities: ['Ocean View', 'King Bed', 'Balcony', 'Mini Bar', 'WiFi', 'Room Service'],
+      keyCards: reservationData.adults > 0 ? reservationData.adults : 2, // Default to 2 key cards or based on adults
+      amenities: ['Ocean View', 'King Bed', 'Balcony', 'Mini Bar', 'WiFi', 'Room Service'], // Example
       checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       checkOutTime: 'Flexible'
     };
-    
+
     setRoomAssignment(assignment);
     setCurrentStep(1);
+    onAIMessage?.(`Room ${assignment.roomNumber} assigned. Please review the check-in summary.`, true);
   };
 
   const completeCheckIn = () => {
     setFormData(prev => ({ ...prev, isProcessing: true }));
-    
-    if (reservationData) {
+
+    if (reservationData && roomAssignment) {
       // Add check-in to store
       dispatch(addCheckIn({
         reservationId: reservationData.id,
-        roomNumber: roomAssignment?.roomNumber || '501',
-        keyCards: roomAssignment?.keyCards || 2
+        roomNumber: roomAssignment.roomNumber,
+        keyCards: roomAssignment.keyCards
       }));
-      
+
+      // Notify parent component about completion
       onProcessCompleted?.({
         guestName: reservationData.guestName,
-        roomNumber: roomAssignment?.roomNumber || '501',
+        roomNumber: roomAssignment.roomNumber,
         roomType: reservationData.roomType,
         confirmationNumber: reservationData.confirmationNumber
       });
+      onAIMessage?.(`Check-in complete for ${reservationData.guestName}. Welcome!`, true);
+    } else {
+      onAIMessage?.("Check-in could not be completed due to missing reservation or room assignment details.", true);
     }
-    
+
     setTimeout(() => {
-      setFormData(prev => ({ 
-        ...prev, 
-        isProcessing: false, 
-        checkInComplete: true 
+      setFormData(prev => ({
+        ...prev,
+        isProcessing: false,
+        checkInComplete: true
       }));
-      
+
       setTimeout(() => {
-        onClose();
+        onClose(); // Close modal after successful check-in
       }, 3000);
     }, 2000);
   };
 
   const handleVoiceProcessed = (result: ProcessedVoiceResponse): void => {
     const voiceResult = result as ProcessedVoiceResponse;
-    
+
     // Send user input and AI response to chatbot
     if (onAIMessage) {
       // Add user message to chatbot
       onAIMessage(`User: "${voiceResult.originalInput || 'Voice input received'}"`, false);
-      
+
       // Add AI response to chatbot
       if (voiceResult.text) {
         onAIMessage(`AI: ${voiceResult.text}`, false);
       }
     }
-    
+
     if (voiceResult.extractedData) {
-      const updates: Partial<{
-        searchQuery: string;
-        cameraActive: boolean;
-        scanningPassport: boolean;
-        passportScanned: boolean;
-        passportVerified: boolean;
-        checkInComplete: boolean;
-        isProcessing: boolean;
-      }> = {};
+      const updates: Partial<typeof formData> = {}; // Use typeof formData for type safety
       const newVoiceFields = new Set(voiceFilledFields);
-      
-      if (voiceResult.extractedData.guestName) {
-        updates.searchQuery = voiceResult.extractedData.guestName;
-        newVoiceFields.add('searchQuery');
-      }
+
+      // Prioritize confirmationNumber, then guestName, then phone for search query
       if (voiceResult.extractedData.confirmationNumber) {
         updates.searchQuery = voiceResult.extractedData.confirmationNumber;
         newVoiceFields.add('searchQuery');
-      }
-      if (voiceResult.extractedData.phone) {
+      } else if (voiceResult.extractedData.guestName) {
+        updates.searchQuery = voiceResult.extractedData.guestName;
+        newVoiceFields.add('searchQuery');
+      } else if (voiceResult.extractedData.phone) {
         updates.searchQuery = voiceResult.extractedData.phone;
         newVoiceFields.add('searchQuery');
       }
-      
+
       if (Object.keys(updates).length > 0) {
         setFormData(prev => ({ ...prev, ...updates }));
         setVoiceFilledFields(newVoiceFields);
-        
+
+        // Automatically trigger search if a query is extracted
         setTimeout(() => {
           handleGuestLookup();
         }, 1000);
@@ -361,13 +404,13 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               <Scanner color="primary" />
               Document Verification
             </Typography>
-            
+
             {!reservationData ? (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   Enter guest name, confirmation number, or mobile number to find reservation.
                 </Typography>
-                
+
                 <Box sx={{ mb: 3, textAlign: 'center' }}>
                   <VoiceInput
                     onVoiceProcessed={handleVoiceProcessed}
@@ -377,7 +420,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                     showTranscript={true}
                   />
                 </Box>
-                
+
                 <TextField
                   fullWidth
                   size={isMobile ? 'small' : 'medium'}
@@ -388,7 +431,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                   sx={getFieldSx('searchQuery')}
                   helperText={isVoiceFilled('searchQuery') ? '✓ Filled by voice' : 'Example: Sunil Karmur or 8128273972'}
                 />
-                
+
                 <Button
                   fullWidth
                   variant="contained"
@@ -402,9 +445,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               </Box>
             ) : (
               <Box>
+                {/* Display found reservation details */}
                 <Alert severity="success" sx={{ mb: 3 }}>
                   <Typography variant="body2">
-                    <strong>Reservation Found!</strong> Guest: {reservationData.guestName}
+                    <strong>Reservation Found!</strong> Guest: {reservationData.guestName} (Confirmation: {reservationData.confirmationNumber})
                   </Typography>
                 </Alert>
 
@@ -413,9 +457,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 </Typography>
 
                 {/* Camera View */}
-                <Paper sx={{ 
-                  position: 'relative', 
-                  mb: 3, 
+                <Paper sx={{
+                  position: 'relative',
+                  mb: 3,
                   borderRadius: 2,
                   overflow: 'hidden',
                   bgcolor: 'black',
@@ -432,7 +476,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                     playsInline
                     muted
                   />
-                  
+
                   {/* Passport Frame Overlay */}
                   <Box sx={{
                     position: 'absolute',
@@ -454,10 +498,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       '100%': { borderColor: 'warning.main' }
                     }
                   }}>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: 'white', 
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'white',
                         textAlign: 'center',
                         bgcolor: 'rgba(0,0,0,0.7)',
                         p: 1,
@@ -467,7 +511,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       {formData.scanningPassport ? 'Scanning...' : 'Position passport here'}
                     </Typography>
                   </Box>
-                  
+
                   {/* Scanning Progress */}
                   {formData.scanningPassport && (
                     <Box sx={{
@@ -490,10 +534,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                     </Box>
                   )}
                 </Paper>
-                
+
                 {/* Camera Controls */}
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid item xs={6}> {/* Changed size prop to item prop */}
                     <Button
                       fullWidth
                       variant="contained"
@@ -505,7 +549,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       {formData.scanningPassport ? 'Scanning...' : 'Scan Passport'}
                     </Button>
                   </Grid>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid item xs={6}> {/* Changed size prop to item prop */}
                     <Button
                       fullWidth
                       variant="outlined"
@@ -519,39 +563,48 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 </Grid>
 
                 {/* Passport Verification Result */}
-                {passportData && formData.passportVerified && (
+                {passportData && (
                   <Fade in={true}>
-                    <Paper sx={{ p: 3, mt: 3, bgcolor: 'success.light' }}>
+                    <Paper sx={{ p: 3, mt: 3, bgcolor: formData.passportVerified ? 'success.light' : 'error.light' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <CheckCircle sx={{ color: 'success.main', fontSize: 32 }} />
-                        <Typography variant="h6" color="success.main">
-                          Identity Verified Successfully!
+                        {formData.passportVerified ? (
+                          <CheckCircle sx={{ color: 'success.main', fontSize: 32 }} />
+                        ) : (
+                          <Close sx={{ color: 'error.main', fontSize: 32 }} />
+                        )}
+                        <Typography variant="h6" color={formData.passportVerified ? 'success.main' : 'error.main'}>
+                          Identity {formData.passportVerified ? 'Verified Successfully!' : 'Verification Failed!'}
                         </Typography>
                       </Box>
                       <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                        <Grid item xs={12} sm={6}>
                           <Typography variant="body2" fontWeight="bold">Name:</Typography>
                           <Typography variant="body2">{passportData.name}</Typography>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                        <Grid item xs={12} sm={6}>
                           <Typography variant="body2" fontWeight="bold">Passport Number:</Typography>
                           <Typography variant="body2">{passportData.passportNumber}</Typography>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                        <Grid item xs={12} sm={6}>
                           <Typography variant="body2" fontWeight="bold">Nationality:</Typography>
                           <Typography variant="body2">{passportData.nationality}</Typography>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                        <Grid item xs={12} sm={6}>
                           <Typography variant="body2" fontWeight="bold">Expiry Date:</Typography>
                           <Typography variant="body2">{passportData.expiryDate}</Typography>
                         </Grid>
                       </Grid>
+                      {!formData.passportVerified && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                          The scanned passport name does not match the reservation. Please verify details or try scanning again.
+                        </Alert>
+                      )}
                     </Paper>
                   </Fade>
                 )}
               </Box>
             )}
-            
+
             <canvas ref={canvasRef} style={{ display: 'none' }} />
           </Box>
         );
@@ -563,7 +616,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               <Hotel color="primary" />
               Check-in Summary
             </Typography>
-            
+
             {formData.isProcessing ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <CircularProgress size={60} sx={{ mb: 2 }} />
@@ -575,24 +628,24 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             ) : formData.checkInComplete ? (
               <Fade in={true}>
                 <Box sx={{ textAlign: 'center' }}>
-                  <Avatar sx={{ 
-                    bgcolor: 'success.main', 
-                    width: { xs: 80, md: 100 }, 
-                    height: { xs: 80, md: 100 }, 
-                    mx: 'auto', 
-                    mb: 3 
+                  <Avatar sx={{
+                    bgcolor: 'success.main',
+                    width: { xs: 80, md: 100 },
+                    height: { xs: 80, md: 100 },
+                    mx: 'auto',
+                    mb: 3
                   }}>
                     <Key sx={{ fontSize: { xs: 40, md: 50 } }} />
                   </Avatar>
-                  
+
                   <Typography variant="h4" color="success.main" gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
                     Welcome to Lagunacreek!
                   </Typography>
-                  
+
                   <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
                     Check-in Complete
                   </Typography>
-                  
+
                   {roomAssignment && (
                     <Paper sx={{ p: 3, mt: 3, bgcolor: 'primary.light', maxWidth: 400, mx: 'auto' }}>
                       <Typography variant="h3" fontWeight="bold" color="primary.main" gutterBottom>
@@ -603,9 +656,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       </Typography>
                     </Paper>
                   )}
-                  
+
                   <Typography variant="body1" color="text.secondary" sx={{ mt: 3 }}>
-                    Enjoy your stay, {reservationData.guestName}!
+                    Enjoy your stay, {reservationData?.guestName || 'Guest'}! {/* Safely access guestName */}
                   </Typography>
                 </Box>
               </Fade>
@@ -615,25 +668,25 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, bgcolor: 'grey.50' }}>
                   <Typography variant="h6" gutterBottom>Guest Information</Typography>
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid item xs={6}>
                       <Typography variant="body2" fontWeight="bold">Guest Name:</Typography>
-                      <Typography variant="body2">{reservationData.guestName}</Typography>
+                      <Typography variant="body2">{reservationData?.guestName}</Typography>
                     </Grid>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid item xs={6}>
                       <Typography variant="body2" fontWeight="bold">Confirmation:</Typography>
-                      <Typography variant="body2">{reservationData.confirmationNumber}</Typography>
+                      <Typography variant="body2">{reservationData?.confirmationNumber}</Typography>
                     </Grid>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid item xs={6}>
                       <Typography variant="body2" fontWeight="bold">Check-in Date:</Typography>
-                      <Typography variant="body2">{reservationData.checkInDate}</Typography>
+                      <Typography variant="body2">{reservationData?.checkInDate}</Typography>
                     </Grid>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid item xs={6}>
                       <Typography variant="body2" fontWeight="bold">Check-out Date:</Typography>
-                      <Typography variant="body2">{reservationData.checkOutDate}</Typography>
+                      <Typography variant="body2">{reservationData?.checkOutDate}</Typography>
                     </Grid>
-                    <Grid size={{ xs: 12 }}>
+                    <Grid item xs={12}>
                       <Typography variant="body2" fontWeight="bold">Phone:</Typography>
-                      <Typography variant="body2">{reservationData.phone}</Typography>
+                      <Typography variant="body2">{reservationData?.phone}</Typography>
                     </Grid>
                   </Grid>
                 </Paper>
@@ -646,28 +699,28 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                         <Typography variant="h4" fontWeight="bold" color="primary.main">
                           Room {roomAssignment.roomNumber}
                         </Typography>
-                        <Chip 
-                          label={`Floor ${roomAssignment.floor}`} 
-                          color="primary" 
+                        <Chip
+                          label={`Floor ${roomAssignment.floor}`}
+                          color="primary"
                           size={isMobile ? 'small' : 'medium'}
                         />
                       </Box>
-                      
+
                       <Typography variant="h6" gutterBottom>
                         {roomAssignment.roomType}
                       </Typography>
-                      
+
                       <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid size={{ xs: 6 }}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" fontWeight="bold">Check-in Time:</Typography>
                           <Typography variant="body2">{roomAssignment.checkInTime}</Typography>
                         </Grid>
-                        <Grid size={{ xs: 6 }}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" fontWeight="bold">Key Cards:</Typography>
                           <Typography variant="body2">{roomAssignment.keyCards} cards</Typography>
                         </Grid>
                       </Grid>
-                      
+
                       <Typography variant="body2" fontWeight="bold" sx={{ mb: 1 }}>
                         Room Amenities:
                       </Typography>
@@ -696,10 +749,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   };
 
   return (
-    <Dialog 
-      open={isOpen} 
-      onClose={onClose} 
-      maxWidth="lg" 
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="lg"
       fullWidth
       fullScreen={isMobile}
       PaperProps={{
@@ -720,8 +773,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           </IconButton>
         </Box>
         <Box sx={{ mt: 2 }}>
-          <Stepper 
-            activeStep={currentStep} 
+          <Stepper
+            activeStep={currentStep}
             alternativeLabel={!isMobile}
             orientation={isMobile ? 'vertical' : 'horizontal'}
             sx={{
@@ -736,9 +789,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               </Step>
             ))}
           </Stepper>
-          <LinearProgress 
-            variant="determinate" 
-            value={(currentStep + 1) / steps.length * 100} 
+          <LinearProgress
+            variant="determinate"
+            value={(currentStep + 1) / steps.length * 100}
             sx={{ mt: 2 }}
           />
         </Box>
@@ -749,8 +802,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
       </DialogContent>
 
       {!formData.checkInComplete && (
-        <DialogActions sx={{ 
-          p: { xs: 2, md: 3 }, 
+        <DialogActions sx={{
+          p: { xs: 2, md: 3 },
           bgcolor: 'grey.50',
           flexDirection: { xs: 'column', sm: 'row' },
           gap: { xs: 1, sm: 0 }

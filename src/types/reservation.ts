@@ -187,6 +187,7 @@ export type IntentType =
   | 'checkout' 
   | 'availability' 
   | 'search_reservation' 
+  | 'reservation_list'
   | 'inquiry' 
   | 'help' 
   | 'error' 
@@ -264,10 +265,10 @@ export interface LanguageConfig {
 }
 
 export interface MultilingualBookingPatterns {
-  reservation: Record<string, string[]>;
-  checkin: Record<string, string[]>;
-  checkout: Record<string, string[]>;
-  availability: Record<string, string[]>;
+  reservation: { [key: string]: string[] };
+  checkin: { [key: string]: string[] };
+  checkout: { [key: string]: string[] };
+  availability: { [key: string]: string[] };
 }
 
 // Utility type for converting dayjs to string
