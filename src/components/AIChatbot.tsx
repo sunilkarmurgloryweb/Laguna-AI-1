@@ -6,6 +6,7 @@ import {
   useMediaQuery
 } from '@mui/material';
 import { multilingualAI } from '../services/multilingualAIService';
+import { languageConfigs } from '../services/multilingualAIService';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useChatLogic } from '../hooks/useChatLogic';
 import {
@@ -79,7 +80,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     stopListening,
     resetTranscript
   } = useSpeechRecognition(
-    multilingualAI.getSpeechRecognitionLanguage(),
+    languageConfigs[currentLanguage]?.speechCode || 'en-US',
     false,
     true
   );
@@ -266,7 +267,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           currentLanguage={currentLanguage}
           isListening={isListening}
           isSpeechEnabled={isSpeechEnabled}
-          availableLanguages={multilingualAI.getAvailableLanguages()}
+          availableLanguages={availableLanguages}
           onLanguageChange={handleLanguageChange}
           onToggleSpeech={toggleSpeech}
           onMinimize={!isMobile ? () => setIsMinimized(true) : undefined}
