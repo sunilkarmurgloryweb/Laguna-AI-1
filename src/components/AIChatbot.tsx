@@ -2,56 +2,22 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
-  Typography,
-  TextField,
-  IconButton,
-  Avatar,
-  Chip,
-  CircularProgress,
-  Fade,
-  Tooltip,
   useTheme,
-  useMediaQuery,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel
+  useMediaQuery
 } from '@mui/material';
-import {
-  Send as SendIcon,
-  Mic as MicIcon,
-  MicOff as MicOffIcon,
-  VolumeUp as VolumeUpIcon,
-  VolumeOff as VolumeOffIcon,
-  Chat as ChatIcon,
-  Close as CloseIcon,
-  Psychology as AIIcon,
-  Person as PersonIcon,
-  Language as LanguageIcon
-} from '@mui/icons-material';
-import { useSendMessageMutation } from '../store/api/geminiApi';
 import { multilingualAI } from '../services/multilingualAIService';
-import { languageConfigs, LanguageConfig } from '../services/multilingualAIService';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useChatLogic } from '../hooks/useChatLogic';
 import {
-  ChatMessage,
   ModalType,
-  IntentType,
-  VoiceProcessedData,
-  ProcessedVoiceResponse
+  VoiceProcessedData
 } from '../types/reservation';
-import ProcessCompletionMessage from './ProcessCompletionMessage';
+import ChatHeader from './ChatHeader';
+import ChatMessages from './ChatMessages';
+import ChatInput from './ChatInput';
+import MinimizedChatButton from './MinimizedChatButton';
 import SpeechCaption from './SpeechCaption';
 import ReservationPreview from './ReservationPreview';
-import { useAppDispatch } from '../hooks/useAppDispatch';
-import { useAppSelector } from '../hooks/useAppSelector';
-import { addReservation, selectAllReservations, selectReservationsByGuest, selectReservationsByPhone, selectReservationByConfirmation } from '../store/slices/mockDataSlice';
-import { getDefaultCheckInDate, getDefaultCheckOutDate, getCurrentMonthYear } from '../utils/dateUtils';
-
-type Message = ChatMessage & {
-  isUser: boolean;
-  text: string;
-};
 
 interface AIChatbotProps {
   onOpenModal?: (modalType: ModalType, data?: VoiceProcessedData) => void;
@@ -73,21 +39,34 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [detectedLanguage, setDetectedLanguage] = useState('en');
-  const [showReservationPreview, setShowReservationPreview] = useState(false);
-  const [previewReservationData, setPreviewReservationData] = useState<any>(null);
   const [currentSpeechText, setCurrentSpeechText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [sendMessage, { isLoading: isProcessing }] = useSendMessageMutation();
-  const dispatch = useAppDispatch();
-  const allReservations = useAppSelector(selectAllReservations);
+
+  // Use chat logic hook
+  const {
+    messages,
+    isProcessing,
+    showReservationPreview,
+    previewReservationData,
+    handleSendMessage: chatHandleSendMessage,
+    handleConfirmReservation,
+    addMessage,
+    addProcessCompletionMessage,
+    setShowReservationPreview,
+    setPreviewReservationData
+  } = useChatLogic({
+    context,
+    currentLanguage,
+    isSpeechEnabled,
+    onOpenModal
+  });
 
   // Speech recognition hook with dynamic language
   const {
@@ -100,31 +79,10 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     stopListening,
     resetTranscript
   } = useSpeechRecognition(
-    languageConfigs[currentLanguage]?.speechCode || 'en-US',
+    multilingualAI.getSpeechRecognitionLanguage(),
     false,
     true
   );
-
-  // Initialize with welcome message in current language
-  useEffect(() => {
-    const welcomeMessage: Message = {
-      id: '1',
-      role: 'assistant' as const,
-      content: multilingualAI.getGreeting('welcome'),
-      text: multilingualAI.getGreeting('welcome'),
-      timestamp: new Date(),
-      language: currentLanguage,
-      isUser: false,
-    };
-    setMessages([welcomeMessage]);
-
-    // Speak welcome message
-    if (isSpeechEnabled) {
-      setTimeout(() => {
-        speakMessage(welcomeMessage.text, currentLanguage);
-      }, 1000);
-    }
-  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -157,23 +115,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   useEffect(() => {
     if (onReceiveMessage) {
       onReceiveMessage((message: string, shouldSpeak: boolean = true) => {
-        const aiMessage: Message = {
-          id: Date.now().toString(),
-          role: 'assistant' as const,
-          content: message,
-          text: message,
-          timestamp: new Date(),
-          language: currentLanguage,
-          isUser: false,
-        };
-        setMessages(prev => [...prev, aiMessage]);
+        addMessage(message, shouldSpeak);
 
         if (shouldSpeak && isSpeechEnabled) {
           speakMessage(message, currentLanguage);
         }
       });
     }
-  }, [onReceiveMessage, isSpeechEnabled, currentLanguage]);
+  }, [onReceiveMessage, isSpeechEnabled, currentLanguage, addMessage]);
 
   // Speech synthesis function with language support
   const speakMessage = useCallback(async (text: string, language: string = currentLanguage) => {
@@ -215,401 +164,45 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
   useEffect(() => {
     if (processCompleteData) {
-      const completionMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: 'Process completed successfully',
-        text: multilingualAI.getResponse('bookingConfirmed', {}, currentLanguage),
-        timestamp: new Date(),
-        language: currentLanguage,
-        isProcessCompletion: true,
-        processType: processCompleteData.modelType as 'reservation' | 'checkin' | 'checkout',
-        confirmationData: processCompleteData.condfirmationData
-      } as any;
-
-      setMessages((prev) => [...prev, completionMessage]);
+      addProcessCompletionMessage(
+        processCompleteData.modelType as 'reservation' | 'checkin' | 'checkout',
+        processCompleteData.condfirmationData
+      );
 
       if (isSpeechEnabled) {
         setTimeout(() => {
-          speakMessage(completionMessage.text, currentLanguage);
+          speakMessage(multilingualAI.getResponse('bookingConfirmed', {}, currentLanguage), currentLanguage);
         }, 300);
       }
     }
-  }, [processCompleteData, currentLanguage, isSpeechEnabled, speakMessage]);
+  }, [processCompleteData, currentLanguage, isSpeechEnabled, speakMessage, addProcessCompletionMessage]);
 
   // Handle language change
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
     multilingualAI.setLanguage(language);
 
-    // Add language change notification
-    const changeMessage: Message = {
-      id: Date.now().toString(),
-      role: 'assistant' as const,
-      content: multilingualAI.getResponse('help', {}, language),
-      text: multilingualAI.getResponse('help', {}, language),
-      timestamp: new Date(),
-      language: language,
-      isUser: false
-    };
-    setMessages(prev => [...prev, changeMessage]);
+    addMessage(multilingualAI.getResponse('help', {}, language));
 
     // Speak in new language
     if (isSpeechEnabled) {
       setTimeout(() => {
-        speakMessage(changeMessage.text, language);
+        speakMessage(multilingualAI.getResponse('help', {}, language), language);
       }, 500);
     }
   };
 
-  // Detect intent and open appropriate modal
-  const detectIntentAndOpenModal = useCallback((intent: IntentType, extractedData: VoiceProcessedData, language: string) => {
-    if (!onOpenModal) return;
-
-    console.log('🎯 Intent detected:', intent, 'Data:', extractedData);
-
-    // Handle reservation search
-    if (intent === 'search_reservation') {
-      handleReservationSearch(extractedData);
-      return;
-    }
-
-    const modalMappings: Record<IntentType, ModalType | null> = {
-      'reservation': 'reservation',
-      'checkin': 'checkin',
-      'checkout': 'checkout',
-      'availability': 'availability',
-      'search_reservation': null,
-      'inquiry': null,
-      'help': null,
-      'error': null,
-      'unknown': null
-    };
-
-    const modalType = modalMappings[intent];
-    if (modalType) {
-      // Add language context to extracted data
-      const dataWithLanguage: VoiceProcessedData = {
-        ...extractedData,
-      };
-
-      // Show user which modal is opening
-      const modalMessages: Record<ModalType, string> = {
-        'reservation': 'Opening reservation form...',
-        'checkin': 'Opening check-in process...',
-        'checkout': 'Opening check-out process...',
-        'availability': 'Opening room availability calendar...'
-      };
-
-      const modalMessage: Message = {
-        id: Date.now().toString() + '_modal',
-        role: 'assistant' as const,
-        content: modalMessages[modalType] || 'Opening requested service...',
-        text: modalMessages[modalType] || 'Opening requested service...',
-        timestamp: new Date(),
-        language: language,
-        isUser: false,
-      };
-
-      setMessages(prev => [...prev, modalMessage]);
-
-      // Open modal immediately for better user experience
-      console.log('🚀 Opening modal:', modalType, 'with data:', dataWithLanguage);
-      onOpenModal(modalType, dataWithLanguage);
-    }
-  }, [onOpenModal]);
-
-  // Handle reservation search
-  const handleReservationSearch = (extractedData: VoiceProcessedData) => {
-    let foundReservations: any[] = [];
-
-    if (extractedData.confirmationNumber) {
-      const reservation = selectReservationByConfirmation({ mockData: { reservations: allReservations, checkIns: [], checkOuts: [], roomAvailability: {} } }, extractedData.confirmationNumber);
-      if (reservation) foundReservations = [reservation];
-    } else if (extractedData.guestName) {
-      foundReservations = selectReservationsByGuest({ mockData: { reservations: allReservations, checkIns: [], checkOuts: [], roomAvailability: {} } }, extractedData.guestName);
-    } else if (extractedData.phone) {
-      foundReservations = selectReservationsByPhone({ mockData: { reservations: allReservations, checkIns: [], checkOuts: [], roomAvailability: {} } }, extractedData.phone);
-    }
-
-    let responseText = '';
-    if (foundReservations.length > 0) {
-      const reservation = foundReservations[0];
-      responseText = `Found reservation for ${reservation.guestName}. Confirmation: ${reservation.confirmationNumber}, Room: ${reservation.roomType}, Check-in: ${reservation.checkIn}, Status: ${reservation.status}`;
-    } else {
-      responseText = 'No reservations found with the provided information. Please check your confirmation number or contact details.';
-    }
-
-    const searchMessage: Message = {
-      id: Date.now().toString(),
-      role: 'assistant' as const,
-      content: responseText,
-      text: responseText,
-      timestamp: new Date(),
-      language: currentLanguage,
-      isUser: false,
-    };
-
-    setMessages(prev => [...prev, searchMessage]);
-
-    if (isSpeechEnabled) {
-      speakMessage(responseText, currentLanguage);
-    }
-  };
-
-  // Enhanced date processing with current month/year defaults
-  const processDateWithDefaults = (extractedData: VoiceProcessedData) => {
-    const currentDate = getCurrentMonthYear();
-    const processedData = { ...extractedData };
-
-    // If no check-in date provided, use tomorrow
-    if (!processedData.checkIn) {
-      processedData.checkIn = getDefaultCheckInDate();
-    }
-
-    // If no check-out date provided, use day after check-in
-    if (!processedData.checkOut) {
-      processedData.checkOut = getDefaultCheckOutDate();
-    }
-
-    return processedData;
-  };
-
-  // Handle reservation preview and confirmation
-  const handleReservationIntent = (extractedData: VoiceProcessedData, responseText: string) => {
-    const processedData = processDateWithDefaults(extractedData);
-
-    // Check if we have enough data for a preview
-    const hasMinimumData = processedData.checkIn && processedData.checkOut &&
-      processedData.adults && processedData.roomType &&
-      processedData.guestName && processedData.phone &&
-      processedData.email && processedData.paymentMethod;
-
-    if (hasMinimumData) {
-      // Show preview instead of opening modal directly
-      const reservationData = {
-        checkIn: processedData.checkIn as string,
-        checkOut: processedData.checkOut as string,
-        adults: processedData.adults as number,
-        children: processedData.children || 0,
-        roomType: processedData.roomType as string,
-        roomPrice: getRoomPrice(processedData.roomType as string),
-        guestName: processedData.guestName as string,
-        phone: processedData.phone as string,
-        email: processedData.email as string,
-        paymentMethod: processedData.paymentMethod as string,
-        hotel: 'Laguna Creek Downtown'
-      };
-
-      setPreviewReservationData(reservationData);
-      setShowReservationPreview(true);
-
-      const previewMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant' as const,
-        content: 'I have all the information needed for your reservation. Please review the details and confirm.',
-        text: 'I have all the information needed for your reservation. Please review the details and confirm.',
-        timestamp: new Date(),
-        language: currentLanguage,
-        isUser: false,
-      };
-
-      setMessages(prev => [...prev, previewMessage]);
-
-      if (isSpeechEnabled) {
-        setTimeout(() => {
-          speakMessage('Please review your reservation details and confirm to proceed.', currentLanguage);
-        }, 500);
-      }
-    } else {
-      // Open modal for data collection
-      detectIntentAndOpenModal('reservation', processedData, currentLanguage);
-    }
-  };
-
-  // Get room price helper
-  const getRoomPrice = (roomType: string): number => {
-    const roomPrices: Record<string, number> = {
-      'Ocean View King Suite': 299,
-      'Deluxe Garden Room': 199,
-      'Family Oceanfront Suite': 399,
-      'Presidential Suite': 599,
-      'Standard Double Room': 149,
-      'Luxury Spa Suite': 449
-    };
-    return roomPrices[roomType] || 199;
-  };
-
-  // Confirm reservation from preview
-  const handleConfirmReservation = () => {
-    if (previewReservationData) {
-      dispatch(addReservation(previewReservationData));
-
-      const confirmationMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant' as const,
-        content: `Reservation confirmed! Your confirmation number is ${generateConfirmationNumber()}. You will receive an email confirmation shortly.`,
-        text: `Reservation confirmed! Your confirmation number is ${generateConfirmationNumber()}. You will receive an email confirmation shortly.`,
-        timestamp: new Date(),
-        language: currentLanguage,
-        isUser: false,
-      };
-
-      setMessages(prev => [...prev, confirmationMessage]);
-      setShowReservationPreview(false);
-      setPreviewReservationData(null);
-
-      if (isSpeechEnabled) {
-        setTimeout(() => {
-          speakMessage('Your reservation has been confirmed successfully!', currentLanguage);
-        }, 500);
-      }
-    }
-  };
-
-  // Generate confirmation number
-  const generateConfirmationNumber = () => {
-    return 'LG' + Math.random().toString(36).substr(2, 8).toUpperCase();
-  };
-
-  async function listenForSpeech(lang: string = 'en-US'): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-      if (!SpeechRecognition) {
-        return reject(new Error("Speech Recognition API is not supported in this browser."));
-      }
-
-      const recognition: SpeechRecognition = new SpeechRecognition();
-      recognition.lang = lang;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        const transcript: string = event.results[0][0].transcript.trim().toLowerCase();
-        resolve(transcript);
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        reject(new Error(`Speech recognition error: ${event.error}`));
-      };
-
-      recognition.start();
-    });
-  }
-
-  // Main flow: speak a message, ask to confirm, listen for "yes", and proceed
-  async function confirmAndContinue(responseText: string, messageLang: string = 'en-US'): Promise<boolean> {
-    if (!isSpeechEnabled) return false;
-    await speakMessage("Do you want to continue?", messageLang);
-    startListening()
-    return true;
-  }
-
-
-
-  // Enhanced message processing with language detection
+  // Handle sending message
   const handleSendMessage = async (text?: string, detectedLang?: string) => {
     const messageText = text || inputText.trim();
-    if (!messageText || isProcessing) return;
+    if (!messageText) return;
 
-    const messageLang = detectedLang || currentLanguage;
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user' as const,
-      content: messageText,
-      text: messageText,
-      timestamp: new Date(),
-      language: messageLang,
-      isUser: true,
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const responseText = await chatHandleSendMessage(messageText, detectedLang);
     setInputText('');
 
-    try {
-      // Send to Gemini AI with language context
-      const result = await sendMessage({
-        message: messageText,
-        context: `${context}_${messageLang}`,
-        currentFormData: { language: messageLang }
-      }).unwrap();
-      const { response } = result;
-      console.log(response, "response");
-
-      // Generate response in detected/current language  
-      let responseText = response.text;
-
-      // If language was auto-detected and different, acknowledge it
-      if (detectedLang && detectedLang !== currentLanguage) {
-        const langInfo = multilingualAI.getLanguageInfo(detectedLang);
-        responseText = `${langInfo.flag} ${responseText}`;
-      }
-
-
-      // Add AI response message
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant' as const,
-        content: responseText,
-        text: responseText,
-        timestamp: new Date(),
-        extractedData: response.extractedData,
-        intent: response.intent,
-        language: messageLang,
-        isUser: false,
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
-      // // Speak AI response in appropriate language
-      if (isSpeechEnabled) {
-        const speakResp = await speakMessage(responseText, messageLang);
-        console.log(speakResp, "resp");
-      }
-
-      // Handle modal opening based on intent
-      switch (response.intent) {
-        case 'reservation':
-          handleReservationIntent(response.extractedData, responseText);
-          break;
-        case 'checkin':
-          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
-          break;
-        case 'checkout':
-          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
-          break;
-        case 'availability':
-          detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
-          break;
-        case 'search_reservation':
-          handleReservationSearch(response.extractedData);
-          break;
-        default:
-          break;
-      }
-
-    } catch (error) {
-      console.error('Error processing message:', error);
-
-      const errorText = multilingualAI.getResponse('error', {}, messageLang);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant' as const,
-        content: errorText,
-        text: errorText,
-        timestamp: new Date(),
-        language: messageLang,
-        isUser: false,
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-
-      if (isSpeechEnabled) {
-        speakMessage(errorText, messageLang);
-      }
+    // Speak AI response if enabled
+    if (isSpeechEnabled && responseText) {
+      await speakMessage(responseText, detectedLang || currentLanguage);
     }
   };
 
@@ -646,36 +239,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
   // Minimized view
   if (isMinimized) {
-    return (
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: { xs: 16, md: 24 },
-          right: { xs: 16, md: 24 },
-          zIndex: 1000
-        }}
-      >
-        <Tooltip title="Open AI Assistant">
-          <IconButton
-            onClick={() => setIsMinimized(false)}
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              width: { xs: 56, md: 64 },
-              height: { xs: 56, md: 64 },
-              '&:hover': {
-                bgcolor: 'primary.dark',
-                transform: 'scale(1.1)'
-              },
-              transition: 'all 0.2s',
-              boxShadow: 3
-            }}
-          >
-            <ChatIcon sx={{ fontSize: { xs: 24, md: 28 } }} />
-          </IconButton>
-        </Tooltip>
-      </Box>
-    );
+    return <MinimizedChatButton onExpand={() => setIsMinimized(false)} />;
   }
 
   // Full chatbot interface
@@ -698,317 +262,38 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           overflow: 'hidden'
         }}
       >
-        {/* Header */}
-        <Box
-          sx={{
-            background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
-            color: 'white',
-            p: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 32, height: 32 }}>
-              <AIIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle1" fontWeight="bold">
-                AI Assistant
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                {languageConfigs[currentLanguage]?.flag} {languageConfigs[currentLanguage]?.name} • Powered by Gemini AI
-              </Typography>
-            </Box>
-          </Box>
+        <ChatHeader
+          currentLanguage={currentLanguage}
+          isListening={isListening}
+          isSpeechEnabled={isSpeechEnabled}
+          availableLanguages={multilingualAI.getAvailableLanguages()}
+          onLanguageChange={handleLanguageChange}
+          onToggleSpeech={toggleSpeech}
+          onMinimize={!isMobile ? () => setIsMinimized(true) : undefined}
+        />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Language Selector */}
-            <FormControl size="small" sx={{ minWidth: 80 }}>
-              <Select
-                value={currentLanguage}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                sx={{
-                  color: 'white',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)'
-                  },
-                  '& .MuiSvgIcon-root': {
-                    color: 'white'
-                  }
-                }}
-              >
-                {availableLanguages.map((lang) => (
-                  <MenuItem key={lang.code} value={lang.code}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography>{lang.flag}</Typography>
-                      <Typography variant="caption">{lang.code.toUpperCase()}</Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        <ChatMessages
+          messages={messages}
+          isProcessing={isProcessing}
+          transcript={transcript}
+          detectedLanguage={detectedLanguage}
+          currentLanguage={currentLanguage}
+          messagesEndRef={messagesEndRef}
+        />
 
-            {/* Speech Status */}
-            {isListening && (
-              <Chip
-                label="Listening..."
-                size="small"
-                sx={{
-                  bgcolor: 'error.main',
-                  color: 'white',
-                  animation: 'pulse 1.5s infinite'
-                }}
-              />
-            )}
-
-            {/* Speech Toggle */}
-            <Tooltip title={isSpeechEnabled ? 'Disable Speech' : 'Enable Speech'}>
-              <IconButton onClick={toggleSpeech} sx={{ color: 'white' }}>
-                {isSpeechEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
-              </IconButton>
-            </Tooltip>
-
-            {/* Minimize Button */}
-            {!isMobile && (
-              <Tooltip title="Minimize">
-                <IconButton onClick={() => setIsMinimized(true)} sx={{ color: 'white' }}>
-                  <CloseIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        </Box>
-
-        {/* Messages Area */}
-        <Box
-          sx={{
-            flex: 1,
-            overflow: 'auto',
-            p: 2,
-            bgcolor: 'grey.50',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2
-          }}
-        >
-          {messages.map((message) => (
-            <Fade in={true} key={message.id}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                  alignItems: 'flex-start',
-                  gap: 1
-                }}
-              >
-                {message.role === 'assistant' && (
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                    <AIIcon sx={{ fontSize: 18 }} />
-                  </Avatar>
-                )}
-
-                <Paper
-                  elevation={1}
-                  sx={{
-                    maxWidth: '75%',
-                    p: 2,
-                    bgcolor: message.role === 'user' ? 'primary.main' : 'white',
-                    color: message.role === 'user' ? 'white' : 'text.primary',
-                    borderRadius: 2,
-                    borderTopLeftRadius: message.role === 'user' ? 2 : 0.5,
-                    borderTopRightRadius: message.role === 'user' ? 0.5 : 2
-                  }}
-                >
-                  {/* Process Completion Message */}
-                  {message.role === 'assistant' && (message as any).isProcessCompletion && (
-                    <ProcessCompletionMessage
-                      processType={(message as any).processType}
-                      confirmationData={(message as any).confirmationData}
-                      timestamp={message.timestamp}
-                      language={message.language || currentLanguage}
-                    />
-                  )}
-
-                  {/* Regular Message */}
-                  {!(message as any).isProcessCompletion && (
-                    <>
-                      {/* Language indicator for messages */}
-                      {message.language && message.language !== 'en' && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                          <LanguageIcon sx={{ fontSize: 14 }} />
-                          <Typography variant="caption">
-                            {languageConfigs[message.language]?.flag} {languageConfigs[message.language]?.name}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                        {message.text}
-                      </Typography>
-
-                      {/* Show extracted data for AI messages */}
-                      {message.role === 'assistant' && message.extractedData && Object.keys(message.extractedData).length > 0 && (
-                        <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {Object.entries(message.extractedData).map(([key, value]) => (
-                            <Chip
-                              key={key}
-                              label={`${key}: ${value}`}
-                              size="small"
-                              variant="outlined"
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                          ))}
-                        </Box>
-                      )}
-
-                      <Typography variant="caption" sx={{
-                        display: 'block',
-                        mt: 0.5,
-                        opacity: 0.7,
-                        fontSize: '0.7rem'
-                      }}>
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </Typography>
-                    </>
-                  )}
-                </Paper>
-
-                {message.role === 'user' && (
-                  <Avatar sx={{ bgcolor: 'grey.400', width: 32, height: 32 }}>
-                    <PersonIcon sx={{ fontSize: 18 }} />
-                  </Avatar>
-                )}
-              </Box>
-            </Fade>
-          ))}
-
-          {/* Processing Indicator */}
-          {isProcessing && (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                <AIIcon sx={{ fontSize: 18 }} />
-              </Avatar>
-              <Paper elevation={1} sx={{ p: 2, borderRadius: 2, borderTopLeftRadius: 0.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={16} />
-                  <Typography variant="body2" color="text.secondary">
-                    AI is thinking...
-                  </Typography>
-                </Box>
-              </Paper>
-            </Box>
-          )}
-
-          {/* Current transcript display */}
-          {transcript && (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Paper
-                elevation={1}
-                sx={{
-                  maxWidth: '75%',
-                  p: 2,
-                  bgcolor: 'primary.light',
-                  color: 'primary.contrastText',
-                  borderRadius: 2,
-                  borderTopRightRadius: 0.5,
-                  opacity: 0.8
-                }}
-              >
-                <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                  {transcript}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  {languageConfigs[detectedLanguage]?.flag} Speaking...
-                </Typography>
-              </Paper>
-            </Box>
-          )}
-
-          <div ref={messagesEndRef} />
-        </Box>
-
-        {/* Input Area */}
-        <Box
-          sx={{
-            p: 2,
-            bgcolor: 'white',
-            borderTop: 1,
-            borderColor: 'divider',
-            display: 'flex',
-            alignItems: 'flex-end',
-            gap: 1
-          }}
-        >
-          <TextField
-            fullWidth
-            multiline
-            maxRows={3}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={`Type your message in any language or use voice...`}
-            disabled={isProcessing || isListening}
-            variant="outlined"
-            size="small"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3
-              }
-            }}
-          />
-
-          {/* Voice Input Button */}
-          {speechSupported && (
-            <Tooltip title={isListening ? 'Stop Listening' : 'Start Voice Input'}>
-              <IconButton
-                onClick={toggleVoiceInput}
-                disabled={isProcessing}
-                sx={{
-                  bgcolor: isListening ? 'error.main' : 'grey.100',
-                  color: isListening ? 'white' : 'grey.600',
-                  '&:hover': {
-                    bgcolor: isListening ? 'error.dark' : 'grey.200'
-                  },
-                  animation: isListening ? 'pulse 1.5s infinite' : 'none'
-                }}
-              >
-                {isListening ? <MicOffIcon /> : <MicIcon />}
-              </IconButton>
-            </Tooltip>
-          )}
-
-          {/* Send Button */}
-          <Tooltip title="Send Message">
-            <IconButton
-              onClick={() => handleSendMessage()}
-              disabled={isProcessing || !inputText.trim()}
-              sx={{
-                bgcolor: 'primary.main',
-                color: 'white',
-                '&:hover': {
-                  bgcolor: 'primary.dark'
-                },
-                '&.Mui-disabled': {
-                  bgcolor: 'grey.300'
-                }
-              }}
-            >
-              <SendIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-
-        {/* Speech Error Display */}
-        {speechError && (
-          <Box sx={{ p: 1, bgcolor: 'error.light', color: 'error.contrastText' }}>
-            <Typography variant="caption">
-              Speech Error: {speechError}
-            </Typography>
-          </Box>
-        )}
+        <ChatInput
+          inputText={inputText}
+          isProcessing={isProcessing}
+          isListening={isListening}
+          speechSupported={speechSupported}
+          speechError={speechError}
+          onInputChange={setInputText}
+          onSendMessage={() => handleSendMessage()}
+          onToggleVoiceInput={toggleVoiceInput}
+          onKeyPress={handleKeyPress}
+        />
       </Paper>
+      
       {/* Speech Caption */}
       <SpeechCaption
         isVisible={isSpeaking && currentSpeechText.length > 0}
@@ -1031,7 +316,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
         />
       )}
     </>
-
   );
 }
 
