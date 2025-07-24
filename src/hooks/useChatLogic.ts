@@ -70,7 +70,7 @@ export const useChatLogic = ({
       isUser: false,
     };
     setMessages([welcomeMessage]);
-    speakMessage(welcomeText, currentLanguage);
+    // speakMessage(welcomeText, currentLanguage);
   }, [currentLanguage, speakMessage]);
 
   const handleReservationSearch = useCallback((data: VoiceProcessedData) => {
@@ -345,8 +345,6 @@ export const useChatLogic = ({
         currentFormData: { language: lang }
       }).unwrap();
       let respText = response.text;
-      console.log(respText, "respText");
-      
       if (detectedLang && detectedLang !== currentLanguage) {
         respText = `${multilingualAI.getLanguageInfo(detectedLang).flag} ${respText}`;
       }
@@ -364,7 +362,6 @@ export const useChatLogic = ({
       };
       setMessages(prev => [...prev, aiMsg]);
       speakMessage(respText, lang);
-      console.log(response.extractedData, "response.extractedData");
 
       switch (response.intent) {
         case 'reservation':

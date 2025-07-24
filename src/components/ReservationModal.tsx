@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -44,6 +44,10 @@ import {
   VoiceProcessedData,
 } from "../types/reservation";
 import { FormDataWithDayjs, ConvertDayjsToString } from "../types/reservation";
+import { useLazyGetAvailabilityQuery } from "../store/api/otaReservationApi";
+import moment from "moment";
+import { useAuth } from "../hooks/useAuth";
+import { AvailabilityItem, RoomTypeItem } from "../types/otaReservationApi";
 
 interface ReservationModalProps {
   isOpen?: boolean;
@@ -65,8 +69,10 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const dispatch = useAppDispatch();
+  const [getAvailability, { isLoading }] = useLazyGetAvailabilityQuery()
 
   const [currentStep, setCurrentStep] = useState(0);
+  const [roomTypes, setRoomTypes] = useState<AvailabilityItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(
     new Set()
@@ -77,7 +83,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     checkOut: initialData.checkOut ? dayjs(initialData.checkOut as string) : dayjs(getDefaultCheckOutDate()),
     adults: initialData.adults || 1,
     children: initialData.children || 0,
-    roomType: initialData.roomType || "",
+    roomType: initialData.matchedRoomType?.id || 1,
     guestName: initialData.guestName || "",
     phone: initialData.phone || "",
     email: initialData.email || "",
@@ -92,38 +98,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     "Confirmation",
   ];
 
-  const roomTypes = [
-    {
-      name: "Ocean View King Suite",
-      price: 299,
-      description: "Luxurious suite with panoramic ocean views",
-    },
-    {
-      name: "Deluxe Garden Room",
-      price: 199,
-      description: "Comfortable room overlooking beautiful gardens",
-    },
-    {
-      name: "Family Oceanfront Suite",
-      price: 399,
-      description: "Spacious suite perfect for families",
-    },
-    {
-      name: "Presidential Suite",
-      price: 599,
-      description: "Ultimate luxury with premium amenities",
-    },
-    {
-      name: "Standard Double Room",
-      price: 149,
-      description: "Comfortable standard accommodation",
-    },
-    {
-      name: "Luxury Spa Suite",
-      price: 449,
-      description: "Relaxation suite with spa amenities",
-    },
-  ];
+
 
   const paymentMethods = [
     { id: "credit-card", name: "Credit Card" },
@@ -131,9 +106,25 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
     { id: "upi", name: "UPI or Digital Wallet" },
   ];
 
+  const fetchRoomAvailability = useCallback(async () => {
+    if (initialData) {
+      const response = await getAvailability({
+        start_date: moment(initialData.checkIn).format("YYYY-MM-DD"),
+        end_date: moment(initialData.checkOut).format("YYYY-MM-DD"),
+        number_of_guests: initialData?.adults ?? 1,
+        property_id: initialData.matchedProperty?.id ?? 1
+      })
+
+      setRoomTypes(response.data?.availability ?? [])
+
+    }
+
+  }, [initialData])
+
   // Initialize form with initial data
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
+      fetchRoomAvailability()
       const newVoiceFields = new Set<string>();
       const updates: Partial<FormDataWithDayjs> = {};
 
@@ -154,7 +145,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
         newVoiceFields.add("children");
       }
       if (initialData.roomType) {
-        updates.roomType = initialData.roomType;
+        updates.roomType = initialData.matchedRoomType?.id;
         newVoiceFields.add("roomType");
       }
       if (initialData.guestName) {
@@ -180,9 +171,9 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   }, [initialData]);
 
   useEffect(() => {
-  setLastUpdatedByVoice(false);
+    setLastUpdatedByVoice(false);
     validateAndAdvanceToNextStep();
-}, [formData]);
+  }, [formData]);
 
 
   const validateAndAdvanceToNextStep = () => {
@@ -370,7 +361,15 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
   });
 
   const getSelectedRoom = () => {
-    return roomTypes.find((room) => room.name === formData.roomType);
+    return roomTypes.find((room) => room.room_type_id === formData.roomType);
+  };
+
+  const getDisplayPrice = (room: AvailabilityItem): string => {
+    const dates = Object.keys(room.pricing).sort(); // Sort to get the earliest date
+    if (dates.length > 0) {
+      return room.pricing[dates[0]];
+    }
+    return 'N/A'; // Or handle as an error/default
   };
 
   const calculateTotal = () => {
@@ -520,17 +519,17 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
 
             <Grid container spacing={2}>
               {roomTypes.map((room) => (
-                <Grid size={{ xs: 12, sm: 6 }} key={room.name}>
+                <Grid item xs={12} sm={6} key={room.room_type_id}>
                   <Card
                     sx={{
                       cursor: "pointer",
-                      border: formData.roomType === room.name ? 2 : 1,
+                      border: formData.roomType === room.room_type_id ? 2 : 1,
                       borderColor:
-                        formData.roomType === room.name
+                        formData.roomType === room.room_type_id
                           ? "primary.main"
                           : "divider",
                       bgcolor:
-                        formData.roomType === room.name
+                        formData.roomType === room.room_type_id
                           ? "primary.light"
                           : "background.paper",
                       "&:hover": {
@@ -539,14 +538,15 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                         boxShadow: 2,
                       },
                       transition: "all 0.2s",
+                      height: '100%' // Ensure cards are same height if content varies
                     }}
                     onClick={() =>
-                      setFormData({ ...formData, roomType: room.name })
+                      setFormData({ ...formData, roomType: room.room_type_id })
                     }
                   >
                     <CardContent>
                       <Typography variant="h6" fontWeight="bold" gutterBottom>
-                        {room.name}
+                        {room.room_type.name} {/* Access name from room_type object */}
                       </Typography>
                       <Typography
                         variant="h4"
@@ -554,7 +554,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                         fontWeight="bold"
                         gutterBottom
                       >
-                        ${room.price}
+                        ${getDisplayPrice(room)} {/* Use the helper function for price */}
                         <Typography
                           component="span"
                           variant="body2"
@@ -563,10 +563,10 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                           /night
                         </Typography>
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {room.description}
+                      <Typography variant="body2" color="text.secondary" sx={{ minHeight: '40px' /* prevent layout shift if no desc */ }}>
+                        {room.room_type.type_description} {/* Access description from room_type object */}
                       </Typography>
-                      {formData.roomType === room.name && (
+                      {formData.roomType === room.room_type_id && ( // Consistent comparison with ID
                         <Chip
                           label="Selected"
                           color="primary"
@@ -574,6 +574,11 @@ const ReservationModal: React.FC<ReservationModalProps> = ({
                           sx={{ mt: 1 }}
                         />
                       )}
+                      <Box mt={2}>
+                        <Typography variant="caption" color="text.secondary">
+                          Available: {room.rooms_available}
+                        </Typography>
+                      </Box>
                     </CardContent>
                   </Card>
                 </Grid>

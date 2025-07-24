@@ -1,33 +1,24 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { geminiService } from '../../services/geminiService';
-import { GeminiResponse, ChatMessage, VoiceProcessedData } from '../../types/reservation';
-
-export interface SendMessageRequest {
-  message: string;
-  currentFormData?: VoiceProcessedData;
-  context?: string;
-}
-
-export interface SendMessageResponse {
-  response: GeminiResponse;
-  chatMessage: ChatMessage;
-}
+import { ChatMessage } from '../../types/reservation';
+import { getGeminiService } from '../../services/geminiService';
+import { SendMessageRequest, SendMessageResponse } from '../../types/gemini';
 
 export const geminiApi = createApi({
   reducerPath: 'geminiApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/' }), // Dummy base query since we're using the service directly
+  baseQuery: fetchBaseQuery({ baseUrl: '/' }),
   tagTypes: ['Chat', 'FormData'],
   endpoints: (builder) => ({
     sendMessage: builder.mutation<SendMessageResponse, SendMessageRequest>({
       queryFn: async ({ message, currentFormData, context }) => {
         try {
+          const geminiService = getGeminiService();
+
           if (context) {
-            geminiService.setContext(context);
+            await geminiService.setContext(context);
           }
 
           const response = await geminiService.sendMessage(message, currentFormData);
-          
-          // Create chat message
+
           const chatMessage: ChatMessage = {
             id: Date.now().toString(),
             role: 'assistant',
@@ -58,7 +49,7 @@ export const geminiApi = createApi({
     resetChat: builder.mutation<void, void>({
       queryFn: async () => {
         try {
-          const { geminiService } = await import('../../services/geminiService');
+          const geminiService = getGeminiService();
           await geminiService.resetChat();
           return { data: undefined };
         } catch (error) {
@@ -76,8 +67,8 @@ export const geminiApi = createApi({
     setContext: builder.mutation<void, string>({
       queryFn: async (context) => {
         try {
-          const { geminiService } = await import('../../services/geminiService');
-          geminiService.setContext(context);
+          const geminiService = getGeminiService();
+          await geminiService.setContext(context);
           return { data: undefined };
         } catch (error) {
           return {

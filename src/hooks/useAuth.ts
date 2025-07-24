@@ -10,6 +10,7 @@ import {
   setUserInfo,
   setProperties
 } from '../store/slices/otaApiSlice';
+import { initializeGeminiService } from '../services/geminiService';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -58,6 +59,13 @@ export const useAuth = () => {
       dispatch(setRoomTypes(roomTypesData));
     }
   }, [roomTypesData, dispatch]);
+
+  useEffect(() => {
+    if (roomTypesData.length) {
+      initializeGeminiService({roomTypes: roomTypesData, rateCodes: [], properties: propertiesData ?? null,}, ['en', 'es']);
+    }
+  }, [roomTypesData]);
+
 
   return {
     isLoading: isWhoamiLoading || isPropertiesLoading || isRoomTypesLoading,

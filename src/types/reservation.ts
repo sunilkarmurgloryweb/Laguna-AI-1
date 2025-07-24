@@ -1,3 +1,5 @@
+import { ChildProperty, RateCode, RoomTypeItem } from "./otaReservationApi";
+
 export interface ReservationData {
   checkIn: string;
   checkOut: string;
@@ -123,6 +125,9 @@ export interface VoiceProcessedData {
   room?: string;
   name?: string;
   language?: string;
+  matchedProperty?: ChildProperty | null;
+  matchedRoomType?: RoomTypeItem | null
+  matchedRateCode?: RateCode | null
 }
 
 export interface FormDataWithDayjs {
@@ -130,7 +135,7 @@ export interface FormDataWithDayjs {
   checkOut: dayjs.Dayjs | null;
   adults: number;
   children: number;
-  roomType: string;
+  roomType: number;
   guestName: string;
   phone: string;
   email: string;
