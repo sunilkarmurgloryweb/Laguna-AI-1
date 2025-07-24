@@ -24,8 +24,8 @@ import {
   Email,
   Phone
 } from '@mui/icons-material';
-import { ReservationData } from '../types/reservation';
-import { formatDateForDisplay, calculateNights } from '../utils/dateUtils';
+import { ReservationData } from '../../types/reservation';
+import { formatDateForDisplay, calculateNights } from '../../utils/dateUtils';
 
 interface ReservationPreviewProps {
   isOpen: boolean;

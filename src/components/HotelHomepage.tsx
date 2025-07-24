@@ -42,8 +42,8 @@ import {
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import AIChatbot from "./AIChatbot";
-import ReservationModal from "./ReservationModal";
-import CheckInModal from "./CheckInModal";
+import ReservationModal from "./ReservationModel/ReservationModal";
+import CheckInModal from "./CheckIn/CheckInModal";
 import CheckOutModal from "./CheckOutModal";
 import RoomAvailabilityModal from "./RoomAvailabilityModal";
 import LanguageSelector from "./LanguageSelector";

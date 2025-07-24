@@ -18,7 +18,7 @@ import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import MinimizedChatButton from './MinimizedChatButton';
 import SpeechCaption from './SpeechCaption';
-import ReservationPreview from './ReservationPreview';
+import ReservationPreview from './ReservationModel/ReservationPreview';
 
 interface AIChatbotProps {
   onOpenModal?: (modalType: ModalType, data?: VoiceProcessedData) => void;

@@ -34,20 +34,18 @@ import {
   CreditCard,
   CheckCircle,
 } from "@mui/icons-material";
-import VoiceInput from "./VoiceInput";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { updateReservationData } from "../store/slices/reservationSlice";
-import { addReservation } from '../store/slices/mockDataSlice';
-import { getDefaultCheckInDate, getDefaultCheckOutDate } from '../utils/dateUtils';
+import VoiceInput from "../VoiceInput";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { addReservation } from '../../store/slices/mockDataSlice';
+import { getDefaultCheckInDate, getDefaultCheckOutDate } from '../../utils/dateUtils';
 import {
   ProcessedVoiceResponse,
   VoiceProcessedData,
-} from "../types/reservation";
-import { FormDataWithDayjs, ConvertDayjsToString } from "../types/reservation";
-import { useLazyGetAvailabilityQuery } from "../store/api/otaReservationApi";
+} from "../../types/reservation";
+import { FormDataWithDayjs, ConvertDayjsToString } from "../../types/reservation";
+import { useLazyGetAvailabilityQuery } from "../../store/api/otaReservationApi";
 import moment from "moment";
-import { useAuth } from "../hooks/useAuth";
-import { AvailabilityItem, RoomTypeItem } from "../types/otaReservationApi";
+import { AvailabilityItem } from "../../types/otaReservationApi";
 
 interface ReservationModalProps {
   isOpen?: boolean;

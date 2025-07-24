@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useLazyGetAvailabilityQuery } from '../store/api/otaReservationApi';
 import { GetAvailabilityResponse } from '../types/otaReservationApi';
+import {useSpeechVoices} from './useSpeechVoices';
 
 type Message = ChatMessage & {
   isUser: boolean;
@@ -39,9 +40,12 @@ export const useChatLogic = ({
   isSpeechEnabled,
   onOpenModal
 }: UseChatLogicProps) => {
+  const voices = useSpeechVoices();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [showReservationPreview, setShowReservationPreview] = useState(false);
   const [previewReservationData, setPreviewReservationData] = useState<any>(null);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null)
 
   const [sendMessage, { isLoading: isProcessing }] = useSendMessageMutation();
   const dispatch = useAppDispatch();
@@ -51,12 +55,23 @@ export const useChatLogic = ({
   // Lazy availability query
   const [getAvailability] = useLazyGetAvailabilityQuery();
 
+  useEffect(()=>{
+    if (voices) {
+      const sVoice = voices.find(v => v.name === 'Google US English'); 
+      setSelectedVoice(sVoice)
+    }
+  },[voices])
+
   const speakMessage = useCallback((text: string, lang?: string) => {
-    if (!isSpeechEnabled || !window.speechSynthesis) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (lang) utterance.lang = lang;
-    window.speechSynthesis.speak(utterance);
-  }, [isSpeechEnabled]);
+  if (!isSpeechEnabled || !window.speechSynthesis) return;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  if (lang) utterance.lang = lang;
+  if (selectedVoice) utterance.voice = selectedVoice;
+
+  window.speechSynthesis.speak(utterance);
+}, [isSpeechEnabled, selectedVoice]);
+
 
   useEffect(() => {
     const welcomeText = multilingualAI.getGreeting('welcome');

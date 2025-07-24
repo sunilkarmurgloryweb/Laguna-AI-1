@@ -35,12 +35,11 @@ import {
   Stop,
   CameraAlt
 } from '@mui/icons-material';
-import VoiceInput from './VoiceInput';
-import { ProcessedVoiceResponse, VoiceProcessedData, PassportInfo, ReservationSearchResult } from '../types/reservation';
-import { FormDataWithDayjs } from '../types/reservation'; // This type seems unused in this specific component.
-import { useAppSelector } from '../hooks/useAppSelector';
-import { useAppDispatch } from '../hooks/useAppDispatch';
-import { selectAllReservations, addCheckIn } from '../store/slices/mockDataSlice';
+import VoiceInput from '../VoiceInput';
+import { ProcessedVoiceResponse, VoiceProcessedData, PassportInfo, ReservationSearchResult } from '../../types/reservation';
+import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAppDispatch } from '../../hooks/useAppDispatch';
+import { selectAllReservations, addCheckIn } from '../../store/slices/mockDataSlice';
 
 interface CheckInModalProps {
   isOpen: boolean;
