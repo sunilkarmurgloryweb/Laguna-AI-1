@@ -832,26 +832,17 @@ const DocumentScannerModal: React.FC<DocumentScannerProps> = ({
     }
   };
 
-  const isValidFutureDate = (dateStr: string): boolean => {
-    try {
-      const date = new Date(dateStr);
-      const currentDate = new Date();
-      return date > currentDate; // Must be in the future
-    } catch {
-      return false;
-    }
-  };
-
-  const formatDate = (dateStr: string): string => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
-    } catch {
-      return dateStr;
-    }
-  };
 
   const calculateCompleteness = (data: Partial<DocumentData>, requiredFields: string[]): number => {
+  const formatDateForDisplay = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '';
+      return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+    } catch {
+      return '';
+    }
+  };
     const extractedFields = requiredFields.filter(field => {
       const value = data[field as keyof DocumentData];
       return value && String(value).trim().length > 0;
