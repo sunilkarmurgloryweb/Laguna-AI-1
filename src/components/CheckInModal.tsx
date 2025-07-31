@@ -33,7 +33,7 @@ import {
   Key,
   Stop,
   CameraAlt,
-  DocumentScanner,
+  DocumentScanner as DocumentScannerIcon,
   CreditCard,
   Badge
 } from '@mui/icons-material';
@@ -303,7 +303,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         return (
           <Box sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <DocumentScanner color="primary" />
+              <DocumentScannerIcon color="primary" />
               Document Scan
             </Typography>
 
