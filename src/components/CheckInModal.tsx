@@ -71,6 +71,7 @@ interface DocumentData {
   dateOfBirth?: string;
   expiryDate?: string;
   photo?: string;
+  confidence: number;
 }
 
 const CheckInModal: React.FC<CheckInModalProps> = ({
@@ -89,18 +90,20 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<{
+  const [scanningState, setScanningState] = useState<{
     documentScanned: boolean;
     documentVerified: boolean;
     checkInComplete: boolean;
     isProcessing: boolean;
     reservationFound: boolean;
+    autoScanStarted: boolean;
   }>({
     documentScanned: false,
     documentVerified: false,
     checkInComplete: false,
     isProcessing: false,
-    reservationFound: false
+    reservationFound: false,
+    autoScanStarted: false
   });
 
   const [reservationData, setReservationData] = useState<ReservationSearchResult | null>(null);
@@ -114,22 +117,26 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   // Auto-start document scanner when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Delay the AI message to allow modal to fully open
+      // Start scanning immediately when modal opens
       setTimeout(() => {
-        onAIMessage?.("Please position your document in front of the camera. I will automatically identify the document type.", true);
-      }, 500);
+        if (!scanningState.autoScanStarted) {
+          setScanningState(prev => ({ ...prev, autoScanStarted: true }));
+          onAIMessage?.("Document scanner is ready. Please position your document clearly in the camera view. I will automatically identify the document type.", true);
+        }
+      }, 300);
     }
-  }, [isOpen, onAIMessage]);
+  }, [isOpen, onAIMessage, scanningState.autoScanStarted]);
 
   // Handle document scan completion
   const handleDocumentScanned = (scannedData: DocumentData) => {
     setDocumentData(scannedData);
-    setFormData(prev => ({ 
+    setScanningState(prev => ({ 
       ...prev, 
       documentScanned: true
     }));
 
-    onAIMessage?.(`${scannedData.documentType.toUpperCase()} identified and scanned successfully. Searching for your reservation...`, true);
+    const docTypeName = scannedData.documentType.toUpperCase().replace('_', ' ');
+    onAIMessage?.(`${docTypeName} identified and scanned successfully with ${Math.round(scannedData.confidence * 100)}% confidence. Searching for your reservation...`, true);
 
     // Search for reservation using scanned document data
     setTimeout(() => {
@@ -137,20 +144,20 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
       
       if (reservation) {
         setReservationData(reservation);
-        setFormData(prev => ({ 
+        setScanningState(prev => ({ 
           ...prev, 
           documentVerified: true,
           reservationFound: true 
         }));
         
-        onAIMessage?.(`Welcome, ${reservation.guestName}. Reservation found! Preparing your room.`, true);
+        onAIMessage?.(`Welcome, ${reservation.guestName}! Your reservation has been found. Preparing your room assignment now.`, true);
         
         // Auto-assign room and proceed
         setTimeout(() => {
           assignRoomAndProceed(reservation);
         }, 1500);
       } else {
-        setFormData(prev => ({ ...prev, reservationFound: false }));
+        setScanningState(prev => ({ ...prev, reservationFound: false }));
         onAIMessage?.(`No reservation found for ${scannedData.name}. Would you like to make a new reservation?`, true);
       }
     }, 2000);
@@ -237,8 +244,13 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     // You can emit an event or call a parent function here
   };
 
+  const handleDocumentScanError = (error: string) => {
+    setScanningState(prev => ({ ...prev, documentScanned: false }));
+    onAIMessage?.(error, true);
+  };
+
   const completeCheckIn = () => {
-    setFormData(prev => ({ ...prev, isProcessing: true }));
+    setScanningState(prev => ({ ...prev, isProcessing: true }));
 
     if (reservationData && roomAssignment) {
       dispatch(addCheckIn({
@@ -260,7 +272,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     }
 
     setTimeout(() => {
-      setFormData(prev => ({
+      setScanningState(prev => ({
         ...prev,
         isProcessing: false,
         checkInComplete: true
@@ -303,33 +315,35 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Position your document in front of the camera. The AI will automatically identify and scan your document.
+                The AI document scanner will automatically identify and extract information from your document.
               </Typography>
 
               <DocumentScanner
                 onScanComplete={handleDocumentScanned}
-                onError={(error) => onAIMessage?.(error, true)}
+                onError={handleDocumentScanError}
                 isActive={isOpen && currentStep === 0}
               />
             </Box>
 
-            {formData.documentScanned && documentData && (
+            {scanningState.documentScanned && documentData && (
               <Box>
                 <Alert severity="success" sx={{ mb: 3 }} icon={<CheckCircle />}>
                   <Typography variant="body2">
-                    <strong>{documentData.documentType.toUpperCase()} Identified & Scanned!</strong> 
-                    Name: {documentData.name}
+                    <strong>{documentData.documentType.toUpperCase().replace('_', ' ')} Identified & Scanned!</strong>
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5 }}>
+                    Name: {documentData.name} | Confidence: {Math.round(documentData.confidence * 100)}%
                   </Typography>
                 </Alert>
 
                 {/* Document Details */}
                 <Paper sx={{ p: 3, mb: 3, bgcolor: 'grey.50' }}>
-                  <Typography variant="h6" gutterBottom>Identified Document</Typography>
+                  <Typography variant="h6" gutterBottom>Scanned Document Details</Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <Typography variant="body2" fontWeight="bold">Document Type:</Typography>
                       <Chip 
-                        label={documentData.documentType.toUpperCase()} 
+                        label={documentData.documentType.toUpperCase().replace('_', ' ')} 
                         color="primary" 
                         size="small"
                         sx={{ fontWeight: 'bold' }}
@@ -343,11 +357,36 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                       <Typography variant="body2" fontWeight="bold">Name:</Typography>
                       <Typography variant="body2">{documentData.name}</Typography>
                     </Grid>
+                    {documentData.dateOfBirth && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" fontWeight="bold">Date of Birth:</Typography>
+                        <Typography variant="body2">{documentData.dateOfBirth}</Typography>
+                      </Grid>
+                    )}
+                    {documentData.nationality && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" fontWeight="bold">Nationality:</Typography>
+                        <Typography variant="body2">{documentData.nationality}</Typography>
+                      </Grid>
+                    )}
+                    <Grid item xs={12}>
+                      <Typography variant="body2" fontWeight="bold">Scan Confidence:</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={documentData.confidence * 100}
+                          sx={{ flex: 1, height: 8, borderRadius: 4 }}
+                        />
+                        <Typography variant="body2" fontWeight="bold">
+                          {Math.round(documentData.confidence * 100)}%
+                        </Typography>
+                      </Box>
+                    </Grid>
                   </Grid>
                 </Paper>
 
                 {/* Reservation Status */}
-                {formData.reservationFound && reservationData ? (
+                {scanningState.reservationFound && reservationData ? (
                   <Alert severity="success" sx={{ mb: 3 }}>
                     <Typography variant="body2">
                       <strong>Reservation Found!</strong> Welcome, {reservationData.guestName}
@@ -381,7 +420,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               Check-in Summary
             </Typography>
 
-            {formData.isProcessing ? (
+            {scanningState.isProcessing ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <CircularProgress size={60} sx={{ mb: 2 }} />
                 <Typography variant="h6">Completing Check-in...</Typography>
@@ -389,7 +428,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                   Preparing your room and key cards
                 </Typography>
               </Box>
-            ) : formData.checkInComplete ? (
+            ) : scanningState.checkInComplete ? (
               <Fade in={true}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Avatar sx={{
@@ -565,7 +604,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         {renderStepContent()}
       </DialogContent>
 
-      {!formData.checkInComplete && (
+      {!scanningState.checkInComplete && (
         <DialogActions sx={{
           p: { xs: 2, md: 3 },
           bgcolor: 'grey.50',
@@ -581,7 +620,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             Previous
           </Button>
           <Box sx={{ flex: 1 }} />
-          {currentStep === 1 && roomAssignment && !formData.isProcessing && formData.reservationFound && (
+          {currentStep === 1 && roomAssignment && !scanningState.isProcessing && scanningState.reservationFound && (
             <Button
               variant="contained"
               color="success"
