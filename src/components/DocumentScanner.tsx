@@ -849,7 +849,7 @@ For example:
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="body2">
               <strong>Voice Corrections:</strong> Click the microphone icon next to any field and say the correct information.
-              Example: "My name is John Smith" or "The document number is ABC123456"
+              Example: "My name is John Smith\" or "The document number is ABC123456"
             </Typography>
           </Alert>
         )}
