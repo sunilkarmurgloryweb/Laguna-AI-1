@@ -127,7 +127,7 @@ const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
 
       if (Capacitor.isNativePlatform()) {
         // Use native document scanner
-        const { scannedImages } = await CapacitorDocumentScanner.scanDocument();
+        const { scannedImages } = await CapacitorDocumentScanner.scanDocument({
           maxNumDocuments: 1,
           letUserAdjustCrop: true,
           croppedImageQuality: 100
