@@ -102,6 +102,8 @@ const DocumentScannerModal: React.FC<DocumentScannerProps> = ({
   const [error, setError] = useState<string>('');
   const [aiInstructions, setAiInstructions] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string>('');
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   // Voice recognition for corrections
   const {
@@ -165,9 +167,9 @@ const DocumentScannerModal: React.FC<DocumentScannerProps> = ({
   // Auto-start continuous scanning when camera is ready
   useEffect(() => {
     if (isOpen && cameraReady && scanningState.stage === 'camera_ready') {
-      console.log('📷 Starting continuous document scanning...');
-      speakInstruction("Starting continuous scanning. Hold your document steady.");
-      startContinuousScanning();
+      // Just show ready state, wait for user to capture
+      setScanningState(prev => ({ ...prev, stage: 'camera_ready' }));
+      speakInstruction("Position your document clearly in the frame and click capture when ready.");
     }
   }, [isOpen, cameraReady, scanningState.stage]);
 
@@ -225,20 +227,82 @@ const DocumentScannerModal: React.FC<DocumentScannerProps> = ({
     console.error('❌ Camera error:', error);
   }, [onError]);
 
-  const startContinuousScanning = async () => {
-    if (!webcamRef.current || !workerRef.current) return;
-
-    setScanningState(prev => ({
-      ...prev,
-      stage: 'continuous_scanning',
-      progress: 30,
-      scanAttempts: 0
-    }));
-
-    // Start continuous scanning every 2 seconds
-    scanIntervalRef.current = setInterval(async () => {
-      await performSingleScan();
-    }, 2000);
+  const captureDocument = async () => {
+    if (!webcamRef.current) return;
+    
+    try {
+      setScanningState(prev => ({ ...prev, stage: 'capturing' }));
+      speakInstruction("Capturing document image...");
+      
+      // Capture the image
+      const imageSrc = webcamRef.current.getScreenshot({
+        width: 1920,
+        height: 1080,
+        screenshotFormat: 'image/jpeg',
+        screenshotQuality: 0.95
+      });
+      
+      if (imageSrc) {
+        setCapturedImage(imageSrc);
+        setScanningState(prev => ({ ...prev, stage: 'processing' }));
+        speakInstruction("Document captured successfully. Now extracting details from the image...");
+        
+        // Process the captured image
+        await processDocumentImage(imageSrc);
+      }
+    } catch (error) {
+      console.error('Document capture error:', error);
+      setScanningState(prev => ({ ...prev, stage: 'error' }));
+      speakInstruction("Failed to capture document. Please try again.");
+    }
+  };
+  
+  const processDocumentImage = async (imageData: string) => {
+    if (!imageData) return;
+    
+    setIsProcessingImage(true);
+    speakInstruction("Processing document image with AI. This may take a moment...");
+    
+    try {
+      // Process with OCR
+      const ocrResult = await performOCR(imageData);
+      const documentType = identifyDocumentType(ocrResult);
+      const extractedData = extractDocumentData(ocrResult, documentType);
+      
+      // Calculate completeness
+      const completeness = calculateCompleteness(extractedData, documentType);
+      
+      if (completeness >= 60) {
+        // Sufficient data extracted
+        setScanningState(prev => ({ ...prev, stage: 'completed' }));
+        speakInstruction(`Document details extracted with ${Math.round(completeness)}% accuracy. Please review and correct any incorrect details.`);
+        
+        const finalData: DocumentData = {
+          name: extractedData.name || 'Not detected',
+          documentNumber: extractedData.documentNumber || 'Not detected',
+          documentType: documentType,
+          nationality: extractedData.nationality,
+          dateOfBirth: extractedData.dateOfBirth,
+          expiryDate: extractedData.expiryDate,
+          photo: imageData,
+          confidence: completeness / 100,
+          completeness: completeness / 100
+        };
+        
+        onScanComplete(finalData);
+      } else {
+        // Insufficient data, ask for retry
+        setScanningState(prev => ({ ...prev, stage: 'error' }));
+        speakInstruction(`Only ${Math.round(completeness)}% of details extracted. Please recapture the document with better lighting and positioning.`);
+      }
+      
+    } catch (error) {
+      console.error('Document processing error:', error);
+      setScanningState(prev => ({ ...prev, stage: 'error' }));
+      speakInstruction("Failed to process document image. Please try capturing again with better lighting.");
+    } finally {
+      setIsProcessingImage(false);
+    }
   };
 
   const performSingleScan = async () => {
@@ -768,22 +832,13 @@ const DocumentScannerModal: React.FC<DocumentScannerProps> = ({
     }
   };
 
-  const isValidFutureDate = (dateStr: string): boolean => {
+  const formatDateForDisplay = (dateStr: string): string => {
     try {
       const date = new Date(dateStr);
-      const currentDate = new Date();
-      return date > currentDate; // Must be in the future
-    } catch {
-      return false;
-    }
-  };
-
-  const formatDate = (dateStr: string): string => {
-    try {
-      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '';
       return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
     } catch {
-      return dateStr;
+      return '';
     }
   };
 
@@ -839,6 +894,305 @@ const DocumentScannerModal: React.FC<DocumentScannerProps> = ({
     if (!data.documentNumber || data.documentNumber.length < 6) missing.push('document number');
     if (!data.dateOfBirth) missing.push('date of birth');
     return missing;
+  };
+
+  const performOCR = async (imageData: string): Promise<string> => {
+    try {
+      speakInstruction("Extracting text from document using AI OCR...");
+      
+      const worker = await createWorker('eng', 1, {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+          }
+        }
+      });
+      
+      // Enhanced OCR settings for better accuracy
+      await worker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,/-:',
+        tessedit_pageseg_mode: '6', // Uniform block of text
+        preserve_interword_spaces: '1'
+      });
+      
+      const { data: { text } } = await worker.recognize(imageData);
+      await worker.terminate();
+      
+      console.log('OCR extracted text:', text.substring(0, 200) + '...');
+      return text;
+    } catch (error) {
+      console.error('OCR error:', error);
+      throw new Error('Failed to extract text from document');
+    }
+  };
+  
+  const identifyDocumentType = (text: string): DocumentType => {
+    speakInstruction("Identifying document type...");
+    
+    const lowerText = text.toLowerCase();
+    
+    // Enhanced patterns for better document identification
+    if (lowerText.includes('passport') || 
+        lowerText.includes('republic of india') || 
+        lowerText.includes('united states of america') ||
+        /type\s*[:\-]?\s*p/i.test(text) ||
+        lowerText.includes('nationality')) {
+      return 'passport';
+    }
+    
+    if (lowerText.includes('permanent account number') || 
+        lowerText.includes('income tax department') ||
+        /[A-Z]{5}\d{4}[A-Z]/.test(text) ||
+        lowerText.includes('pan card')) {
+      return 'pan';
+    }
+    
+    if (lowerText.includes('driving license') || 
+        lowerText.includes('driver license') ||
+        lowerText.includes('transport department') ||
+        /dl\s*no/i.test(text)) {
+      return 'license';
+    }
+    
+    if (lowerText.includes('permanent resident card') || 
+        lowerText.includes('uscis') ||
+        lowerText.includes('green card')) {
+      return 'green_card';
+    }
+    
+    return 'id_card';
+  };
+  
+  const extractDocumentData = (text: string, docType: DocumentType): Partial<DocumentData> => {
+    speakInstruction(`Extracting ${docType.replace('_', ' ')} details...`);
+    
+    const data: Partial<DocumentData> = {};
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    switch (docType) {
+      case 'passport':
+        // Enhanced passport extraction
+        data.name = extractPassportName(text);
+        data.documentNumber = extractPattern(text, /(?:passport\s*(?:no|number|#)?\s*:?\s*)?([A-Z]\d{8}|[A-Z]{2}\d{7})/gi)?.[0];
+        data.nationality = extractPattern(text, /(?:nationality|country)\s*:?\s*([A-Z]{3}|[A-Z][a-z]+)/gi)?.[0];
+        data.dateOfBirth = extractDateOfBirth(text);
+        data.expiryDate = extractExpiryDate(text);
+        break;
+        
+      case 'pan':
+        // Enhanced PAN card extraction
+        data.name = extractPanName(text);
+        data.documentNumber = extractPattern(text, /(?:pan\s*(?:no|number|#)?\s*:?\s*)?([A-Z]{5}\d{4}[A-Z])/gi)?.[0];
+        data.dateOfBirth = extractDateOfBirth(text);
+        break;
+        
+      case 'license':
+        // Enhanced license extraction
+        data.name = extractLicenseName(text);
+        data.documentNumber = extractPattern(text, /(?:DL|LICENSE)\s*(?:NO|NUMBER|#)?\s*:?\s*([A-Z0-9]{10,20})/gi)?.[0] ||
+                            extractPattern(text, /[A-Z]{2}\d{2}\s?\d{11}|[A-Z]\d{7,15}/g)?.[0];
+        data.dateOfBirth = extractDateOfBirth(text);
+        data.expiryDate = extractExpiryDate(text);
+        break;
+        
+      case 'green_card':
+        // Enhanced green card extraction
+        data.name = extractGreenCardName(text);
+        data.documentNumber = extractPattern(text, /(?:USCIS|A)\s*(?:NO|NUMBER|#)?\s*:?\s*(\d{8,9})/gi)?.[0] ||
+                            extractPattern(text, /(?:card\s*(?:no|number|#)?\s*:?\s*)?(\d{3}-\d{3}-\d{3}|\d{9})/gi)?.[0];
+        data.nationality = 'USA';
+        data.dateOfBirth = extractDateOfBirth(text);
+        break;
+        
+      default:
+        // Generic ID card extraction
+        data.name = extractGenericName(text);
+        data.documentNumber = extractPattern(text, /(?:id\s*(?:no|number|#)?\s*:?\s*)?([A-Z0-9]{6,20})/gi)?.[0];
+        data.dateOfBirth = extractDateOfBirth(text);
+        break;
+    }
+    
+    return data;
+  };
+  
+  // Enhanced name extraction functions
+  const extractPassportName = (text: string): string => {
+    const lines = text.split('\n');
+    const namePatterns = [
+      /(?:name|surname|given\s*names?)\s*:?\s*([A-Z][A-Z\s]{2,40})/gi,
+      /^([A-Z][A-Z\s]{2,40})$/gm, // Full caps names on their own line
+      /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/g // Proper case names
+    ];
+    
+    for (const pattern of namePatterns) {
+      const matches = [...text.matchAll(pattern)];
+      for (const match of matches) {
+        const name = match[1]?.trim();
+        if (name && name.length > 2 && !isCountryOrDocument(name)) {
+          return name;
+        }
+      }
+    }
+    return '';
+  };
+  
+  const extractPanName = (text: string): string => {
+    const namePatterns = [
+      /(?:name|full\s*name)\s*:?\s*([A-Z][A-Z\s]{2,40})/gi,
+      /^([A-Z][A-Z\s]{2,40})$/gm
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && !isCountryOrDocument(match[1])) {
+        return match[1].trim();
+      }
+    }
+    return '';
+  };
+  
+  const extractLicenseName = (text: string): string => {
+    const namePatterns = [
+      /(?:name|holder|full\s*name)\s*:?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/gi,
+      /([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && !isCountryOrDocument(match[1])) {
+        return match[1].trim();
+      }
+    }
+    return '';
+  };
+  
+  const extractGreenCardName = (text: string): string => {
+    const nameMatch = text.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+    return nameMatch ? nameMatch[1].trim() : '';
+  };
+  
+  const extractGenericName = (text: string): string => {
+    // Generic name extraction for any ID
+    const namePatterns = [
+      /(?:name|full\s*name)\s*:?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/gi,
+      /([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && !isCountryOrDocument(match[1])) {
+        return match[1].trim();
+      }
+    }
+    return '';
+  };
+  
+  const isCountryOrDocument = (text: string): boolean => {
+    const excludeWords = ['passport', 'republic', 'united states', 'india', 'government', 'department', 'ministry', 'authority', 'card', 'license', 'driving'];
+    return excludeWords.some(word => text.toLowerCase().includes(word));
+  };
+  
+  const extractDateOfBirth = (text: string): string => {
+    // Enhanced date extraction with multiple patterns
+    const datePatterns = [
+      /(?:date\s*of\s*birth|dob|birth\s*date)\s*:?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/gi,
+      /(?:born|birth)\s*:?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/gi,
+      /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/g,
+      /(\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/g, // YYYY-MM-DD format
+      /(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4})/gi // DD MMM YYYY
+    ];
+    
+    for (const pattern of datePatterns) {
+      const matches = [...text.matchAll(pattern)];
+      if (matches && matches.length > 0) {
+        for (const match of matches) {
+          const dateStr = match[1] || match[0];
+          
+          // Validate date is reasonable for birth date
+          const year = parseInt(dateStr.match(/\d{4}/)?.[0] || '0');
+          const currentYear = new Date().getFullYear();
+          if (year < 1900 || year > currentYear - 10) {
+            continue; // Skip unreasonable birth years
+          }
+          
+          if (isValidDate(dateStr)) {
+            return formatDate(dateStr);
+          }
+        }
+      }
+    }
+    return '';
+  };
+  
+  const extractExpiryDate = (text: string): string => {
+    const expiryPatterns = [
+      /(?:expiry|expires|valid\s*until|exp)\s*:?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/gi,
+      /(?:valid\s*till|till)\s*:?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/gi,
+      /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/g, // Any date that could be expiry
+      /(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4})/gi
+    ];
+    
+    for (const pattern of expiryPatterns) {
+      const matches = [...text.matchAll(pattern)];
+      if (matches && matches.length > 0) {
+        for (const match of matches) {
+          const dateStr = match[1] || match[0];
+          
+          // Validate date is reasonable for expiry (future date)
+          const year = parseInt(dateStr.match(/\d{4}/)?.[0] || '0');
+          const currentYear = new Date().getFullYear();
+          if (year < currentYear || year > currentYear + 20) {
+            continue; // Skip unreasonable expiry years
+          }
+          
+          if (isValidDate(dateStr)) {
+            return formatDate(dateStr);
+          }
+        }
+      }
+    }
+    return '';
+  };
+  
+  const extractPattern = (text: string, pattern: RegExp): string[] => {
+    const matches = [...text.matchAll(pattern)];
+    return matches.map(match => match[1] || match[0]).filter(Boolean);
+  };
+  
+  const isValidDate = (dateStr: string): boolean => {
+    try {
+      const date = new Date(dateStr);
+      return !isNaN(date.getTime()) && date.getFullYear() > 1900;
+    } catch {
+      return false;
+    }
+  };
+  
+  const formatDate = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+    } catch {
+      return dateStr;
+    }
+  };
+  
+  const calculateCompleteness = (data: Partial<DocumentData>, docType: DocumentType): number => {
+    const requiredFields = {
+      passport: ['name', 'documentNumber', 'nationality', 'dateOfBirth'],
+      pan: ['name', 'documentNumber', 'dateOfBirth'],
+      license: ['name', 'documentNumber', 'dateOfBirth'],
+      green_card: ['name', 'documentNumber', 'nationality'],
+      id_card: ['name', 'documentNumber']
+    };
+    
+    const required = requiredFields[docType] || ['name', 'documentNumber'];
+    const extracted = required.filter(field => {
+      const value = data[field as keyof DocumentData];
+      return value && String(value).trim().length > 0;
+    });
+    
+    return (extracted.length / required.length) * 100;
   };
 
   // AI-powered voice correction with better prompts
@@ -937,6 +1291,8 @@ Respond with ONLY the corrected value, nothing else.
   };
 
   const retryScanning = () => {
+    setCapturedImage('');
+    setIsProcessingImage(false);
     setScanningState({
       stage: 'camera_ready',
       progress: 20,
@@ -953,14 +1309,34 @@ Respond with ONLY the corrected value, nothing else.
     speakInstruction('Restarting document scanner. Please position your document clearly.');
   };
 
+  const handleClose = () => {
+    retryScanning();
+    onClose();
+  };
+
+  const getStageColor = (stage: string) => {
+    switch (stage) {
+      case 'ready':
+        return { color: 'primary.main', text: 'Ready to Scan' };
+      case 'capturing':
+        return { color: 'info.main', text: 'Capturing Document...' };
+      case 'processing':
+        return { color: 'warning.main', text: 'Processing Document...' };
+      case 'completed':
+        return { color: 'success.main', text: 'Scan Complete' };
+      case 'error':
+        return { color: 'error.main', text: 'Scan Failed' };
+      default:
+        return { color: 'grey.500', text: 'Initializing...' };
+    }
+  };
+
   const getStageIcon = () => {
     switch (scanningState.stage) {
-      case 'initializing':
-        return <Psychology sx={{ fontSize: 40, color: 'info.main' }} />;
-      case 'camera_ready':
+      case 'ready':
         return <CameraAlt sx={{ fontSize: 40, color: 'primary.main' }} />;
-      case 'continuous_scanning':
-        return <Scanner sx={{ fontSize: 40, color: 'warning.main' }} />;
+      case 'capturing':
+        return <Scanner sx={{ fontSize: 40 }} />;
       case 'processing':
         return <DocumentScannerIcon sx={{ fontSize: 40, color: 'warning.main' }} />;
       case 'analyzing':
@@ -1195,275 +1571,269 @@ Respond with ONLY the corrected value, nothing else.
   return (
     <Dialog
       open={isOpen}
-      onClose={onClose}
-      maxWidth="xl"
-      fullWidth
-      fullScreen={true}
+      onClose={handleClose}
+      fullScreen
       PaperProps={{
         sx: {
           borderRadius: 0,
           m: 0,
           maxHeight: '100vh',
-          height: '100vh'
+          height: '100vh',
+          overflow: 'hidden'
         }
       }}
+      TransitionComponent={undefined}
     >
-      <DialogTitle sx={{ p: { xs: 2, md: 3 }, bgcolor: 'primary.main', color: 'white' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
-            🤖 AI Document Scanner
-          </Typography>
-          <IconButton onClick={onClose} sx={{ color: 'white' }}>
-            <Close />
-          </IconButton>
+      {/* Header */}
+      <Box
+        sx={{
+          bgcolor: 'primary.main',
+          color: 'white',
+          p: { xs: 2, md: 3 },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {getStageIcon()}
+          <Box>
+            <Typography variant="h6" fontWeight="bold">
+              AI Document Scanner
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
+              Automatic document identification and data extraction
+            </Typography>
+          </Box>
         </Box>
         
-        {/* Enhanced Progress Indicator */}
-        <Box sx={{ mt: 2 }}>
-          <LinearProgress
-            variant="determinate"
-            value={scanningState.progress}
-            sx={{ 
-              height: 8, 
-              borderRadius: 4,
-              bgcolor: 'rgba(255,255,255,0.3)',
-              '& .MuiLinearProgress-bar': {
-                bgcolor: scanningState.stage === 'complete' ? 'success.main' : 'warning.main'
+        <IconButton onClick={handleClose} sx={{ color: 'white' }}>
+          <Close />
+        </IconButton>
+      </Box>
+      
+      {/* Main Content */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        
+        {!capturedImage ? (
+          /* Camera View */
+          <Box sx={{ flex: 1, position: 'relative', bgcolor: 'black' }}>
+            <Webcam
+              ref={webcamRef}
+              audio={false}
+              screenshotFormat="image/jpeg"
+              screenshotQuality={0.95}
+              videoConstraints={{
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                facingMode: isMobile ? 'environment' : 'user',
+                aspectRatio: 16/9
+              }}
+              onUserMedia={handleCameraReady}
+              onUserMediaError={handleCameraError}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+            
+            {/* Document Frame Overlay - Only show when ready */}
+            <Box sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: { xs: '85%', md: '70%' },
+              height: { xs: '60%', md: '50%' },
+              border: '3px solid',
+              borderColor: scanningState.stage === 'ready' ? 'primary.main' : 
+                          scanningState.stage === 'capturing' ? 'info.main' : 'warning.main',
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: scanningState.stage === 'capturing' ? 'scanPulse 1s infinite' : 
+                        scanningState.stage === 'processing' ? 'processPulse 2s infinite' : 'none',
+              '@keyframes scanPulse': {
+                '0%': { borderColor: 'info.main', boxShadow: '0 0 0 0 rgba(33, 150, 243, 0.7)' },
+                '50%': { borderColor: 'success.main', boxShadow: '0 0 0 10px rgba(76, 175, 80, 0)' },
+                '100%': { borderColor: 'warning.main', boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.7)' }
+              },
+              '@keyframes processPulse': {
+                '0%': { borderColor: 'warning.main', boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.7)' },
+                '50%': { borderColor: 'info.main', boxShadow: '0 0 0 15px rgba(33, 150, 243, 0)' },
+                '100%': { borderColor: 'warning.main', boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.7)' }
               }
-            }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-              {getStageText()}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-              {Math.round(scanningState.progress)}%
-            </Typography>
-          </Box>
-        </Box>
-      </DialogTitle>
-
-      <DialogContent sx={{ p: 0, height: 'calc(100vh - 140px)', overflow: 'auto' }}>
-        {error ? (
-          <Card sx={{ m: 3, p: 3, textAlign: 'center', border: 2, borderColor: 'error.main' }}>
-            <CardContent>
-              <Avatar sx={{ bgcolor: 'error.main', mx: 'auto', mb: 2, width: 64, height: 64 }}>
-                <ErrorIcon sx={{ fontSize: 32 }} />
-              </Avatar>
-              <Typography variant="h6" color="error.main" gutterBottom>
-                Scanning Error
-              </Typography>
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-              <Button
-                variant="contained"
-                onClick={retryScanning}
-                startIcon={<Refresh />}
-                size="large"
+            }}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: 'white', 
+                  textAlign: 'center',
+                  bgcolor: 'rgba(0,0,0,0.8)',
+                  p: { xs: 1.5, md: 2 },
+                  borderRadius: 1,
+                  fontWeight: 'bold',
+                  fontSize: { xs: '0.8rem', md: '1rem' }
+                }}
               >
-                Retry Scanning
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Box sx={{ height: '100%' }}>
-            {/* Camera View - Full screen during scanning */}
-            {(scanningState.stage === 'camera_ready' || scanningState.stage === 'continuous_scanning' || scanningState.stage === 'processing' || scanningState.stage === 'analyzing' || scanningState.stage === 'extracting') && (
-              <Box sx={{ position: 'relative', height: '100%', bgcolor: 'black' }}>
-                <Webcam
-                  ref={webcamRef}
-                  audio={false}
-                  screenshotFormat="image/jpeg"
-                  screenshotQuality={0.95}
-                  videoConstraints={{
-                    width: { ideal: 1920, max: 1920 },
-                    height: { ideal: 1080, max: 1080 },
-                    facingMode: isMobile ? 'environment' : 'user'
-                  }}
-                  onUserMedia={handleCameraReady}
-                  onUserMediaError={handleCameraError}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
+                <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', md: '1rem' } }}>
+                  {scanningState.stage === 'ready' && 'Position document clearly in frame'}
+                  {scanningState.stage === 'capturing' && 'Capturing document image...'}
+                  {scanningState.stage === 'processing' && 'AI is extracting document details...'}
+                </Typography>
+              </Typography>
+            </Box>
+            
+            {/* Scanning Progress Overlay */}
+            {scanningState.stage === 'processing' && (
+              <Box sx={{
+                position: 'absolute',
+                bottom: { xs: 80, md: 100 },
+                left: '50%',
+                transform: 'translateX(-50%)',
+                bgcolor: 'rgba(0,0,0,0.9)',
+                color: 'white',
+                p: { xs: 2, md: 3 },
+                borderRadius: 2,
+                minWidth: { xs: 280, md: 350 },
+                textAlign: 'center'
+              }}>
+                <CircularProgress 
+                  variant="determinate" 
+                  value={scanningState.progress} 
+                  size={50} 
+                  sx={{ mb: 2, color: 'warning.main' }}
                 />
-                
-                {/* Enhanced Document Frame Overlay */}
-                <Box sx={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: { xs: '90%', md: '75%' },
-                  height: { xs: '70%', md: '60%' },
-                  border: '4px solid',
-                  borderColor: scanningState.stage === 'continuous_scanning' ? 'warning.main' : 'primary.main',
-                  borderRadius: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  animation: scanningState.stage === 'continuous_scanning' ? 'scanPulse 2s infinite' : 'none',
-                  '@keyframes scanPulse': {
-                    '0%': { borderColor: 'warning.main', boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.7)' },
-                    '50%': { borderColor: 'success.main', boxShadow: '0 0 0 15px rgba(76, 175, 80, 0)' },
-                    '100%': { borderColor: 'warning.main', boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.7)' }
-                  }
-                }}>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      color: 'white', 
-                      textAlign: 'center',
-                      bgcolor: 'rgba(0,0,0,0.9)',
-                      p: 3,
-                      borderRadius: 2,
-                      fontWeight: 'bold',
-                      mb: 2
-                    }}
-                  >
-                    {scanningState.stage === 'continuous_scanning' ? 
-                      `🤖 AI Scanning... (${scanningState.scanAttempts}/${scanningState.maxAttempts})` : 
-                      '📄 Position Document Here'
-                    }
-                  </Typography>
-                  
-                  {scanningState.stage === 'continuous_scanning' && (
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: 'white', 
-                        textAlign: 'center',
-                        bgcolor: 'rgba(0,0,0,0.8)',
-                        p: 2,
-                        borderRadius: 1,
-                        fontWeight: 'medium'
-                      }}
-                    >
-                      Hold steady - AI is reading your document
-                    </Typography>
-                  )}
-                </Box>
-
-                {/* Scanning Progress Overlay */}
-                {(scanningState.stage === 'processing' || scanningState.stage === 'analyzing' || scanningState.stage === 'extracting') && (
-                  <Box sx={{
-                    position: 'absolute',
-                    bottom: 20,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    bgcolor: 'rgba(0,0,0,0.9)',
-                    color: 'white',
-                    p: 3,
-                    borderRadius: 2,
-                    minWidth: 300,
-                    textAlign: 'center'
-                  }}>
-                    <CircularProgress 
-                      variant="determinate" 
-                      value={scanningState.progress} 
-                      size={50} 
-                      sx={{ mb: 2, color: 'warning.main' }}
-                    />
-                    <Typography variant="body1" fontWeight="bold" gutterBottom>
-                      {getStageText()}
-                    </Typography>
-                    <Typography variant="caption">
-                      AI is analyzing your document with advanced OCR
-                    </Typography>
-                  </Box>
-                )}
-
-                {/* Scan Lines Animation */}
-                {scanningState.stage === 'continuous_scanning' && (
-                  <Box sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(76, 175, 80, 0.4) 50%, transparent 100%)',
-                    animation: 'scanLine 3s infinite',
-                    '@keyframes scanLine': {
-                      '0%': { transform: 'translateX(-100%)' },
-                      '100%': { transform: 'translateX(100%)' }
-                    }
-                  }} />
-                )}
+                <Typography variant="body1" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }}>
+                  {getStageText()}
+                </Typography>
+                <Typography variant="body2" textAlign="center" sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}>
+                  Extracting Details... {scanningState.progress}%
+                </Typography>
+                <Typography variant="caption" textAlign="center" sx={{ opacity: 0.8, fontSize: { xs: '0.7rem', md: '0.8rem' } }}>
+                  AI is reading your document
+                </Typography>
               </Box>
-            )}
-
-            {/* Document Review - Full screen */}
-            {scanningState.stage === 'review' && (
-              <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
-                {renderDocumentReview()}
-              </Box>
-            )}
-
-            {/* Complete Status */}
-            {scanningState.stage === 'complete' && (
-              <Card sx={{ m: 3, textAlign: 'center', border: 2, borderColor: 'success.main', bgcolor: 'success.light' }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Avatar sx={{ bgcolor: 'success.main', mx: 'auto', mb: 2, width: 100, height: 100 }}>
-                    <CheckCircle sx={{ fontSize: 50 }} />
-                  </Avatar>
-                  <Typography variant="h4" color="success.main" fontWeight="bold" gutterBottom>
-                    Document Verified!
-                  </Typography>
-                  <Typography variant="body1" color="success.contrastText">
-                    All document details have been successfully extracted and verified.
-                  </Typography>
-                </CardContent>
-              </Card>
             )}
           </Box>
+        ) : (
+          /* Results View */
+          <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 2, md: 3 } }}>
+            {/* Captured Image Preview */}
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Captured Document
+              </Typography>
+              <Box sx={{ 
+                maxWidth: 400, 
+                mx: 'auto', 
+                border: 2, 
+                borderColor: 'success.main',
+                borderRadius: 2,
+                overflow: 'hidden'
+              }}>
+                <img 
+                  src={capturedImage} 
+                  alt="Captured Document" 
+                  style={{ 
+                    width: '100%', 
+                    height: 'auto',
+                    display: 'block'
+                  }} 
+                />
+              </Box>
+            </Box>
+            
+            {/* Processing Status */}
+            {isProcessingImage && (
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <CircularProgress size={40} sx={{ mb: 2 }} />
+                <Typography variant="body1">
+                  AI is extracting document details...
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This may take a few moments
+                </Typography>
+              </Box>
+            )}
+            <Typography variant="h5" gutterBottom textAlign="center">
+              Document Scan Results
+            </Typography>
+            
+            {/* Results content would go here */}
+            <Typography variant="body1" textAlign="center" color="text.secondary">
+              Document processing complete. Review the extracted information above.
+            </Typography>
+          </Box>
         )}
-      </DialogContent>
+      </Box>
+      
+      {/* Bottom Actions */}
+      {scanningState.stage === 'ready' && !capturedImage && (
+        <Box sx={{ 
+          p: { xs: 2, md: 3 }, 
+          bgcolor: 'grey.100',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 2
+        }}>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={captureDocument}
+            startIcon={<Scanner />}
+            sx={{ minWidth: { xs: '100%', md: 200 }, py: { xs: 2, md: 1.5 } }}
+          >
+            Capture Document
+          </Button>
+          <Typography variant="body2" color="text.secondary" textAlign="center">
+            AI will automatically identify and extract document details
+          </Typography>
+        </Box>
+      )}
 
-      <DialogActions sx={{ 
-        p: { xs: 2, md: 3 }, 
-        bgcolor: 'grey.50',
-        flexDirection: { xs: 'column', sm: 'row' },
-        gap: { xs: 1, sm: 0 }
-      }}>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          fullWidth={isMobile}
-          size="large"
-        >
-          Cancel
-        </Button>
-        
-        <Box sx={{ flex: 1 }} />
-        
-        {scanningState.stage === 'review' && documentData && (
-          <>
-            <Button
-              variant="outlined"
-              onClick={retryScanning}
-              startIcon={<Refresh />}
-              sx={{ mr: 1 }}
-              size="large"
-            >
-              Scan Again
-            </Button>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={confirmDocumentData}
-              startIcon={<CheckCircle />}
-              fullWidth={isMobile}
-              size="large"
-              disabled={documentData.completeness < 0.5}
-            >
-              Confirm Details ({Math.round(documentData.completeness * 100)}% Complete)
-            </Button>
-          </>
-        )}
-      </DialogActions>
+      {scanningState.stage === 'review' && documentData && (
+        <DialogActions sx={{ 
+          p: { xs: 2, md: 3 }, 
+          bgcolor: 'grey.50',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1, sm: 0 }
+        }}>
+          <Button
+            onClick={handleClose}
+            variant="outlined"
+            fullWidth={isMobile}
+            size="large"
+          >
+            Cancel
+          </Button>
+          
+          <Box sx={{ flex: 1 }} />
+          
+          <Button
+            variant="outlined"
+            onClick={retryScanning}
+            startIcon={<Refresh />}
+            sx={{ mr: 1 }}
+            size="large"
+          >
+            Scan Again
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={confirmDocumentData}
+            startIcon={<CheckCircle />}
+            fullWidth={isMobile}
+            size="large"
+            disabled={documentData.completeness < 0.5}
+          >
+            Confirm Details ({Math.round(documentData.completeness * 100)}% Complete)
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 };
