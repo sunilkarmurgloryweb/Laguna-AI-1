@@ -88,8 +88,9 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     try {
       const worker = await createWorker('eng');
       await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,/-:',
-        tessedit_pageseg_mode: '6', // Uniform block of text
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,/-:()[]',
+        tessedit_pageseg_mode: '3', // Fully automatic page segmentation
+        tessedit_ocr_engine_mode: '1', // Neural nets LSTM engine only
       });
       setOcrWorker(worker);
       console.log('OCR worker initialized successfully');
@@ -162,13 +163,16 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       setProgress(40);
       speakInstruction('Extracting text from document...');
 
-      // Convert base64 to image for OCR
-      const { data: { text } } = await ocrWorker.recognize(imageData);
+      // Convert base64 to image for OCR with better preprocessing
+      const { data: { text, confidence } } = await ocrWorker.recognize(imageData, {
+        rectangle: { top: 0, left: 0, width: 0, height: 0 }
+      });
       
       setExtractedText(text);
       setProgress(70);
       
       console.log('Extracted text:', text);
+      console.log('OCR confidence:', confidence);
       speakInstruction('Analyzing document details...');
 
       // Process extracted text
@@ -197,6 +201,7 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
     try {
       const cleanText = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       console.log('Analyzing text:', cleanText);
+      console.log('Raw OCR text lines:', text.split('\n'));
 
       // Identify document type
       const docType = identifyDocumentType(cleanText);
@@ -204,6 +209,17 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
 
       // Extract data based on document type
       const extractedData = extractDocumentData(cleanText, docType);
+      console.log('Extracted data:', extractedData);
+      
+      if (!extractedData.name && !extractedData.documentNumber) {
+        console.log('No name or document number found, trying alternative extraction...');
+        
+        // Try alternative extraction methods
+        const alternativeData = extractDataAlternative(text, docType);
+        if (alternativeData.name || alternativeData.documentNumber) {
+          Object.assign(extractedData, alternativeData);
+        }
+      }
       
       if (!extractedData.name && !extractedData.documentNumber) {
         return null;
@@ -220,6 +236,64 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       console.error('Document analysis error:', error);
       return null;
     }
+  };
+  
+  // Alternative extraction method for difficult documents
+  const extractDataAlternative = (text: string, docType: DocumentData['documentType']) => {
+    const data: Partial<DocumentData> = {};
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 2);
+    
+    console.log('Alternative extraction from lines:', lines);
+    
+    if (docType === 'license') {
+      // For driving license, look for specific patterns in lines
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Look for name patterns in driving license
+        if (!data.name) {
+          // Pattern: Line starting with class and name (e.g., "4d JOHN SMITH")
+          const classNameMatch = line.match(/^[0-9][a-z]\s+([A-Z][A-Za-z]+\s+[A-Z][A-Za-z]+)/);
+          if (classNameMatch) {
+            data.name = classNameMatch[1];
+            console.log('Found name with class pattern:', data.name);
+          }
+          
+          // Pattern: Full name on its own line
+          if (!data.name && /^[A-Z][A-Za-z]+\s+[A-Z][A-Za-z]+$/.test(line)) {
+            const excludeTerms = ['DRIVING', 'LICENSE', 'DEPARTMENT', 'MOTOR', 'VEHICLE', 'STATE', 'COUNTY'];
+            if (!excludeTerms.some(term => line.includes(term))) {
+              data.name = line;
+              console.log('Found name on line:', data.name);
+            }
+          }
+        }
+        
+        // Look for license number
+        if (!data.documentNumber) {
+          // Pattern: License number (usually long alphanumeric)
+          const licenseMatch = line.match(/\b([A-Z]{1,2}\d{8,15})\b/);
+          if (licenseMatch) {
+            data.documentNumber = licenseMatch[1];
+            console.log('Found license number:', data.documentNumber);
+          }
+        }
+        
+        // Look for date of birth
+        if (!data.dateOfBirth) {
+          const dateMatch = line.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+          if (dateMatch) {
+            const parsedDate = parseAndValidateDate(dateMatch[1], 'birth');
+            if (parsedDate) {
+              data.dateOfBirth = parsedDate;
+              console.log('Found date of birth:', data.dateOfBirth);
+            }
+          }
+        }
+      }
+    }
+    
+    return data;
   };
 
   const identifyDocumentType = (text: string): DocumentData['documentType'] => {
@@ -262,22 +336,73 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       'passport', 'republic', 'india', 'united', 'states', 'america', 'government',
       'driving', 'license', 'licence', 'department', 'transport', 'motor', 'vehicle',
       'pan', 'income', 'tax', 'permanent', 'account', 'number', 'card', 'identity',
-      'date', 'birth', 'issue', 'expiry', 'valid', 'until', 'nationality', 'sex',
-      'place', 'signature', 'holder', 'authority', 'issued', 'type', 'code'
+      'date', 'birth', 'issue', 'expiry', 'valid', 'until', 'nationality', 'sex', 'male', 'female',
+      'place', 'signature', 'holder', 'authority', 'issued', 'type', 'code', 'class', 'restrictions',
+      'endorsements', 'veteran', 'donor', 'height', 'weight', 'eyes', 'hair', 'address', 'city', 'state',
+      'zip', 'county', 'country', 'organ', 'blood', 'rstr', 'end', 'iss', 'exp', 'dob', 'dd', 'lic'
     ];
 
-    const namePatterns = [
-      // Pattern for names after "Name:" or similar
-      /(?:name|nome|naam)\s*:?\s*([A-Z][A-Za-z\s]{4,49})/i,
-      // Pattern for names in passport format (SURNAME, GIVEN NAMES)
+    // Clean text and split into lines for better analysis
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    // For driving license, look for specific patterns
+    if (docType === 'license') {
+      // Look for name patterns specific to driving licenses
+      const licenseNamePatterns = [
+        // Pattern: "4d JOHN SMITH" or "4a JANE DOE"
+        /^[0-9][a-z]\s+([A-Z][A-Za-z]+\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?)$/,
+        // Pattern: "SMITH, JOHN" format
+        /^([A-Z][A-Za-z]+,\s*[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?)$/,
+        // Pattern: "JOHN SMITH" on its own line
+        /^([A-Z][A-Za-z]+\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?)$/,
+        // Pattern after "LN" (Last Name) and "FN" (First Name)
+        /LN\s+([A-Z][A-Za-z]+)\s+FN\s+([A-Z][A-Za-z]+)/i,
+        // Pattern: Name before date of birth
+        /([A-Z][A-Za-z]+\s+[A-Z][A-Za-z]+)(?=.*\d{2}\/\d{2}\/\d{4})/
+      ];
+      
+      for (const pattern of licenseNamePatterns) {
+        const match = text.match(pattern);
+        if (match) {
+          let candidateName = '';
+          if (match[2]) {
+            // LN/FN pattern - combine last and first name
+            candidateName = `${match[2]} ${match[1]}`;
+          } else {
+            candidateName = match[1];
+          }
+          
+          if (isValidName(candidateName, excludeTerms)) {
+            return candidateName.trim();
+          }
+        }
+      }
+      
+      // Look line by line for driving license names
+      for (const line of lines) {
+        // Skip lines with common license terms
+        if (excludeTerms.some(term => line.toLowerCase().includes(term))) {
+          continue;
+        }
+        
+        // Look for lines with proper name format
+        if (/^[A-Z][A-Za-z]+\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?$/.test(line)) {
+          if (isValidName(line, excludeTerms)) {
+            return line.trim();
+          }
+        }
+      }
+    }
+    
+    // General name patterns for other documents
+    const generalNamePatterns = [
+      // Pattern for names after keywords
+      /(?:name|full name|given name)\s*:?\s*([A-Z][A-Za-z\s]{4,49})/i,
+      // Pattern for names in passport format
       /([A-Z]{2,20},\s*[A-Z][A-Za-z\s]{2,30})/,
-      // Pattern for names in multiple lines
-      /^([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){1,4})$/m,
       // Pattern for names near date of birth
-      /([A-Z][A-Za-z\s]{4,49})(?=.*(?:date.*birth|dob|born))/i
-    ];
-
-    for (const pattern of namePatterns) {
+      /([A-Z][A-Za-z\s]{4,49})(?=.*(?:date.*birth|dob|\d{2}\/\d{2}\/\d{4}))/i
+    for (const pattern of generalNamePatterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
         const candidateName = match[1].trim();
@@ -343,9 +468,15 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
         /([A-Z]{5}\d{4}[A-Z])/
       ],
       license: [
-        /(?:license|licence)\s*(?:no|number|#)?\s*:?\s*([A-Z0-9]{8,20})/i,
-        /([A-Z]{2}\d{2}\s?\d{11})/,
-        /([A-Z0-9]{10,20})/
+        // Driving license specific patterns
+        /(?:lic|license|licence)\s*(?:no|number|#)?\s*:?\s*([A-Z0-9]{8,20})/i,
+        /DL\s*(?:NO|NUMBER)?\s*:?\s*([A-Z0-9]{8,20})/i,
+        /([A-Z]{1,2}\d{2}\s*\d{11})/,
+        /([A-Z0-9]{8,15})/,
+        // Look for numbers after "4d" or similar class indicators
+        /[0-9][a-z]\s+[A-Z][A-Za-z\s]+\s+([A-Z0-9]{8,20})/,
+        // Look for standalone license numbers
+        /\b([A-Z]{1,2}\d{13,15})\b/
       ],
       green_card: [
         /(?:card|number)\s*(?:no|#)?\s*:?\s*([A-Z0-9]{9,13})/i,
@@ -359,6 +490,25 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
 
     const docPatterns = patterns[docType] || patterns.id_card;
     
+    // For driving license, also look line by line
+    if (docType === 'license') {
+      const lines = text.split('\n').map(line => line.trim());
+      
+      for (const line of lines) {
+        // Look for lines that might contain license numbers
+        const licenseNumberMatch = line.match(/\b([A-Z]{1,2}\d{13,15})\b/);
+        if (licenseNumberMatch) {
+          return licenseNumberMatch[1];
+        }
+        
+        // Look for patterns like "DL NO: ABC123456789"
+        const dlMatch = line.match(/(?:DL|LICENSE)\s*(?:NO|NUMBER)?\s*:?\s*([A-Z0-9]{8,20})/i);
+        if (dlMatch) {
+          return dlMatch[1];
+        }
+      }
+    }
+    
     for (const pattern of docPatterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
@@ -370,24 +520,31 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
   };
 
   const extractDateOfBirth = (text: string): string => {
+    // Clean the text and look for date patterns
+    const cleanText = text.replace(/\s+/g, ' ').trim();
+    
     const datePatterns = [
-      // DD/MM/YYYY or DD-MM-YYYY
-      /(?:date.*birth|dob|born).*?(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
-      /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/,
-      // DD MMM YYYY
-      /(?:date.*birth|dob|born).*?(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4})/i,
-      /(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4})/i,
-      // YYYY-MM-DD
-      /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/
+      // Look for dates after DOB or similar keywords
+      /(?:DOB|date.*birth|born)\s*:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
+      // Look for dates in MM/DD/YYYY format (common in US licenses)
+      /(\d{1,2}\/\d{1,2}\/\d{4})/g,
+      // Look for dates in DD-MM-YYYY format
+      /(\d{1,2}-\d{1,2}-\d{4})/g,
+      // Look for dates in YYYY-MM-DD format
+      /(\d{4}-\d{1,2}-\d{1,2})/g,
+      // Look for dates with month names
+      /(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4})/gi
     ];
 
     for (const pattern of datePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        const dateStr = match[1];
-        const parsedDate = parseAndValidateDate(dateStr, 'birth');
-        if (parsedDate) {
-          return parsedDate;
+      const matches = [...cleanText.matchAll(pattern)];
+      for (const match of matches) {
+        if (match && match[1]) {
+          const dateStr = match[1];
+          const parsedDate = parseAndValidateDate(dateStr, 'birth');
+          if (parsedDate) {
+            return parsedDate;
+          }
         }
       }
     }
@@ -441,8 +598,14 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       if (dateStr.includes('/')) {
         const parts = dateStr.split('/');
         if (parts.length === 3) {
-          // Assume DD/MM/YYYY format for most documents
-          date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          // For US documents, assume MM/DD/YYYY format
+          if (parseInt(parts[0]) > 12) {
+            // If first part > 12, it's likely DD/MM/YYYY
+            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          } else {
+            // Otherwise assume MM/DD/YYYY (US format)
+            date = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+          }
         } else {
           return '';
         }
@@ -461,7 +624,7 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
         }
       } else {
         // Try parsing as is
-        date = new Date(dateStr);
+        date = new Date(cleanDateStr);
       }
 
       if (isNaN(date.getTime())) {
@@ -473,7 +636,7 @@ const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
 
       // Validate date ranges
       if (type === 'birth') {
-        if (year < 1920 || year > currentYear - 5) {
+        if (year < 1900 || year > currentYear - 10) {
           return '';
         }
       } else if (type === 'expiry') {
