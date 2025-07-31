@@ -577,6 +577,10 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
           break;
         case 'checkin':
           detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
+          // Auto-speak the document scanning instruction
+          setTimeout(() => {
+            speakMessage("Please scan your document. I support Passport, PAN Card, Driving License, and Green Card.", messageLang);
+          }, 1000);
           break;
         case 'checkout':
           detectIntentAndOpenModal(response.intent, response.extractedData, messageLang);
