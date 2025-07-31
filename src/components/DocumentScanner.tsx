@@ -56,41 +56,38 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [cameraError, setCameraError] = useState<string>('');
-  const [selectedDocType, setSelectedDocType] = useState<DocumentData['documentType'] | null>(null);
+  const [detectedDocType, setDetectedDocType] = useState<DocumentData['documentType'] | null>(null);
 
-  const documentTypes = [
-    { 
-      type: 'passport' as const, 
+  const documentTypes = {
+    'passport': { 
       name: 'Passport', 
       icon: <ContactPage />, 
       color: 'primary',
       description: 'International travel document'
     },
-    { 
-      type: 'pan' as const, 
+    'pan': { 
       name: 'PAN Card', 
       icon: <CreditCard />, 
       color: 'secondary',
       description: 'Permanent Account Number'
     },
-    { 
-      type: 'license' as const, 
+    'license': { 
       name: 'Driving License', 
       icon: <Badge />, 
       color: 'success',
       description: 'Government issued ID'
     },
-    { 
-      type: 'green_card' as const, 
+    'green_card': { 
       name: 'Green Card', 
       icon: <ContactPage />, 
       color: 'info',
       description: 'US Permanent Resident Card'
     }
-  ];
+  };
 
+  // Auto-start camera when component becomes active
   useEffect(() => {
-    if (isActive && selectedDocType) {
+    if (isActive) {
       startCamera();
     } else {
       stopCamera();
@@ -99,7 +96,7 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
     return () => {
       stopCamera();
     };
-  }, [isActive, selectedDocType]);
+  }, [isActive]);
 
   const startCamera = async () => {
     try {
@@ -136,10 +133,43 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
     }
     setIsScanning(false);
     setScanProgress(0);
+    setDetectedDocType(null);
+  };
+
+  // Auto-detect document type based on scanned content
+  const detectDocumentType = (extractedText: string[]): DocumentData['documentType'] => {
+    const text = extractedText.join(' ').toLowerCase();
+    
+    // Passport detection
+    if (text.includes('passport') || text.includes('united states of america') || 
+        text.includes('republic of india') || text.includes('type p')) {
+      return 'passport';
+    }
+    
+    // PAN Card detection
+    if (text.includes('permanent account number') || text.includes('income tax department') ||
+        /[a-z]{5}\d{4}[a-z]/i.test(text)) {
+      return 'pan';
+    }
+    
+    // Driving License detection
+    if (text.includes('driving license') || text.includes('driver license') ||
+        text.includes('department of motor vehicles') || text.includes('dl no')) {
+      return 'license';
+    }
+    
+    // Green Card detection
+    if (text.includes('permanent resident card') || text.includes('united states of america') ||
+        text.includes('uscis') || text.includes('green card')) {
+      return 'green_card';
+    }
+    
+    // Default to passport if uncertain
+    return 'passport';
   };
 
   const scanDocument = async () => {
-    if (!videoRef.current || !canvasRef.current || isScanning || !selectedDocType) return;
+    if (!videoRef.current || !canvasRef.current || isScanning) return;
 
     setIsScanning(true);
     setScanProgress(0);
@@ -169,8 +199,15 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
         // Simulate OCR processing delay
         await new Promise(resolve => setTimeout(resolve, 2500));
 
-        // Generate mock document data based on selected type
-        const mockDocumentData = generateMockDocumentData(selectedDocType);
+        // Simulate OCR text extraction
+        const extractedText = await extractTextFromImage(canvas.toDataURL());
+        
+        // Auto-detect document type
+        const detectedType = detectDocumentType(extractedText);
+        setDetectedDocType(detectedType);
+
+        // Generate mock document data based on detected type
+        const mockDocumentData = generateMockDocumentData(detectedType);
         mockDocumentData.photo = canvas.toDataURL('image/jpeg', 0.8);
 
         // Validate extracted data
@@ -188,6 +225,57 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
       setIsScanning(false);
       setScanProgress(0);
     }
+  };
+
+  // Simulate OCR text extraction
+  const extractTextFromImage = async (imageData: string): Promise<string[]> => {
+    // In a real implementation, this would use OCR libraries like Tesseract.js
+    // For now, return mock extracted text based on random document type
+    const mockTexts = {
+      passport: [
+        'PASSPORT',
+        'UNITED STATES OF AMERICA',
+        'SMITH, JOHN MICHAEL',
+        'P123456789',
+        'USA',
+        '15 MAR 1985',
+        '15 MAR 2030',
+        'M',
+        'NEW YORK, USA'
+      ],
+      pan: [
+        'PERMANENT ACCOUNT NUMBER',
+        'INCOME TAX DEPARTMENT',
+        'GOVT. OF INDIA',
+        'JOHN SMITH',
+        'ABCDE1234F',
+        '15/03/1985'
+      ],
+      license: [
+        'DRIVING LICENSE',
+        'DEPARTMENT OF MOTOR VEHICLES',
+        'JOHN SMITH',
+        'DL123456789',
+        '15 MAR 1985',
+        '15 MAR 2028',
+        'CLASS C'
+      ],
+      green_card: [
+        'PERMANENT RESIDENT CARD',
+        'UNITED STATES OF AMERICA',
+        'USCIS',
+        'JOHN SMITH',
+        'GC123456789',
+        '15 MAR 1985',
+        '15 MAR 2035'
+      ]
+    };
+
+    // Randomly select a document type for simulation
+    const types = Object.keys(mockTexts) as (keyof typeof mockTexts)[];
+    const randomType = types[Math.floor(Math.random() * types.length)];
+    
+    return mockTexts[randomType];
   };
 
   const generateMockDocumentData = (docType: DocumentData['documentType']): DocumentData => {
@@ -253,56 +341,6 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
     }, 1000);
   };
 
-  if (!selectedDocType) {
-    return (
-      <Box>
-        <Typography variant="h6" gutterBottom sx={{ textAlign: 'center', mb: 3 }}>
-          Select Document Type to Scan
-        </Typography>
-        
-        <Grid container spacing={2}>
-          {documentTypes.map((doc) => (
-            <Grid item xs={6} sm={3} key={doc.type}>
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 4
-                  }
-                }}
-                onClick={() => setSelectedDocType(doc.type)}
-              >
-                <CardContent sx={{ p: 2 }}>
-                  <Avatar 
-                    sx={{ 
-                      bgcolor: `${doc.color}.light`, 
-                      color: `${doc.color}.main`,
-                      mx: 'auto',
-                      mb: 1,
-                      width: 48,
-                      height: 48
-                    }}
-                  >
-                    {doc.icon}
-                  </Avatar>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    {doc.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                    {doc.description}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-    );
-  }
-
   if (cameraError) {
     return (
       <Paper sx={{ p: 3, textAlign: 'center' }}>
@@ -316,37 +354,26 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
         >
           Retry Camera Access
         </Button>
-        <Button
-          variant="outlined"
-          onClick={() => setSelectedDocType(null)}
-          sx={{ ml: 2 }}
-        >
-          Change Document Type
-        </Button>
       </Paper>
     );
   }
 
   return (
     <Box>
-      {/* Selected Document Type */}
-      <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.light' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Document Type Detection Display */}
+      {detectedDocType && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: 'success.light' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DocumentIcon color="primary" />
-            <Typography variant="h6" color="primary.main">
-              Scanning: {documentTypes.find(d => d.type === selectedDocType)?.name}
+            <CheckCircle color="success" />
+            <Typography variant="h6" color="success.main">
+              Detected: {documentTypes[detectedDocType].name}
             </Typography>
           </Box>
-          <Button 
-            size="small" 
-            onClick={() => setSelectedDocType(null)}
-            variant="outlined"
-          >
-            Change
-          </Button>
-        </Box>
-      </Paper>
+          <Typography variant="body2" color="success.contrastText">
+            {documentTypes[detectedDocType].description}
+          </Typography>
+        </Paper>
+      )}
 
       {/* Camera View */}
       <Paper sx={{ 
@@ -401,7 +428,7 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
               fontSize: { xs: '0.75rem', md: '0.875rem' }
             }}
           >
-            {isScanning ? `Scanning ${selectedDocType}...` : `Position ${selectedDocType} within frame`}
+            {isScanning ? 'Scanning and identifying document...' : 'Position document within frame'}
           </Typography>
         </Box>
         
@@ -432,7 +459,9 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
               Scanning... {scanProgress}%
             </Typography>
             <Typography variant="caption" textAlign="center" sx={{ opacity: 0.8 }}>
-              Hold steady for best results
+              {scanProgress < 50 ? 'Capturing image...' : 
+               scanProgress < 80 ? 'Identifying document type...' : 
+               'Extracting information...'}
             </Typography>
           </Box>
         )}
@@ -487,13 +516,16 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
       {/* Instructions */}
       <Alert severity="info" sx={{ mt: 2 }}>
         <Typography variant="body2">
-          <strong>Tips for best results:</strong>
+          <strong>AI will automatically identify your document type:</strong>
         </Typography>
         <Typography variant="body2" component="ul" sx={{ mt: 1, pl: 2 }}>
-          <li>Ensure good lighting</li>
-          <li>Hold document flat and steady</li>
-          <li>Avoid glare and shadows</li>
-          <li>Make sure all text is clearly visible</li>
+          <li>Passport - International travel document</li>
+          <li>PAN Card - Permanent Account Number</li>
+          <li>Driving License - Government issued ID</li>
+          <li>Green Card - US Permanent Resident Card</li>
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          <strong>Tips:</strong> Ensure good lighting, hold document flat and steady, avoid glare.
         </Typography>
       </Alert>
       

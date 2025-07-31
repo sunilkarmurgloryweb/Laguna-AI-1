@@ -94,14 +94,12 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     documentVerified: boolean;
     checkInComplete: boolean;
     isProcessing: boolean;
-    showDocumentScanner: boolean;
     reservationFound: boolean;
   }>({
     documentScanned: false,
     documentVerified: false,
     checkInComplete: false,
     isProcessing: false,
-    showDocumentScanner: true,
     reservationFound: false
   });
 
@@ -116,12 +114,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   // Auto-start document scanner when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Automatically show document scanner and speak instruction
-      setFormData(prev => ({ ...prev, showDocumentScanner: true }));
-      
       // Delay the AI message to allow modal to fully open
       setTimeout(() => {
-        onAIMessage?.("Please scan your document. I support Passport, PAN Card, Driving License, and Green Card.", true);
+        onAIMessage?.("Please position your document in front of the camera. I will automatically identify the document type.", true);
       }, 500);
     }
   }, [isOpen, onAIMessage]);
@@ -131,11 +126,10 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     setDocumentData(scannedData);
     setFormData(prev => ({ 
       ...prev, 
-      documentScanned: true,
-      showDocumentScanner: false 
+      documentScanned: true
     }));
 
-    onAIMessage?.("Document scanned successfully. Searching for your reservation...", true);
+    onAIMessage?.(`${scannedData.documentType.toUpperCase()} identified and scanned successfully. Searching for your reservation...`, true);
 
     // Search for reservation using scanned document data
     setTimeout(() => {
@@ -304,39 +298,42 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           <Box sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <DocumentScannerIcon color="primary" />
-              Document Scan
+              Document Identification & Scan
             </Typography>
 
-            {formData.showDocumentScanner && (
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Please scan your document for identity verification. Supported documents: Passport, PAN Card, Driving License, Green Card.
-                </Typography>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Position your document in front of the camera. The AI will automatically identify and scan your document.
+              </Typography>
 
-                <DocumentScanner
-                  onScanComplete={handleDocumentScanned}
-                  onError={(error) => onAIMessage?.(error, true)}
-                  isActive={formData.showDocumentScanner}
-                />
-              </Box>
-            )}
+              <DocumentScanner
+                onScanComplete={handleDocumentScanned}
+                onError={(error) => onAIMessage?.(error, true)}
+                isActive={isOpen && currentStep === 0}
+              />
+            </Box>
 
             {formData.documentScanned && documentData && (
               <Box>
                 <Alert severity="success" sx={{ mb: 3 }} icon={<CheckCircle />}>
                   <Typography variant="body2">
-                    <strong>Document Scanned Successfully!</strong> 
-                    {documentData.documentType.toUpperCase()}: {documentData.name}
+                    <strong>{documentData.documentType.toUpperCase()} Identified & Scanned!</strong> 
+                    Name: {documentData.name}
                   </Typography>
                 </Alert>
 
                 {/* Document Details */}
                 <Paper sx={{ p: 3, mb: 3, bgcolor: 'grey.50' }}>
-                  <Typography variant="h6" gutterBottom>Scanned Document</Typography>
+                  <Typography variant="h6" gutterBottom>Identified Document</Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <Typography variant="body2" fontWeight="bold">Document Type:</Typography>
-                      <Typography variant="body2">{documentData.documentType.toUpperCase()}</Typography>
+                      <Chip 
+                        label={documentData.documentType.toUpperCase()} 
+                        color="primary" 
+                        size="small"
+                        sx={{ fontWeight: 'bold' }}
+                      />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography variant="body2" fontWeight="bold">Document Number:</Typography>
