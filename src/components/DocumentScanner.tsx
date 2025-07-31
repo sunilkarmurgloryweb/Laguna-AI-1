@@ -1177,24 +1177,6 @@ const DocumentScannerModal: React.FC<DocumentScannerProps> = ({
     }
   };
   
-  const calculateCompleteness = (data: Partial<DocumentData>, docType: DocumentType): number => {
-    const requiredFields = {
-      passport: ['name', 'documentNumber', 'nationality', 'dateOfBirth'],
-      pan: ['name', 'documentNumber', 'dateOfBirth'],
-      license: ['name', 'documentNumber', 'dateOfBirth'],
-      green_card: ['name', 'documentNumber', 'nationality'],
-      id_card: ['name', 'documentNumber']
-    };
-    
-    const required = requiredFields[docType] || ['name', 'documentNumber'];
-    const extracted = required.filter(field => {
-      const value = data[field as keyof DocumentData];
-      return value && String(value).trim().length > 0;
-    });
-    
-    return (extracted.length / required.length) * 100;
-  };
-
   // AI-powered voice correction with better prompts
   const processVoiceCorrection = async (voiceInput: string, fieldName: string) => {
     try {
