@@ -42,7 +42,7 @@ import { ProcessedVoiceResponse, VoiceProcessedData, PassportInfo, ReservationSe
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { selectAllReservations, addCheckIn } from '../store/slices/mockDataSlice';
-import DocumentScanner from './DocumentScanner';
+import DocumentScannerModal from './DocumentScanner';
 
 interface CheckInModalProps {
   isOpen: boolean;
@@ -110,6 +110,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   const [documentData, setDocumentData] = useState<DocumentData | null>(null);
   const [roomAssignment, setRoomAssignment] = useState<RoomAssignment | null>(null);
   const [voiceFilledFields, setVoiceFilledFields] = useState<Set<string>>(new Set());
+  const [showDocumentScanner, setShowDocumentScanner] = useState(false);
 
 
   const steps = ['Document Scan', 'Check-in Summary'];
@@ -117,19 +118,17 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   // Auto-start document scanner when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Start scanning immediately when modal opens
       setTimeout(() => {
-        if (!scanningState.autoScanStarted) {
-          setScanningState(prev => ({ ...prev, autoScanStarted: true }));
-          onAIMessage?.("Document scanner is ready. Please position your document clearly in the camera view. I will automatically identify the document type.", true);
-        }
-      }, 300);
+        setShowDocumentScanner(true);
+        onAIMessage?.("Opening AI document scanner. Please position your document clearly for automatic scanning.", true);
+      }, 500);
     }
-  }, [isOpen, onAIMessage, scanningState.autoScanStarted]);
+  }, [isOpen, onAIMessage]);
 
   // Handle document scan completion
   const handleDocumentScanned = (scannedData: DocumentData) => {
     setDocumentData(scannedData);
+    setShowDocumentScanner(false);
     setScanningState(prev => ({ 
       ...prev, 
       documentScanned: true
@@ -315,14 +314,23 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                The AI document scanner will automatically identify and extract information from your document.
+                Click "Open Scanner" to start the AI document scanner in full screen mode.
               </Typography>
 
-              <DocumentScanner
-                onScanComplete={handleDocumentScanned}
-                onError={handleDocumentScanError}
-                isActive={isOpen && currentStep === 0}
-              />
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => setShowDocumentScanner(true)}
+                  startIcon={<DocumentScannerIcon />}
+                  sx={{ minWidth: 200, py: 2 }}
+                >
+                  Open AI Scanner
+                </Button>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Full screen scanner with automatic document identification
+                </Typography>
+              </Box>
             </Box>
 
             {scanningState.documentScanned && documentData && (
@@ -634,6 +642,14 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           )}
         </DialogActions>
       )}
+
+      {/* Document Scanner Modal */}
+      <DocumentScannerModal
+        isOpen={showDocumentScanner}
+        onClose={() => setShowDocumentScanner(false)}
+        onScanComplete={handleDocumentScanned}
+        onError={handleDocumentScanError}
+      />
     </Dialog>
   );
 };
