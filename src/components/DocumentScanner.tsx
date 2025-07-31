@@ -28,7 +28,7 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import { Capacitor } from '@capacitor/core';
-import { DocumentScanner } from 'capacitor-document-scanner';
+import { DocumentScanner as CapacitorDocumentScanner } from 'capacitor-document-scanner';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { createWorker } from 'tesseract.js';
 
@@ -51,7 +51,7 @@ interface DocumentScannerProps {
   isActive: boolean;
 }
 
-const DocumentScanner: React.FC<DocumentScannerProps> = ({
+const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
   onScanComplete,
   onError,
   isActive
@@ -127,7 +127,7 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
       if (Capacitor.isNativePlatform()) {
         // Use native document scanner
-        const { scannedImages } = await DocumentScanner.scanDocument({
+        const { scannedImages } = await CapacitorDocumentScanner.scanDocument();
           maxNumDocuments: 1,
           letUserAdjustCrop: true,
           croppedImageQuality: 100
@@ -775,4 +775,4 @@ const DocumentScanner: React.FC<DocumentScannerProps> = ({
   );
 };
 
-export default DocumentScanner;
+export default DocumentScannerComponent;
