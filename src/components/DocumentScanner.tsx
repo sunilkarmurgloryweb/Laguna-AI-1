@@ -67,13 +67,14 @@ const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
   const [detectedDocType, setDetectedDocType] = useState<DocumentData['documentType'] | null>(null);
   const [isCapacitorAvailable, setIsCapacitorAvailable] = useState(false);
   const [scannedImage, setScannedImage] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string>('');
   const scannedImageRef = useRef<HTMLImageElement>(null);
 
   // Check if Capacitor is available
   useEffect(() => {
     const checkCapacitor = () => {
       try {
-        setIsCapacitorAvailable(Capacitor.isNativePlatform() || true); // Allow web testing
+        setIsCapacitorAvailable(true); // Always allow for web testing
       } catch (error) {
         console.log('Capacitor not available, using web fallback');
         setIsCapacitorAvailable(false);
@@ -83,38 +84,122 @@ const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
     checkCapacitor();
   }, []);
 
+  // Request camera permissions
+  const requestCameraPermissions = async (): Promise<boolean> => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // For native platforms, permissions are handled by the plugin
+        return true;
+      } else {
+        // For web, request camera permission
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
+        // Stop the stream immediately as we just needed permission
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+      }
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      setCameraError('Camera permission denied. Please allow camera access to scan documents.');
+      return false;
+    }
+  };
+
   // Auto-start scanning when component becomes active
   useEffect(() => {
-    if (isActive && isCapacitorAvailable) {
+    if (isActive && isCapacitorAvailable && !cameraError) {
       // Small delay to allow UI to settle
       setTimeout(() => {
-        startDocumentScan();
+        initializeScanner();
       }, 500);
     }
-  }, [isActive, isCapacitorAvailable]);
+  }, [isActive, isCapacitorAvailable, cameraError]);
+
+  const initializeScanner = async () => {
+    setCameraError('');
+    const hasPermission = await requestCameraPermissions();
+    if (hasPermission) {
+      startDocumentScan();
+    }
+  };
 
   const scanDocument = async () => {
     try {
-      // start the document scanner
-      const { scannedImages } = await DocumentScanner.scanDocument();
+      if (Capacitor.isNativePlatform()) {
+        // Use native document scanner
+        const { scannedImages } = await DocumentScanner.scanDocument({
+          letUserAdjustCrop: true,
+          maxNumDocuments: 1,
+          croppedImageQuality: 100
+        });
 
-      // get back an array with scanned image file paths
-      if (scannedImages.length > 0) {
-        // Convert file path to usable src
-        const imageSrc = Capacitor.convertFileSrc(scannedImages[0]);
-        setScannedImage(imageSrc);
-        
-        // set the img src, so we can view the first scanned image
-        if (scannedImageRef.current) {
-          scannedImageRef.current.src = imageSrc;
+        if (scannedImages.length > 0) {
+          const imageSrc = Capacitor.convertFileSrc(scannedImages[0]);
+          setScannedImage(imageSrc);
+          
+          if (scannedImageRef.current) {
+            scannedImageRef.current.src = imageSrc;
+          }
+          
+          return imageSrc;
         }
-        
-        return imageSrc;
       } else {
-        throw new Error('No document image captured');
+        // Web fallback - use camera to capture image
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
+        
+        // Create video element to capture frame
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.play();
+        
+        // Wait for video to be ready
+        await new Promise(resolve => {
+          video.onloadedmetadata = resolve;
+        });
+        
+        // Create canvas to capture frame
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          ctx.drawImage(video, 0, 0);
+          const imageData = canvas.toDataURL('image/jpeg', 0.9);
+          
+          // Stop video stream
+          stream.getTracks().forEach(track => track.stop());
+          
+          setScannedImage(imageData);
+          if (scannedImageRef.current) {
+            scannedImageRef.current.src = imageData;
+          }
+          
+          return imageData;
+        }
       }
+      
+      throw new Error('No document image captured');
     } catch (error) {
       console.error('Document scanning error:', error);
+      if (error instanceof Error && error.message.includes('Permission')) {
+        setCameraError('Camera permission denied. Please allow camera access and try again.');
+      } else if (error instanceof Error && error.message.includes('NotFound')) {
+        setCameraError('No camera found. Please ensure your device has a camera.');
+      } else {
+        setCameraError('Failed to access camera. Please check your device settings.');
+      }
       throw error;
     }
   };
@@ -122,6 +207,7 @@ const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
   const startDocumentScan = async () => {
     if (isScanning) return;
 
+    setCameraError('');
     setIsScanning(true);
     setScanStage('capturing');
     setScanProgress(0);
@@ -130,31 +216,62 @@ const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
     try {
       // Stage 1: Capturing document
       setScanStage('capturing');
-      await updateProgress(0, 30, 'Opening camera and capturing document...');
+      await updateProgress(0, 25, 'Opening camera and capturing document...');
       
       const scannedImageSrc = await scanDocument();
       
-      // Stage 2: Processing image
+      // Stage 2: Identifying document type
       setScanStage('processing');
-      await updateProgress(30, 60, 'Processing document image...');
+      await updateProgress(25, 50, 'Identifying document type...');
       
-      // Stage 3: Extracting data
-      setScanStage('extracting');
-      await updateProgress(60, 90, 'Extracting document information...');
+      const extractedText = await simulateOCRFromImage(scannedImageSrc);
+      const documentType = detectDocumentType(extractedText);
+      setDetectedDocType(documentType);
       
-      // Process the scanned document with real OCR
-      const documentData = await processScannedDocument(scannedImageSrc);
+      // Stage 3: Processing image
+      setScanStage('processing');
+      await updateProgress(50, 75, 'Processing document data...');
+          <Alert severity="warning" sx={{ mt: 2 }}>
+      // Stage 4: Extracting data
+              <strong>Camera Access Required</strong>
+      await updateProgress(75, 95, 'Extracting document information...');
+      
+              Please allow camera access to scan documents. 
+              Make sure your browser has camera permissions enabled.
       
       setScanStage('complete');
-      await updateProgress(90, 100, 'Document processing complete!');
+              variant="contained" 
       
       // Validate and return data
-      if (validateDocumentData(documentData)) {
+              onClick={initializeScanner}
         setTimeout(() => {
-          onScanComplete(documentData);
+              Try Again
         }, 500);
       } else {
         throw new Error('Could not extract valid document information');
+      }
+
+      // Show camera error if any
+      if (cameraError) {
+        return (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              <strong>Camera Error</strong>
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {cameraError}
+            </Typography>
+            <Button 
+              variant="contained" 
+              size="small" 
+              sx={{ mt: 2 }}
+              onClick={initializeScanner}
+              startIcon={<Refresh />}
+            >
+              Retry Camera Access
+            </Button>
+          </Alert>
+        );
       }
 
     } catch (error) {
@@ -184,19 +301,12 @@ const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
     });
   };
 
-  const processScannedDocument = async (imageData: string): Promise<DocumentData> => {
-    // Simulate OCR processing with the actual scanned image
-    // In production, you would integrate with OCR services like:
-    // - Google Vision API
-    // - AWS Textract
-    // - Azure Computer Vision
-    // - Tesseract.js for client-side OCR
-    
-    const extractedText = await simulateOCRFromImage(imageData);
-    const documentType = detectDocumentType(extractedText);
+  const processScannedDocument = async (
+    imageData: string, 
+    extractedText: string[], 
+    documentType: DocumentData['documentType']
+  ): Promise<DocumentData> => {
     const extractedData = extractDocumentInfo(extractedText, documentType);
-    
-    setDetectedDocType(documentType);
     
     return {
       ...extractedData,
@@ -208,57 +318,30 @@ const DocumentScannerComponent: React.FC<DocumentScannerProps> = ({
   };
 
   const simulateOCRFromImage = async (imageData: string): Promise<string[]> => {
-    // In a real implementation, this would process the actual scanned image
-    // For now, we'll simulate realistic OCR results based on common document patterns
+    // In production, integrate with OCR services:
+    // - Tesseract.js for client-side OCR
+    // - Google Vision API
+    // - AWS Textract
+    // - Azure Computer Vision
     
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // For now, simulate OCR processing of the actual scanned image
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Generate realistic OCR results that would come from actual document scanning
-    const mockOCRResults = [
-      // Common document headers
-      'GOVERNMENT OF INDIA',
+    // TODO: Replace with actual OCR processing of imageData
+    // For demonstration, return realistic patterns that would be extracted
+    const sampleOCRResults = [
+      'REPUBLIC OF INDIA',
       'PASSPORT',
-      'DRIVING LICENCE',
-      'PERMANENT ACCOUNT NUMBER',
-      'INCOME TAX DEPARTMENT',
-      
-      // Personal information (would be extracted from actual document)
       'JOHN MICHAEL SMITH',
-      'JANE ELIZABETH DOE',
-      'ROBERT WILLIAM JOHNSON',
-      
-      // Document numbers (realistic patterns)
       'P1234567',
-      'DL-1320110012345',
-      'ABCDE1234F',
-      'GC1234567890',
-      
-      // Dates
       '15/03/1985',
       '15/03/2030',
-      '01/01/2025',
-      
-      // Locations
-      'NEW DELHI',
-      'MUMBAI',
-      'BANGALORE',
-      'CHENNAI',
-      'KOLKATA',
-      
-      // Additional details
       'INDIAN',
       'MALE',
-      'FEMALE',
-      'LMV',
-      'MCWG',
-      '123 MAIN STREET',
-      'SECTOR 15',
-      'GURGAON 122001'
+      'NEW DELHI'
     ];
     
-    // Return a subset of realistic data
-    return mockOCRResults.slice(0, Math.floor(Math.random() * 8) + 5);
+    return sampleOCRResults;
   };
 
   const detectDocumentType = (extractedText: string[]): DocumentData['documentType'] => {
